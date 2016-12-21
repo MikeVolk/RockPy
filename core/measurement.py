@@ -47,7 +47,7 @@ class Measurement(object):
 
     @property
     def log(self):
-        name = '{}.{}[{}]'.format(self.sobj, self.mtype, self.id)
+        name = '{}.{}[{}]'.format(self.sobj, self.mtype(), self.id)
         return logging.getLogger(name)
 
     @classmethod
@@ -317,9 +317,11 @@ class Measurement(object):
         ----
             when creating a new measurement it automatically calculates all results using the standard prameter set
         """
+
         self.id = id(self)
 
         self.sobj = sobj
+        self.log.debug('Creating measurement: id:{} idx:{}'.format(self.id, self._idx))
 
         # create the dictionary the data will be stored in
         if mdata is None:
@@ -353,7 +355,7 @@ class Measurement(object):
 
         self.calculation_parameter = {res: {} for res in self.result_methods()}
 
-        self.__initialize()
+        # self.__initialize()
 
         # normalization
         self.is_normalized = False  # normalized flag for visuals, so its not normalized twice
@@ -396,29 +398,29 @@ class Measurement(object):
 
     def get_RockPy_compatible_filename(self, add_series=True):
 
-    # if add_series:
-    #     series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
-    # else:
-    #     series = None
-    #
-    # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
-    # # height = self.get_mtype_prior_to(mtype='height')
-    #
-    # # convert the mass to the smallest possible exponent
-    # mass, mass_unit = None, None
-    # if self.mass:
-    #     mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
-    #
-    # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
-    #                                                sgroups=self.sobj.samplegroups,
-    #                                                samples=self.sobj.name,
-    #                                                mtypes=self.mtype, ftype=self.ftype,
-    #                                                mass=mass, massunit=mass_unit,
-    #                                                series=series,
-    #                                                suffix=self.idx,
-    #                                                read_fpath=False)
-    # return minfo_obj.fname
-
+        # if add_series:
+        #     series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
+        # else:
+        #     series = None
+        #
+        # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
+        # # height = self.get_mtype_prior_to(mtype='height')
+        #
+        # # convert the mass to the smallest possible exponent
+        # mass, mass_unit = None, None
+        # if self.mass:
+        #     mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
+        #
+        # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
+        #                                                sgroups=self.sobj.samplegroups,
+        #                                                samples=self.sobj.name,
+        #                                                mtypes=self.mtype, ftype=self.ftype,
+        #                                                mass=mass, massunit=mass_unit,
+        #                                                series=series,
+        #                                                suffix=self.idx,
+        #                                                read_fpath=False)
+        # return minfo_obj.fname
+        raise NotImplementedError
 
     def _rename_to_RockPy_compatible_filename(self, add_series=True, create_backup=True):
         if self.fpath:
@@ -568,10 +570,6 @@ class Measurement(object):
         return sorted(set([cm] + dependent_on_cm))
 
     @property
-    def mtype(self):
-        return self._mtype()
-
-    @property
     def base_ids(self):
         """
         returns a list of ids for all base measurements
@@ -670,50 +668,6 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
-    def __getstate__(self):
-        """
-        returned dict will be pickled
-        :return:
-        """
-        pickle_me = {k: v for k, v in self.__dict__.items() if k in
-                     (
-                         'id', '_idx', 'idx',
-                         'ftype', 'fpath',
-                         # plotting related
-                         '_plt_props',
-                         'calculation_parameter',
-                         # data related
-                         '_raw_data', '_data',
-                         'initial_state', 'is_initial_state', 'is_normalized',
-                         'is_mean', 'base_measurements',
-                         'results',
-                         # sample related
-                         'sobj',
-                         '_series',
-                         'calibration', 'holder', 'correction',
-                     )
-                     }
-        return pickle_me
-
-    def __setstate__(self, d):
-        """
-        d is unpickled data
-           d:
-        :return:
-        """
-        self.__dict__.update(d)
-        self.__initialize()
-
-    def __initialize(self):
-        """
-        Initialize function is called inside the __init__ function, it is also called when the object is reconstructed
-        with pickle.
-
-        :return:
-        """
-        # self.selected_recipe = deepcopy(self.result_recipe())
-        # self.cmethods = {result: getattr(self, 'calculate_' + self.get_cmethod_name(result)) for result in
-        #                  self.result_recipe()}
 
     @property
     def stype_sval_tuples(self):
@@ -1140,4 +1094,4 @@ class Measurement(object):
 
 
 if __name__ == '__main__':
-    m = Measurement(sobj=None)
+    m = Measurement(sobj='test')
