@@ -1,9 +1,14 @@
 import RockPy
+import RockPy.core
+
 import inspect
 import logging
 import pandas as pd
 
-log = logging.getLogger(__name__)
+from collections import OrderedDict
+from copy import deepcopy
+import shutil
+import os
 
 class Measurement(object):
     """
@@ -38,8 +43,15 @@ class Measurement(object):
                           'solid_capstyle', 'solid_joinstyle', 'transform', 'url', 'visible', 'xdata', 'ydata',
                           'zorder']
 
+    log = logging.getLogger(__name__)
+
+    @property
+    def log(self):
+        name = '{}.{}[{}]'.format(self.sobj, self.mtype, self.id)
+        return logging.getLogger(name)
+
     @classmethod
-    def _mtype(cls):
+    def mtype(cls):
         return cls.__name__.lower()
 
     @classmethod
@@ -320,15 +332,16 @@ class Measurement(object):
         self._raw_data = deepcopy(mdata)
 
         # flags for mean and the base measurements
-        self.is_mean = ismean  # flag for mean measurements
-        self.base_measurements = base_measurements  # list with all measurements used to generate the mean
+        self.is_mean = options.get('ismean', False)  # flag for mean measurements
+        self.base_measurements = options.get('base_measurements',
+                                             False)  # list with all measurements used to generate the mean
 
         self.ftype = ftype
         self.fpath = fpath
 
         ''' initial state '''
         self.is_initial_state = False
-        self.initial_state = initial_state
+        self.initial_state = options.get('initial_state', False)
 
         ''' calibration, correction and holder'''
         self.calibration = None
@@ -358,38 +371,10 @@ class Measurement(object):
         self.__class__.n_created += 1
 
         self._plt_props = {'label': ''}
-        self.set_standard_plt_props(color, marker, linestyle)
+        # self.set_standard_plt_props(color, marker, linestyle)
 
-        if automatic_results:
-            self.calc_all(force_recalc=True)
-
-
-    def set_standard_plt_props(self, color=None, marker=None, linestyle=None):
-        #### automatically set the plt_props for the measurement according to the
-        if color:
-            self.set_plt_prop('color', color)
-        else:
-            self.set_plt_prop(prop='color', value=RockPy3.colorscheme[self._idx])
-
-        if marker or marker == '':
-            self.set_plt_prop('marker', marker)
-        else:
-            self.set_plt_prop(prop='marker', value=RockPy3.marker[self.sobj.idx])
-
-        if linestyle:
-            self.set_plt_prop('linestyle', linestyle)
-        else:
-            self.set_plt_prop(prop='linestyle', value='-')
-
-    def reset_plt_prop(self):
-        """
-        Resets the plt_props to the standard value
-        """
-        self.set_standard_plt_props()
-        self.plt_props['label'] = ''
-        for prop in self.plt_props:
-            if prop not in ('marker', 'color', 'linestyle', 'label'):
-                self.plt_props.pop(prop)
+        # if automatic_results:
+        #     self.calc_all(force_recalc=True)
 
     def reset_calculation_params(self):
         """
@@ -402,11 +387,7 @@ class Measurement(object):
 
     @property
     def _idx(self):
-        for i, v in enumerate(self.sobj.measurements):
-            if v == self:
-                return i
-        else:
-            return len(self.sobj.measurements)
+        return 0
 
     @property
     def mass(self):
@@ -415,30 +396,29 @@ class Measurement(object):
 
     def get_RockPy_compatible_filename(self, add_series=True):
 
+    # if add_series:
+    #     series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
+    # else:
+    #     series = None
+    #
+    # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
+    # # height = self.get_mtype_prior_to(mtype='height')
+    #
+    # # convert the mass to the smallest possible exponent
+    # mass, mass_unit = None, None
+    # if self.mass:
+    #     mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
+    #
+    # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
+    #                                                sgroups=self.sobj.samplegroups,
+    #                                                samples=self.sobj.name,
+    #                                                mtypes=self.mtype, ftype=self.ftype,
+    #                                                mass=mass, massunit=mass_unit,
+    #                                                series=series,
+    #                                                suffix=self.idx,
+    #                                                read_fpath=False)
+    # return minfo_obj.fname
 
-
-        if add_series:
-            series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
-        else:
-            series = None
-
-        # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
-        # height = self.get_mtype_prior_to(mtype='height')
-
-        # convert the mass to the smallest possible exponent
-        mass, mass_unit = None, None
-        if self.mass:
-            mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
-
-        minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
-                                                       sgroups=self.sobj.samplegroups,
-                                                       samples=self.sobj.name,
-                                                       mtypes=self.mtype, ftype=self.ftype,
-                                                       mass=mass, massunit=mass_unit,
-                                                       series=series,
-                                                       suffix=self.idx,
-                                                       read_fpath=False)
-        return minfo_obj.fname
 
     def _rename_to_RockPy_compatible_filename(self, add_series=True, create_backup=True):
         if self.fpath:
@@ -446,7 +426,6 @@ class Measurement(object):
             backup_name = '#' + os.path.basename(self.fpath)
             fname = self.get_RockPy_compatible_filename(add_series=add_series)
             if create_backup:
-                import shutil
                 shutil.copy(self.fpath, os.path.join(path, backup_name))
             os.rename(self.fpath, os.path.join(path, fname))
 
@@ -732,9 +711,9 @@ class Measurement(object):
 
         :return:
         """
-        self.selected_recipe = deepcopy(self.result_recipe())
-        self.cmethods = {result: getattr(self, 'calculate_' + self.get_cmethod_name(result)) for result in
-                         self.result_recipe()}
+        # self.selected_recipe = deepcopy(self.result_recipe())
+        # self.cmethods = {result: getattr(self, 'calculate_' + self.get_cmethod_name(result)) for result in
+        #                  self.result_recipe()}
 
     @property
     def stype_sval_tuples(self):
@@ -887,7 +866,7 @@ class Measurement(object):
             series = (None, np.nan, None)  #no series
             return [series]
 
-    def add_series(self, stype, sval, unit=None:
+    def add_series(self, stype, sval, unit=None):
         """
         adds a series to measurement.series
 
@@ -909,9 +888,9 @@ class Measurement(object):
             If the measurement previously had no series, the (none, 0 , none) standard series will be removed first
         """
 
-    if all(i for i in [stype, sval, sunit]):
-        series = (stype, sval, sunit)
-    self._series.append(series)
+        if all(i for i in [stype, sval, sunit]):
+            series = (stype, sval, sunit)
+        self._series.append(series)
 
     def remove_series(self, stype):
         """
@@ -986,12 +965,12 @@ class Measurement(object):
             return
 
         # dont normalize parameter measurements
-        if isinstance(self, RockPy3.Parameter):
+        if isinstance(self, RockPy.Parameter):
             return
         # print(self.mtype, locals())
         # separate the calc from non calc parameters
-        calculation_parameter, options = RockPy3.core.utils.separate_calculation_parameter_from_kwargs(rpobj=self,
-                                                                                                       **options)
+        calculation_parameter, options = RockPy.core.utils.separate_calculation_parameter_from_kwargs(rpobj=self,
+                                                                                                      **options)
 
         # getting normalization factor
         if not norm_factor:  # if norm_factor specified
@@ -1158,3 +1137,7 @@ class Measurement(object):
 
     ##################################################################################################################
     ''' REPORT '''
+
+
+if __name__ == '__main__':
+    m = Measurement(sobj=None)
