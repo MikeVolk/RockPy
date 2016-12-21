@@ -1,3 +1,10 @@
+import RockPy
+import inspect
+import logging
+import pandas as pd
+
+log = logging.getLogger(__name__)
+
 class Measurement(object):
     """
 
@@ -31,40 +38,9 @@ class Measurement(object):
                           'solid_capstyle', 'solid_joinstyle', 'transform', 'url', 'visible', 'xdata', 'ydata',
                           'zorder']
 
-    _mcp = None  # mtype calculation parameter cache for all measurements implemented as a dict(measurement:method:parameter)
-
-    _rm = None  # result methods #needed 1.3.16
-    _cm = None  # calculation methods
-
-    _sresult = None
-
-    _scp = None  # standard_calculation parameter
-    _scalculate = None
-
-    _cmtype_params = None  # measurement parameter collection
-
-    @property
-    def log(self):
-        return RockPy3.core.utils.set_get_attr(self, '_log',
-                                               value=logging.getLogger(
-                                                   'RockPy3.[%s].[%i]%s' % (self.sobj.name, self._idx, self.mtype)))
-
     @classmethod
-    def implemented_ftypes(cls):
-        """
-        setting implemented machines
-        looking for all subclasses of RockPy3.io.base.Machine
-        generating a dictionary of implemented machines : {implemented out_* method : machine_class}
-
-        Returns
-        -------
-
-        dict: classname:
-        """
-
-        # implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.io.ftype.__subclasses__()}
-        # return implemented_ftypes
-        raise NotImplementedError
+    def _mtype(cls):
+        return cls.__name__.lower()
 
     @classmethod
     def subclasses(cls):
@@ -92,19 +68,62 @@ class Measurement(object):
                     work.append(child)
         return subclasses
 
+    ''' implemented dicts '''
     @classmethod
-    def measurement_formatters(cls):
-        # measurement formatters are important!
-        # if they are not inside the measurement class, the measurement has not been implemented for this machine.
-        # the following machine formatters:
-        # 1. looks through all implemented measurements
-        # 2. for each measurement stores the machine and the applicable readin class in a dictionary
+    def implemented_ftypes(cls):  # todo move into RockPy core.core has nothing to do with measurement
+        """
+        Dictionary of all implemented filetypes.
+
+        Looks for all subclasses of RockPy3.io.base.ftype
+        generating a dictionary of implemented machines : {implemented out_* method : machine_class}
+
+        Returns
+        -------
+
+        dict: classname:
+        """
+        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.io.ftype.__subclasses__()}
+        return implemented_ftypes
+
+    @classmethod
+    def ftype_formatters(cls):
+        '''
+        This method returns a collection of the implemented measurement formatters for a class.
+        Measurement formatters are important!
+        If there is no formatter for the measurement class, the measurement has not been implemented for this filetype.
+        While the filetype may exist (i.e. other measurements have been implemented) this particular measurement will
+        not work.
+
+        Returns
+        -------
+            dict:
+                Dictionary with a formatter_name : formatter_method
+        '''
+
         measurement_formatters = {
             i.replace('format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('format_')
             }
         return measurement_formatters
 
-    ''' builtin methods '''
+    @classmethod
+    def calculate_methods(cls):
+        '''
+        This is a dictionary with all calculate methods of the class. The design is:
+            method_name:calculate_method
+
+        Returns
+        -------
+        dict
+            Dictionary with all calculate methods.
+        '''
+
+        return {i.replace('calculate_', ''): getattr(cls, i) for i in dir(cls)
+                if i.startswith('calculate_')
+                if not i.endswith('generic')
+                if not i.endswith('result')
+                if not i.endswith('recipe')
+                if not i.endswith('methods')
+                }
 
     @classmethod
     def result_methods(cls):
@@ -115,68 +134,35 @@ class Measurement(object):
 
         where result_name is the name without the result_ prefix
         """
-        if not cls._rm:
-            cls._rm = {i[7:]: getattr(cls, i) for i in dir(cls) if i.startswith('result_')
+        return {i[7:]: getattr(cls, i) for i in dir(cls) if i.startswith('result_')
                        if not i.endswith('generic')
                        if not i.endswith('methods')
                        if not i.endswith('recipe')
                        if not i.endswith('category')
                        }
-        return cls._rm
 
     @classmethod
-    def calculate_methods(cls):
-        # dynamically generating the calculation and standard parameters for each calculation method.
-        # This just sets the values to non, the values have to be specified in the class itself
-        calculate_methods = {i.replace('calculate_', ''): getattr(cls, i) for i in dir(cls)
-                             if i.startswith('calculate_')
-                             if not i.endswith('generic')
-                             if not i.endswith('result')
-                             if not i.endswith('recipe')
-                             if not i.endswith('methods')
-                             }
-        return calculate_methods
-
-    @classmethod
-    def correct_methods(cls):
+    def correct_methods(cls) -> dict:
         """
         Dynamically searches through the class and finds all correction methods
 
+        Returns
+        -------
+            dict:
+                dictionary with all implemented correction methods
+
         """
-        methods = {i.replace('correct_', ''): getattr(cls, i) for i in dir(cls)
+        return {i.replace('correct_', ''): getattr(cls, i) for i in dir(cls)
                    if i.startswith('correct_')
                    }
-        # for name, method in methods.items():
-        # setattr(RockPy3.Measurement.correct_methods, '__doc__', 'test')
-        return methods
-
-    ''' plotting / legend properties '''
-
-    # todo think of a better way of creating plt_options
-    @property
-    def plt_props(self):
-        return self._plt_props
-
-    def set_plt_prop(self, prop, value):
-        """
-        sets the plt_props for the measurement.
-
-        raises
-        ------
-            KeyError if the plt_prop not in the matplotlib.lines.Line2D
-        """
-        if value is None:
-            return
-        if prop not in Measurement.possible_plt_props:
-            raise KeyError
-        old_prop = self._plt_props[prop] if prop in self._plt_props else None
-
-        self._plt_props[prop] = value
-        self.log.debug('SETTING {:10}: {} -> {}'.format(prop, old_prop, self._plt_props[prop]))
 
     ####################################################################################################################
 
-    """ measurement creation through function """
+    @classmethod
+    def get_subclass_name(cls):
+        return cls.__name__
+
+    """    measurement creation through function    """
 
     @classmethod
     def from_mdata(cls):
@@ -186,25 +172,53 @@ class Measurement(object):
     def from_file(cls, sobj,
                   fpath=None, ftype='generic',  # file path and file type
                   idx=None, sample_name=None,
-                  # for special import of pure data (needs to be formatted as specified in data of measurement class)
                   series=None,
                   **options
                   ):
+        '''
+        This is the way a measurement class is created, if it is directly imported from a file.
 
+        Parameters
+        ----------
+        sobj: RockPy.Sample
+            The rockPy.Sample object the measurement belongs to
+        fpath: str
+            The path to the measurement file
+        ftype: str
+            The type of measurement file, e.g. vsm, vftb ...
+        idx: int
+            index of the measurement if needed
+        sample_name: str
+            name of the sample in case there are many samples in the data file
+        series: tuple
+            a series tuple with
+        options: dict
+
+        Note
+        ----
+        Checks if ftype is implemented -> check if ftype_formatter is implemented -> create mdata -> return measurement class
+
+        Returns
+        -------
+            RockPy.measurement object
+        '''
+
+        #check if measurement is implemented
         if ftype in cls.implemented_ftypes():
+            #read the ftype data from the file
             ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name)
         else:
-            cls.clslog.error('CANNOT IMPORT ')
+            log.error('CANNOT IMPORT ')
 
-        if ftype in cls.measurement_formatters():
-            cls.clslog.debug('ftype_formatter << %s >> implemented' % ftype)
-            mdata = cls.measurement_formatters()[ftype](ftype_data, sobj_name=sobj.name)
+        # check wether the formatter for the ftype is implemented
+        if ftype in cls.ftype_formatters():
+            log.debug('ftype_formatter << %s >> implemented' % ftype)
+            mdata = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
             if not mdata:
-                return
+                log.debug('mdata is empty -- measurement may not be created')
         else:
-            cls.clslog.error('UNKNOWN ftype: << %s >>' % ftype)
-            cls.clslog.error(
-                'most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
+            log.error('UNKNOWN ftype: << %s >>' % ftype)
+            log.error('most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
                     ftype, cls.__name__))
             return
 
@@ -219,36 +233,9 @@ class Measurement(object):
         return None
 
     @classmethod
-    def from_measurements_create_mean(cls, sobj, mlist,
-                                      interpolate=False, recalc_mag=False,
-                                      substfunc='mean', ignore_stypes=False,
-                                      color=None, marker=None, linestyle=None):
+    def from_measurements(cls):
         """
-        Creates a new measurement from a list of measurements
-
-        Parameters
-        ----------
-        sobj
-        mlist
-        interpolate
-        recalc_mag
-        substfunc
-        ignore_stypes
-        color
-        marker
-        linestyle
-        """
-
-        # return cls(sobj=sobj, ftype='from_measurements_create_mean', mdata=mdata,
-        #            initial_state=initial, series=series, ismean=True, base_measurements=mlist,
-        #            color=color, marker=marker, linestyle=linestyle)
-
-        raise NotImplementedError
-
-    @classmethod
-    def from_measurement(cls):
-        """
-        creates a measurement from a different type
+        pseudo abstract method that should be overridden in subclasses to return a combined measurement from several measurements.
 
         e.g. pARM spectra -> ARM acquisition
         """
@@ -266,17 +253,12 @@ class Measurement(object):
                           mobj=None, series=None,
                           ):
         """
-        creates a new measurement (ISM) as initial state of base measurement (BSM).
-        It dynamically calls the measurement _init_ function and assigns the created measurement to the
-        self.initial_state value. It also sets a flag for the ISM to check if a measurement is a MIS.
+        This methods creates an initial state for the measurement. It creates a new measurement, the initial state (ISM) of base measurement (BSM). It calls the measurement constructor and assigns the created measurement (ISM) to the self.initial_state parameter of the BSM. It also sets a flag for the ISM to check if a measurement is a ISM.
 
-        if a measurement object is passed, the initial state will be created from _measurements.
+        It is possible to create a ISM from a existing measurement object.
+
         Parameters
         ----------
-           fpath
-           ftype
-           mobj
-           series
            mtype: str
               measurement type
            mfile: str
@@ -285,33 +267,13 @@ class Measurement(object):
               measurement machine
             mobj: RockPy3.MEasurement object
         """
+        # todo needs to be rewritten
+        raise NotImplementedError
 
-        with RockPy3.ignored(AttributeError):
-            mtype = mtype.lower()
-            ftype = ftype.lower()
-
-        self.log.info('CREATING << %s >> initial state measurement << %s >> data' % (mtype, self.mtype))
-
-        # can only be created if the measurement is actually implemented
-        if all([mtype, ftype, fpath]) or fpath or mobj:
-            self.initial_state = self.sobj.add_measurement(
-                mtype=mtype, ftype=ftype, fpath=fpath, series=series, mobj=mobj)
-            self.initial_state.is_initial_state = True
-            return self.initial_state
-        else:
-            self.log.error('UNABLE to find measurement << %s >>' % mtype)
-
-    def __init__(self,
-                 sobj,
-                 fpath=None, ftype=None,
-                 mdata=None,
+    def __init__(self, sobj,
+                 fpath=None, ftype=None, mdata=None,
                  series=None,
                  idx=None,
-                 initial_state=None,
-                 ismean=False, base_measurements=None,
-                 color=None, marker=None, linestyle=None,
-                 automatic_results=True,
-                 filename=None,
                  **options
                  ):
         """
@@ -338,8 +300,6 @@ class Measurement(object):
                 file type. e.g. vsm
             mdata: dict
                 when mdata is set, this will be directly used as measurement data without formatting from file
-            initial_state:
-                RockPy3.Measurement obj
 
         Note
         ----
@@ -348,11 +308,10 @@ class Measurement(object):
         self.id = id(self)
 
         self.sobj = sobj
-        self.filename = filename
-        # self.log = logging.getLogger('RockPy3.MEASURMENT.' + self.get_subclass_name())
 
+        # create the dictionary the data will be stored in
         if mdata is None:
-            mdata = OrderedDict()
+            mdata = OrderedDict()  #create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
 
         # the data that is used for calculations and corrections
         self._data = mdata
@@ -360,9 +319,7 @@ class Measurement(object):
         # _raw_data is a backup deepcopy of _data it will be used to reset the _data if reset_data() is called
         self._raw_data = deepcopy(mdata)
 
-        # coordinate system that is currently used in data; _raw_data is always assumed to be in core coordiantes
-        self._actual_data_coord = 'core'
-
+        # flags for mean and the base measurements
         self.is_mean = ismean  # flag for mean measurements
         self.base_measurements = base_measurements  # list with all measurements used to generate the mean
 
@@ -379,8 +336,8 @@ class Measurement(object):
         self._correction = []
 
         # initialize the calculation_parameter dictionary  and results data
-        self.results = RockPy3.Data(column_names=self.result_methods().keys(),
-                                    data=[np.nan] * len(self.result_methods()))
+        self.results = pd.DataFrame(columns=self.result_methods().keys())
+
         self.calculation_parameter = {res: {} for res in self.result_methods()}
 
         self.__initialize()
@@ -405,6 +362,7 @@ class Measurement(object):
 
         if automatic_results:
             self.calc_all(force_recalc=True)
+
 
     def set_standard_plt_props(self, color=None, marker=None, linestyle=None):
         #### automatically set the plt_props for the measurement according to the
@@ -456,6 +414,8 @@ class Measurement(object):
         return mass.data['data']['mass'].v[0] if mass else None
 
     def get_RockPy_compatible_filename(self, add_series=True):
+
+
 
         if add_series:
             series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
@@ -639,6 +599,7 @@ class Measurement(object):
         """
         return [m.id for m in self.base_measurements]
 
+
     def __lt__(self, other):
         """
         for sorting measurements. They are sorted by their index
@@ -655,6 +616,7 @@ class Measurement(object):
             return int(self._idx) < int(other._idx)
         except ValueError:
             pass
+
 
     def __repr__(self):
         if self.is_mean:
@@ -870,118 +832,22 @@ class Measurement(object):
 
     ''' Calculation and parameters '''
 
-    def calculate_result(self, result, **parameter):
-        """
-        Helper function to dynamically call a result. Used in Visualize
-
-        Parameters
-        ----------
-           result:
-           parameter:
-        """
-
-        if not self.has_result(result):
-            self.log.warning('%s does not have result << %s >>' % self.mtype, result)
-            return
-        else:
-            # self.log = logging.getLogger('RockPy3.MEASURMENT.' + self.mtype + '[%s]' % self.sobj.name)
-            self.log.info('CALCULATING << %s >>' % result)
-            out = getattr(self, 'result_' + result)(**parameter)
-        return out
-
-    def calc_all(self, force_recalc=False, **parameter):
-        """
-        Calculates all result methods in the measurement
-
-        Parameters
-        ----------
-        force_recalc: bool
-            Forces the recalculation of all resuts: e.g. when you change the data values by normalizing
-
-        parameter
-
-        Returns
-        -------
-
-        """
-        if force_recalc:
-            self.reset_calculation_params()
-
-        # get possible calculation parameters and put them in a dictionary
-        calculation_parameter, kwargs = RockPy3.core.utils.kwargs_to_calculation_parameter(rpobj=self, **parameter)
-
-        for result_method in sorted(self.result_methods()):
-            # get calculation parameter
-            calc_param = calculation_parameter.get(self.mtype, {})
-            # get the calculation method
-            calc_param = calc_param.get(result_method, {})
-            getattr(self, 'result_' + result_method)(**calc_param)
-
-        if kwargs:
-            self.log.warning('--------------------------------------------------')
-            self.log.warning('| %46s |' % 'THESE PARAMETERS COULD NOT BE USED')
-            self.log.warning('--------------------------------------------------')
-            for i, v in kwargs.items():
-                self.log.warning('| %22s: %22s |' % (i, v))
-            self.log.warning('--------------------------------------------------')
-        if calculation_parameter:
-            self.log.info('--------------------------------------------------')
-            self.log.info('| %46s |' % 'these parameters were used')
-            self.log.info('--------------------------------------------------')
-            for i, v in calculation_parameter.items():
-                self.log.info('| %46s |' % i)
-                for method, parameter in v.items():
-                    self.log.info('| %22s: %22s |' % (method, parameter))
-            self.log.info('--------------------------------------------------')
-
-        return self.results
-
     def delete_dtype_var_val(self, dtype, var, val):
         """
-        deletes step with var = var and val = val
+        deletes datapoint with var = var and val = val
 
+        Parameters
+        ----------
            dtype: the step type to be deleted e.g. th
            var: the variable e.g. temperature
            val: the value of that step e.g. 500
 
-        example: measurement.delete_step(step='th', var='temp', val=500) will delete the th step where the temperature is 500
+        example: measurement.delete_step(dtype='th', var='temp', val=500) will delete the th step where the variable (temperature) is 500
         """
         idx = self._get_idx_dtype_var_val(dtype=dtype, var=var, val=val)
         self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
         return self
 
-    def check_parameters(self, caller, parameter):
-        """
-        Checks if previous calculation used the same parameters, if yes returns the previous calculation
-        if no calculates with new parameters
-
-        Parameters
-        ----------
-           caller: str
-               name of calling function ('result_generic' should be given as 'generic')
-           parameter:
-        Returns
-        -------
-           bool
-              returns true is parameters are not the same
-        """
-        if self.calculation_parameter[caller]:
-            # parameter for new calculation
-            a = []
-            for key in self.calculation_parameter[caller]:
-                if key in parameter:
-                    a.append(parameter[key])
-                else:
-                    a.append(self.calculation_parameter[caller][key])
-                    # a = [parameter[i] for i in self.calculation_parameter[caller]]
-            # get parameter values used for calculation
-            b = [self.calculation_parameter[caller][i] for i in self.calculation_parameter[caller]]
-            if a != b:
-                return True
-            else:
-                return False
-        else:
-            return True
 
     def has_result(self, result):
         """
@@ -1001,49 +867,7 @@ class Measurement(object):
         else:
             return False
 
-    @classmethod
-    def _get_variable_list(cls, rpdata_list, var='variable'):
-        """
-        takes a list of rpdata objects. it checks for all steps, the size of the step and min and max values of the
-        variable. It then generates a list of new variables from the max(min) -> min(max) with the mean step size
-        """
-        cls.clslog.debug(
-            'Creating new variable list for %s measurement out of %i measurements' % (
-                cls.__name__, len(rpdata_list)))
-        min_vars = []
-        max_vars = []
-        stepsizes = []
-        for rp in rpdata_list:
-            stepsizes.append(np.diff(rp[var].v))
-            min_vars.append(min(rp[var].v))
-            max_vars.append(max(rp[var].v))
-        idx, steps = max(enumerate(stepsizes), key=lambda tup: len(tup[1]))
-        new_variables = np.arange(max(min_vars), min(max_vars), np.mean(np.fabs(steps)))
-        return sorted(set(new_variables))
-
-    def combine_measurements(self, others, remove_others=False):
-        others = RockPy3._to_tuple(others)
-        self.log.info('COMBINING << {} >> with {}'.format(self, others))
-
-        for m in others:
-            m = deepcopy(m)
-
-            # check they are the same type of measurement
-            if not m.mtype == self.mtype:
-                continue
-
-            for dtype in m.data:
-                if not dtype in self.data:
-                    self.data[dtype] = m.data[dtype]
-                self.data[dtype] = self.data[dtype].append_rows(m.data[dtype])
-
-            # remove other measurements
-            if remove_others:
-                self.log.info('REMOVING << {} >> from sample << {} >>'.format(self, self.sobj))
-                self.sobj.remove_measurement(mobj=m)
-        return self
-
-    ####################################################################################################################
+    ##################################################################################################################
     ''' SERIES related '''
 
     @property
@@ -1060,140 +884,12 @@ class Measurement(object):
         if self._series:
             return self._series
         else:
-            series = RockPy3.Series(stype='none', value=np.nan, unit='')
+            series = (None, np.nan, None)  #no series
             return [series]
 
-    def has_stype(self, stype=None, method='all'):
+    def add_series(self, stype, sval, unit=None:
         """
-        Checks if a measurement has all of the specified series
-
-        Parameters
-        ----------
-            stype: str, list, tuple
-                stypes to test for
-            method: 'all' or 'any' or 'none'
-                defines the check method:
-                    all: all series need to exist
-                    any: any series needs to exist
-                    none: no series can exist
-
-        Returns
-        -------
-            bool
-            True if all stypes exist, False if not
-            If stype = None : returns True if no series else True
-        """
-        if not self._series:
-            return False
-
-        if stype is not None:
-            stype = RockPy3._to_tuple(stype)
-            if method == 'all':
-                return True if all(i in self.stypes for i in stype) else False
-            if method == 'any':
-                return True if any(i in self.stypes for i in stype) else False
-            if method == 'none':
-                return True if not any(i in self.stypes for i in stype) else False
-        else:
-            return True if not self.stypes else False
-
-    def has_sval(self, sval=None, method='any'):
-        """
-        Checks if a measurement has all of the specified series
-
-        Parameters
-        ----------
-            stype: str, list, tuple
-                stypes to test for
-            method: 'all' or 'any' or 'none'
-                defines the check method:
-                    all: all series need to exist
-                    any: any series needs to exist
-                    none: no series can exist
-
-        Returns
-        -------
-            True if all stypes exist, False if not
-            If stype = None : returns True if no series else True
-        """
-        if not self._series:
-            return False
-
-        if sval is not None:
-            sval = RockPy3._to_tuple(sval)
-            if method == 'all':
-                return all(i in self.svals for i in sval)
-            if method == 'any':
-                return any(i in self.svals for i in sval)
-            if method == 'none':
-                return not any(i in self.svals for i in sval)
-        else:
-            return True if not self.svals else False
-
-    def has_series(self, series=None, method='all'):
-
-        if series is not None:
-            series = RockPy3.core.utils.tuple2list_of_tuples(series)
-            if method == 'all':
-                return True if all(i in self.stype_sval_tuples for i in series) else False
-            if method == 'any':
-                return True if any(i in self.stype_sval_tuples for i in series) else False
-            if method == 'none':
-                return True if not any(i in self.svals for i in series) else False
-        else:
-            return True if not self.svals else False
-
-    def get_series(self, stype=None, sval=None, series=None):
-        """
-        searches for given stypes and svals in self.series and returns them
-
-        Parameters
-        ----------
-            series: list(tuple)
-                list of tuples to avoid problems wit separate series and same sval
-            stypes: list, str
-                stype or stypes to be looked up
-            svals: float
-                sval or svals to be looked up
-
-        Returns
-        -------
-            list
-                list of series that fit the parameters
-                if no parameters - > all series
-                empty if none fit
-
-        Note
-        ----
-            m = measurement with [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
-            m.get_series(stype = 'pressure', sval = 0) -> [<RockPy3.series> pressure, 0.00, [GPa]]
-            m.get_series(sval = 0) -> [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
-            m.get_series(series=('temperature', 0)) -> [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
-        """
-        if not self._series:
-            return None
-        slist = self.series
-        if stype is not None:
-            stype = RockPy3.core.utils.to_list(stype)
-            slist = filter(lambda x: x.stype in stype, slist)
-        if sval is not None:
-            sval = RockPy3.core.utils.to_list(sval)
-            slist = filter(lambda x: x.sval in sval, slist)
-        if series:
-            series = RockPy3.core.utils.tuple2list_of_tuples(series)
-            slist = filter(lambda x: (x.stype, x.sval) in series, slist)
-        return list(slist)
-
-    def get_sval(self, stype):
-        """
-        Searches for stype and returns sval
-        """
-        s = self.get_series(stype=stype)
-        return s[0].value if s else None
-
-    def add_series(self, stype=None, sval=0, unit='', series_obj=None, series=None):
-        """
-        adds a series to measurement.series, then adds is to the data and results datastructure
+        adds a series to measurement.series
 
         Parameters
         ----------
@@ -1203,11 +899,6 @@ class Measurement(object):
               series value to be added
            unit: str
               unit to be added. can be None #todo change so it uses Pint
-            series_obj: RockPy3.series
-                if a previously created object needs to be passed
-            series: list(tuples)
-                default: None
-                Series object gets created for a list of specified series
 
         Returns
         -------
@@ -1217,29 +908,10 @@ class Measurement(object):
         ----
             If the measurement previously had no series, the (none, 0 , none) standard series will be removed first
         """
-        # if a series object is provided other wise create series object
-        if not any(i for i in [stype, sval, unit, series_obj, series]):
-            return
 
-        elif series_obj:
-            series = series_obj
-
-        # if series provided of type ('stype', value, 'unit')
-        elif series:
-            series = RockPy3.core.utils.tuple2list_of_tuples(series)
-            sobjs = [RockPy3.Series.from_tuple(series=stup) for stup in series]
-        else:
-            sobjs = [RockPy3.Series(stype=stype, value=sval, unit=unit)]
-
-        sobjs = (sobj for sobj in sobjs if sobj not in self.series)
-
-        for sinst in sobjs:
-            if not any(sinst == s for s in self._series):
-                self._series.append(sinst)
-                self._add_sval_to_data(sinst)
-                self._add_sval_to_results(sinst)
-
-        return series
+    if all(i for i in [stype, sval, sunit]):
+        series = (stype, sval, sunit)
+    self._series.append(series)
 
     def remove_series(self, stype):
         """
@@ -1255,56 +927,6 @@ class Measurement(object):
         sobj = self.get_series(stype=stype)[0]
         # remove series from _series list
         self._series.remove(sobj)
-        self._remove_series_from_data(sobj)
-        self._remove_series_from_results(sobj)
-
-    def _add_sval_to_data(self, sobj):
-        """
-        Adds stype as a column and adds svals to data. Only if stype != none.
-
-        Parameter
-        ---------
-           sobj: series instance
-        """
-        if sobj.stype != 'none':
-            for dtype in self._raw_data:
-                if self._raw_data[dtype]:
-                    data = np.ones(len(self.data[dtype]['variable'].v)) * sobj.value
-                    if not 'stype ' + sobj.stype in self.data[dtype].column_names:
-                        self.data[dtype] = self.data[dtype].append_columns(column_names='stype ' + sobj.stype,
-                                                                           data=data)  # , unit=sobj.unit) #todo add units
-
-    def _add_sval_to_results(self, sobj):
-        """
-        Adds the stype as a column and the value as value to the results. Only if stype != none.
-
-        Parameter
-        ---------
-           sobj: series instance
-        """
-
-        if sobj.stype != 'none':
-            if not 'stype ' + sobj.stype in self.results.column_names:
-                self.results = self.results.append_columns(
-                    column_names='stype ' + sobj.stype, data=sobj.value)  # , unit=sobj.unit) #todo add units
-
-    def _remove_series_from_data(self, sobj):
-        # remove series from data
-        for dtype in self.data:
-            if self.data[dtype]:
-                self.data[dtype].delete_columns(keys='stype ' + sobj.stype)
-
-    def _remove_series_from_results(self, sobj):
-        # remove series from results
-        self.results.delete_columns(keys='stype ' + sobj.stype)
-
-    def _get_idx_dtype_var_val(self, dtype, var, val):
-        """
-        returns the index of the closest value with the variable(var) and the step(step) to the value(val)
-
-        """
-        out = [np.argmin(abs(self.data[dtype][var].v - val))]
-        return out
 
     def equal_series(self, other, ignore_stypes=()):
         ignore_stypes = RockPy3._to_tuple(ignore_stypes)
@@ -1478,7 +1100,6 @@ class Measurement(object):
     def _norm_method(self, norm_method, vval, rtype, data):
         methods = {'max': max,
                    'min': min,
-                   # 'val': self.get_val_from_data,
                    }
 
         if not vval:
@@ -1495,7 +1116,7 @@ class Measurement(object):
 
     def get_mtype_prior_to(self, mtype):
         """
-        search for last mtype prior to self
+        This method allows to search for a measurememt with a specific mtype, that was added prior to this measurement.
 
         Parameters
         ----------
@@ -1516,60 +1137,6 @@ class Measurement(object):
         else:
             return None
 
-    def _add_stype_to_results(self):
-        """
-        adds a column with stype stype.name to the results for each stype in measurement.series
-        :return:
-        """
-        if self._series:
-            for t in self.series:
-                if t.stype:
-                    if t.stype not in self.results.column_names:
-                        self.results.append_columns(column_names='stype ' + t.stype,
-                                                    data=t.value,
-                                                    # unit = t.unit      # todo add units
-                                                    )
-
-    ####################################################################################################################
-    '''  CORRECTIONS '''
-
-    def correct_dtype(self, dtype='th', var='variable', val='last', initial_state=True):
-        """
-        corrects the remaining moment from the last th_step
-
-           dtype:
-           var:
-           val:
-           initial_state: also corrects the initial state if one exists
-        """
-
-        try:
-            calc_data = self.data[dtype]
-        except KeyError:
-            self.log.error('REFERENCE << %s >> can not be found ' % (dtype))
-
-        if val == 'last':
-            val = calc_data[var].v[-1]
-        if val == 'first':
-            val = calc_data[var].v[0]
-
-        idx = self._get_idx_dtype_var_val(step=dtype, var=var, val=val)
-
-        correction = self.data[dtype].filter_idx(idx)  # correction step
-
-        for dtype in self.data:
-            # calculate correction
-            self._data[dtype]['m'] = self._data[dtype]['m'].v - correction['m'].v
-            # recalc mag for safety
-            self.data[dtype]['mag'] = self.data[dtype].magnitude(('x', 'y', 'z'))
-        self.reset__data()
-
-        if self.initial_state and initial_state:
-            for dtype in self.initial_state.data:
-                self.initial_state.data[dtype]['m'] = self.initial_state.data[dtype]['m'].v - correction['m'].v
-                self.initial_state.data[dtype]['mag'] = self.initial_state.data[dtype].magnitude(('x', 'y', 'z'))
-        return self
-
     def set_calibration_measurement(self,
                                     fpath=None,  # file path
                                     mdata=None,
@@ -1587,214 +1154,7 @@ class Measurement(object):
         mobj: RockPy3.Measurement
         """
 
-        cal = self.sobj.add_measurement(mtype=self.mtype, ftype=self.ftype, fpath=fpath,
-                                        mobj=mobj, mdata=mdata,
-                                        create_only=True)
-        self.calibration = cal
+        raise NotImplementedError
 
-    ####################################################################################################################
-    '''' PLOTTING '''''
-
-    def get_series_labels(self, stype=None, add_stype=True, add_sval=True, add_unit=True):
-        """
-        takes a list of stypes or stypes = True and returns a string with stype_sval_sunit; for each stype
-
-        Parameters
-        ----------
-            stype: list / bool
-                default: True
-                if True all series will be returned
-                if a list of strings is provided the ones where a matching stype can be found are appended
-            add_stype: bool
-                default: True
-                if True: stype is first part of label
-                if False: stype not in label
-            add_unit: bool
-                default: True
-                if True: unit is last part of label
-                if False: unit not in label
-        """
-        out = []
-
-        if stype is None:
-            stype = list(self.stypes)
-
-        stype = RockPy3._to_tuple(stype)
-        for st in stype:
-            if not st or st == 'none':
-                continue
-            sobj = self.get_series(stype=st)
-            if sobj:
-                sobj = sobj[0]
-                aux = []
-                if add_stype:
-                    aux.append(sobj.stype)
-                if add_sval:
-                    aux.append(str(np.round(sobj.value, 2)))
-                if add_unit:
-                    aux.append(sobj.unit)
-                stype_label = ' '.join(aux)
-                if not stype_label in out:
-                    out.append(stype_label)
-            else:
-                self.log.warning('CANT find series << %s >>' % st)
-                self.log.warning('\tonly one of these are possible:\t%s' % self.stypes)
-        return '; '.join(out)
-
-    def label_add_sname(self):
-        """
-        adds the corresponding sample_name to the measurement label
-        """
-        if isinstance(self.sobj, RockPy3.MeanSample):
-            mean = 'mean '
-        else:
-            mean = ''
-        text = ' '.join([mean, self.sobj.name])
-        self.label_add_text(text)
-
-    def label_add_stype(self, stype=None, add_stype=True, add_sval=True, add_unit=True):
-        """
-        adds the corresponding sample_name to the measurement label
-        """
-        text = self.get_series_labels(stype=stype, add_stype=add_stype, add_sval=add_sval, add_unit=add_unit)
-        self.label_add_text(text)
-
-    def label_add_text(self, text):
-        if not text in self.plt_props['label']:
-            self.plt_props['label'] = ' '.join([self.plt_props['label'], text])
-
-    def set_get_attr(self, attr, value=None):
-        """
-        checks if attribute exists, if not, creates attribute with value None
-           attr:
-        :return:
-        """
-        if not hasattr(self, attr):
-            setattr(self, attr, value)
-        return getattr(self, attr)
-
-    def series_to_color(self, stype: str, reverse: bool = False) -> None:
-        """
-        Sets the color of the measurement to the corresponding value of the series with specified stype
-
-        Parameters
-        ----------
-        stype: str
-            the stype to be set
-        reverse: bool
-            default: False
-            if True the min(sval) will be set to the max(color)
-            else: min(sval) -> min(color)
-        """
-        # get all possible svals in the hierarchy
-
-        svals = sorted(self.sobj.svals)
-
-        # create colormap from svals
-        color_map = RockPy3.core.utils.create_heat_color_map(value_list=svals,
-                                                             reverse=reverse)  # todo implement matplotlib.cmap
-
-        # get the index and set the color
-        sval = self.get_series(stype=stype)[0].value
-        sval_index = svals.index(sval)
-        self.set_plt_prop('color', color_map[sval_index])
-
-    def plot(self, save_path=None, return_figure=False, **plt_props):
-        """
-        Quick plot depending on the mtype._visual specified in the measurement class
-        Parameters
-        ----------
-        plt_props: dict
-            additional plot properties
-        """
-        if self._visuals:
-            fig = RockPy3.Figure(title='{}'.format(self.sobj.name))
-            self.add_visuals(fig, **plt_props)
-            f = fig.show(save_path=save_path, return_figure=return_figure)
-            return f
-
-    def add_visuals(self, fig, **plt_props):
-        for v in self._visuals:
-            visual = v[0]
-            vprops = v[1]
-            vprops.update(plt_props)
-            v = fig.add_visual(data=self, visual=visual, **vprops)
-            if self.is_mean:
-                feature = [f for f in vprops['features'] if 'data' in f]
-                for f in feature:
-                    fprops = {k: v for k, v in vprops.items() if not k == 'features'}
-                    fprops['alpha'] = 0.5
-                    v.add_feature(feature=f, data=self.base_measurements, **fprops)
-        return fig
-
-    ####################################################################################################################
+    ##################################################################################################################
     ''' REPORT '''
-
-    # todo report sheet
-
-    ####################################################################################################################
-    ''' XML io'''
-
-    @property
-    def etree(self):
-        """
-        Returns the content of the measurement as an xml.etree.ElementTree object which can be used to construct xml
-        representation
-
-        Returns
-        -------
-             etree: xml.etree.ElementTree
-        """
-
-        measurement_node = etree.Element(type(self).MEASUREMENT, attrib={'id': str(self.id), 'mtype': str(self.mtype),
-                                                                         'is_mean': str(self.is_mean)})
-
-        # store _data dictionary
-        for name, data in self._data.items():
-            de = etree.SubElement(measurement_node, type(self).DATA, attrib={type(self).NAME: name})
-            if data is not None:
-                de.append(data.etree)
-
-        # store _raw_data dictionary
-        for name, data in self._raw_data.items():
-            de = etree.SubElement(measurement_node, type(self).RAW_DATA, attrib={type(self).NAME: name})
-            if data is not None:
-                det = data.etree
-                de.append(det)
-
-        if self.is_mean:
-            # store ids of base measurements
-            base_measurements_node = etree.SubElement(measurement_node, type(self).BASE_MEASUREMENTS, attrib={})
-            for bid in self.base_ids:
-                etree.SubElement(base_measurements_node, type(self).BID, attrib={}).text = str(bid)
-
-        return measurement_node
-
-    @classmethod
-    def from_etree(cls, et_element, sobj):
-        """
-
-        :param et_element: ElementTree.Element containing the xml data
-        :param sobj: sample object to which this measurement will belong
-        :return:
-        """
-        if et_element.tag != cls.MEASUREMENT:
-            cls.clslog.error('XML Import: Need {} node to construct object.'.format(cls.MEASUREMENT))
-            return None
-
-        # readin data
-        mdata = {}
-        for data in et_element.findall(cls.DATA):
-            mdata[data.attrib[cls.NAME]] = None
-
-        # readin raw data
-        raw_data = {}
-        for data in et_element.findall(cls.RAW_DATA):
-            raw_data[data.attrib[cls.NAME]] = None
-
-        is_mean = (et_element.attrib['is_mean'].upper == 'TRUE')
-        if is_mean:
-            # TODO: readin base measurements
-            pass
-        mobj = cls(sobj=sobj, id=et_element.attrib['id'], mtype=et_element.attrib['mtype'], ismean=is_mean)
-        return mobj
