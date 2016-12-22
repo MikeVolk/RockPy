@@ -43,12 +43,18 @@ class Measurement(object):
                           'solid_capstyle', 'solid_joinstyle', 'transform', 'url', 'visible', 'xdata', 'ydata',
                           'zorder']
 
-    log = logging.getLogger(__name__)
+    # @property
+    # def log(self):
+    #     name = 'RockPy.{}.{}[{}]'.format(self.sobj, self.mtype(), self.id)
+    #     return logging.getLogger(name)
+    @classmethod
+    def logger(cls):
+        # create and return a logger with the pattern RockPy.MTYPE
+        return logging.getLogger('RockPy.%s' % cls.mtype())
 
     @property
     def log(self):
-        name = '{}.{}[{}]'.format(self.sobj, self.mtype(), self.id)
-        return logging.getLogger(name)
+        return self.__class__.logger()
 
     @classmethod
     def mtype(cls):
@@ -1094,4 +1100,5 @@ class Measurement(object):
 
 
 if __name__ == '__main__':
+    # RockPy.log.setLevel(logging.WARNING)
     m = Measurement(sobj='test')
