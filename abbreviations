@@ -1,0 +1,70 @@
+######
+# file containing all abbreviations for mtypes and ftypes
+# The dictionary is created by calling RockPy3.core.file_operations.mtype_ftype_abbreviations()
+# and returns two dictionaries
+#
+#       1. name:abbreviation
+#       2. abbreviation: name
+#
+# Abbreviations[0] has to be the prefered naming for automatic renaming of measurements
+# Abbreviations[1...] may also be alternative names. e.g. vsm: vibrating sample magnetometer
+#
+# The data in this file is as follows:
+#
+#   NAME: abreviation1, abbreviation2
+#
+######
+
+# measurements
+trm: trm
+irm: irm
+arm: arm
+nrm: nrm
+
+# acqisition measurements
+acquisition:: acq
+irm_acquisition: iacq
+arm_acquisition: armacq
+parm_acquisition: parmacq
+trm_acquisition: trmacq
+tarm_acquisition: tarmacq
+
+
+# demagnetization measurements
+demagnetization: demag
+afdemagnetization: af, afdemag
+thermaldemagnetization: thdemag
+
+
+hysteresis: hys, hysteresis
+backfield: coe, backfield
+viscosity: visc
+forc: forc
+thermocurve: rmp, mom
+
+thellier: tt
+paleointensity: pint
+
+anisotropy: ani, aniso
+anisotropy: irmani
+anisotropy: armani
+anisotropy: trmani
+
+mass: mass
+diameter: diameter
+height: height
+volume: volume
+
+generic: generic
+
+simulation: sim, simulation
+
+none: none
+# ftypes
+cryomag: cryo
+cryomagcsv: cry
+vftb: vftb
+sushibar: sush
+vsm: vsm, vibrating sample magnetometer
+jr6: jr6, jr 6
+mpms: mpms

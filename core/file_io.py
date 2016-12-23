@@ -1,14 +1,38 @@
 import RockPy
+from RockPy.core.utils import extract_tuple, _to_tuple
+import os
+
+
+def read_abbreviations():  # todo rewrite as config parser?
+    """
+    Reads the abbreviations file into a dictionary
+
+    Returns
+    -------
+        get_mtype_ftype: dict (abbrev:mtype/ftype)
+            a dictionary used to get to the true mtype/ftype name from an abbreviation
+        get_abbreviations: dict(list) (mtype/ftype:[abbreviation])
+            a dictionary with a list of all possible abbreviations
+    """
+    RockPy.log.debug('READING FTYPE/MTYPE abbreviations')
+
+    # open the file
+    with open(os.path.join(RockPy.installation_directory, 'abbreviations')) as f:
+        get_abbreviations = f.readlines()
+
+    # create the mtype:abbreviation dict
+    get_abbreviations = [tuple(i.rstrip().split(':')) for i in get_abbreviations if i.rstrip() if not i.startswith('#')]
+    get_abbreviations = dict((i[0], [j.lstrip() for j in i[1].split(',')]) for i in get_abbreviations)
+
+    # create inverse abbrev:mtype/ftype
+    get_mtype_ftype = {i: k for k in get_abbreviations for i in get_abbreviations[k]}
+    get_mtype_ftype.update({k: k for k in get_abbreviations})
+    return get_mtype_ftype, get_abbreviations
 
 
 class minfo():
-    @staticmethod
-    def extract_tuple(s):
-        s = s.strip('(').strip(')').split(',')
-        return tuple(s)
-
     def extract_series(self, s):
-        s = self.extract_tuple(s)
+        s = extract_tuple(s)
         s = tuple([s[0], float(s[1]), s[2]])
         return s
 
@@ -20,13 +44,8 @@ class minfo():
         if tup is None:
             return ''
 
-        tup = RockPy._to_tuple(tup)
+        tup = _to_tuple(tup)
 
-        # if type(tup) == list:
-        #     if len(tup) == 1:
-        #         tup = tup[0]
-        #     else:
-        #         tup = tuple(tup)
         if len(tup) == 1:
             return str(tup[0])
         else:
@@ -37,11 +56,11 @@ class minfo():
         # names with , need to be replaced
         if not '(' in samples and ',' in samples:
             samples = samples.replace(',', '.')
-            RockPy3.logger.warning('sample name %s contains \',\' will be replaced with \'.\'' % samples)
+            RockPy.log.warning('sample name %s contains \',\' will be replaced with \'.\'' % samples)
 
-        self.sgroups, self.samples, self.mtypes, self.ftype = self.extract_tuple(sgroups), self.extract_tuple(
-            samples), self.extract_tuple(mtypes), ftype
-        self.mtypes = tuple(RockPy3.abbrev_to_classname(mtype) for mtype in RockPy3._to_tuple(self.mtypes))
+        self.sgroups, self.samples, self.mtypes, self.ftype = extract_tuple(sgroups), extract_tuple(
+            samples), extract_tuple(mtypes), ftype
+        self.mtypes = tuple(RockPy3.abbrev_to_classname(mtype) for mtype in _to_tuple(self.mtypes))
         self.ftype = RockPy3.abbrev_to_classname(ftype)
 
     def sample_block(self, block):
@@ -293,3 +312,7 @@ class minfo():
         for i in samples:
             sdict.update({'name': i})
             yield sdict
+
+
+if __name__ == '__main__':
+    print(read_abbreviations())
