@@ -43,21 +43,22 @@ class Measurement(object):
                           'solid_capstyle', 'solid_joinstyle', 'transform', 'url', 'visible', 'xdata', 'ydata',
                           'zorder']
 
-    # @property
-    # def log(self):
-    #     name = 'RockPy.{}.{}[{}]'.format(self.sobj, self.mtype(), self.id)
-    #     return logging.getLogger(name)
     @classmethod
-    def logger(cls):
+    def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
         return logging.getLogger('RockPy.%s' % cls.mtype())
 
-    @property
-    def log(self):
-        return self.__class__.logger()
-
     @classmethod
     def mtype(cls):
+        """
+        Returns the measurement type of the measurement
+
+        Returns
+        -------
+            str
+
+
+        """
         return cls.__name__.lower()
 
     @classmethod
@@ -327,7 +328,7 @@ class Measurement(object):
         self.id = id(self)
 
         self.sobj = sobj
-        self.log.debug('Creating measurement: id:{} idx:{}'.format(self.id, self._idx))
+        self.log().debug('Creating measurement: id:{} idx:{}'.format(self.id, self._idx))
 
         # create the dictionary the data will be stored in
         if mdata is None:
@@ -366,6 +367,7 @@ class Measurement(object):
         # normalization
         self.is_normalized = False  # normalized flag for visuals, so its not normalized twice
         self.norm = None  # the actual parameters
+        self.norm_factor = 1
 
         ''' series '''
         self._series = []
@@ -378,11 +380,6 @@ class Measurement(object):
 
         self.__class__.n_created += 1
 
-        self._plt_props = {'label': ''}
-        # self.set_standard_plt_props(color, marker, linestyle)
-
-        # if automatic_results:
-        #     self.calc_all(force_recalc=True)
 
     def reset_calculation_params(self):
         """
