@@ -82,3 +82,34 @@ def extract_tuple(s: str) -> tuple:
     """
     s = s.translate(None, "()[]").split(',')
     return tuple(s)
+
+
+def split_num_alph(item):
+    '''
+    splits a string with numeric and str values into a float and a string
+
+    Parameters
+    ----------
+    item: str
+        The string that to be split
+
+    Returns
+    -------
+        float, str
+    '''
+    # replace german decimal comma
+    item.replace(',', '.')
+
+    # cycle through all items in the string and stop at the first non numeric
+    for i, v in enumerate(item):
+        if not v in ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.'):
+            break
+
+    if not i == len(item) - 1:
+        return float(item[:i]), item[i:].strip()
+    else:
+        return float(item), None
+
+
+if __name__ == '__main__':
+# print(split_num_alph('20.3'))
