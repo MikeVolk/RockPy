@@ -66,9 +66,11 @@ def _to_tuple(oneormoreitems):
 
 def extract_tuple(s: str) -> tuple:
     """
-    Extracts a tuple from a string
+    Extracts a tuple from a string, brackets ('[]()') are removed first
 
-    e.g. str((HYS, COE)) -> ('hys','coe')
+    e.g. "(HYS, COE)" -> ('hys','coe')
+    e.g. "[HYS, COE]" -> ('hys','coe')
+
     Parameters
     ----------
     s str
@@ -78,5 +80,5 @@ def extract_tuple(s: str) -> tuple:
     -------
         tuple
     """
-    s = s.strip('(').strip(')').split(',')
+    s = s.translate(None, "()[]").split(',')
     return tuple(s)

@@ -19,3 +19,9 @@ class TestTuple2list_of_tuples(TestCase):
         self.assertEqual([(1,)], RPutils.tuple2list_of_tuples((1,)))
         # test with list of tuples
         self.assertEqual([(1, 1), (2, 2)], RPutils.tuple2list_of_tuples([(1, 1), (2, 2)]))
+
+
+class TestExtract_tuple(TestCase):
+    def test_extract_tuple(self):
+        self.assertEqual(('a', 'b'), '(a,b)')
+        self.assertEqual(('a', 'b'), '[a,b]')
