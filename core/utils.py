@@ -97,6 +97,7 @@ def split_num_alph(item):
     -------
         float, str
     '''
+
     # replace german decimal comma
     item.replace(',', '.')
 
@@ -112,4 +113,4 @@ def split_num_alph(item):
 
 
 if __name__ == '__main__':
-# print(split_num_alph('20.3'))
+    print(split_num_alph('20.3'))

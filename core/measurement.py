@@ -717,14 +717,6 @@ class Measurement(object):
 
     @property
     def data(self):
-        if self._data == {}:
-            self._data = deepcopy(self._raw_data)
-
-        # transform vectorial x,y,z data to new coordinate system when needed
-        # self.transform_data_coord(final_coord=self.coord)
-        # TODO: fails ->
-        # print self.coord
-
         return self._data
 
     def transform_data_coord(self, final_coord):
