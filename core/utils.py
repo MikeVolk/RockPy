@@ -80,5 +80,5 @@ def extract_tuple(s: str) -> tuple:
     -------
         tuple
     """
-    s = s.translate(None, "()[]").split(',')
+    s = s.translate(str.maketrans("", "", "(){}[]")).split(',')
     return tuple(s)
