@@ -29,10 +29,10 @@ class Mass(Parameter):
         mass, unit = RockPy.core.utils.split_num_alph(mass)
         # todo add mass conversion
 
-        self._data = pd.DataFrame(columns=['mass'], data=[mass])
         self.unit = unit if unit else 'kg'
+        self._data = pd.DataFrame(columns=['mass', 'unit'], data=[[mass, self.unit]])
 
 
 if __name__ == '__main__':
-    test = Mass('test', mass='23.4mg')
+    test = Mass('test', mass='23.7 mg')
     print(test.data)
