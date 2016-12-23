@@ -98,6 +98,10 @@ def split_num_alph(item):
         float, str
     '''
 
+    # if item is a float or int number return that
+    if isinstance(item, (float, int)):
+        return item, None
+
     # replace german decimal comma
     item.replace(',', '.')
 
