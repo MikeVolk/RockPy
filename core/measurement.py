@@ -1,8 +1,14 @@
 import RockPy
+import RockPy.core
+
 import inspect
 import logging
 import pandas as pd
-log  = logging.getLogger(__name__)
+
+from collections import OrderedDict
+from copy import deepcopy
+import shutil
+import os
 
 class Measurement(object):
     """
@@ -38,7 +44,21 @@ class Measurement(object):
                           'zorder']
 
     @classmethod
-    def _mtype(cls):
+    def log(cls):
+        # create and return a logger with the pattern RockPy.MTYPE
+        return logging.getLogger('RockPy.%s' % cls.mtype())
+
+    @classmethod
+    def mtype(cls):
+        """
+        Returns the measurement type of the measurement
+
+        Returns
+        -------
+            str
+
+
+        """
         return cls.__name__.lower()
 
     @classmethod
@@ -69,7 +89,7 @@ class Measurement(object):
 
     ''' implemented dicts '''
     @classmethod
-    def implemented_ftypes(cls): #todo move into RockPy core.core has nothing to do with measurement
+    def implemented_ftypes(cls):  # todo move into RockPy core.core has nothing to do with measurement
         """
         Dictionary of all implemented filetypes.
 
@@ -116,14 +136,13 @@ class Measurement(object):
             Dictionary with all calculate methods.
         '''
 
-
         return {i.replace('calculate_', ''): getattr(cls, i) for i in dir(cls)
-                             if i.startswith('calculate_')
-                             if not i.endswith('generic')
-                             if not i.endswith('result')
-                             if not i.endswith('recipe')
-                             if not i.endswith('methods')
-                             }
+                if i.startswith('calculate_')
+                if not i.endswith('generic')
+                if not i.endswith('result')
+                if not i.endswith('recipe')
+                if not i.endswith('methods')
+                }
 
     @classmethod
     def result_methods(cls):
@@ -210,7 +229,7 @@ class Measurement(object):
         else:
             log.error('CANNOT IMPORT ')
 
-        #check wether the formatter for the ftype is implemented
+        # check wether the formatter for the ftype is implemented
         if ftype in cls.ftype_formatters():
             log.debug('ftype_formatter << %s >> implemented' % ftype)
             mdata = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
@@ -267,7 +286,7 @@ class Measurement(object):
               measurement machine
             mobj: RockPy3.MEasurement object
         """
-        #todo needs to be rewritten
+        # todo needs to be rewritten
         raise NotImplementedError
 
     def __init__(self, sobj,
@@ -305,13 +324,15 @@ class Measurement(object):
         ----
             when creating a new measurement it automatically calculates all results using the standard prameter set
         """
+
         self.id = id(self)
 
         self.sobj = sobj
+        self.log().debug('Creating measurement: id:{} idx:{}'.format(self.id, self._idx))
 
         # create the dictionary the data will be stored in
         if mdata is None:
-            mdata = OrderedDict() #create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
+            mdata = OrderedDict()  #create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
 
         # the data that is used for calculations and corrections
         self._data = mdata
@@ -320,15 +341,16 @@ class Measurement(object):
         self._raw_data = deepcopy(mdata)
 
         # flags for mean and the base measurements
-        self.is_mean = ismean  # flag for mean measurements
-        self.base_measurements = base_measurements  # list with all measurements used to generate the mean
+        self.is_mean = options.get('ismean', False)  # flag for mean measurements
+        self.base_measurements = options.get('base_measurements',
+                                             False)  # list with all measurements used to generate the mean
 
         self.ftype = ftype
         self.fpath = fpath
 
         ''' initial state '''
         self.is_initial_state = False
-        self.initial_state = initial_state
+        self.initial_state = options.get('initial_state', False)
 
         ''' calibration, correction and holder'''
         self.calibration = None
@@ -340,11 +362,12 @@ class Measurement(object):
 
         self.calculation_parameter = {res: {} for res in self.result_methods()}
 
-        self.__initialize()
+        # self.__initialize()
 
         # normalization
         self.is_normalized = False  # normalized flag for visuals, so its not normalized twice
         self.norm = None  # the actual parameters
+        self.norm_factor = 1
 
         ''' series '''
         self._series = []
@@ -357,39 +380,6 @@ class Measurement(object):
 
         self.__class__.n_created += 1
 
-        self._plt_props = {'label': ''}
-        self.set_standard_plt_props(color, marker, linestyle)
-
-        if automatic_results:
-            self.calc_all(force_recalc=True)
-
-
-    def set_standard_plt_props(self, color=None, marker=None, linestyle=None):
-        #### automatically set the plt_props for the measurement according to the
-        if color:
-            self.set_plt_prop('color', color)
-        else:
-            self.set_plt_prop(prop='color', value=RockPy3.colorscheme[self._idx])
-
-        if marker or marker == '':
-            self.set_plt_prop('marker', marker)
-        else:
-            self.set_plt_prop(prop='marker', value=RockPy3.marker[self.sobj.idx])
-
-        if linestyle:
-            self.set_plt_prop('linestyle', linestyle)
-        else:
-            self.set_plt_prop(prop='linestyle', value='-')
-
-    def reset_plt_prop(self):
-        """
-        Resets the plt_props to the standard value
-        """
-        self.set_standard_plt_props()
-        self.plt_props['label'] = ''
-        for prop in self.plt_props:
-            if prop not in ('marker', 'color', 'linestyle', 'label'):
-                self.plt_props.pop(prop)
 
     def reset_calculation_params(self):
         """
@@ -402,11 +392,7 @@ class Measurement(object):
 
     @property
     def _idx(self):
-        for i, v in enumerate(self.sobj.measurements):
-            if v == self:
-                return i
-        else:
-            return len(self.sobj.measurements)
+        return 0
 
     @property
     def mass(self):
@@ -415,30 +401,29 @@ class Measurement(object):
 
     def get_RockPy_compatible_filename(self, add_series=True):
 
-
-
-        if add_series:
-            series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
-        else:
-            series = None
-
-        # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
-        # height = self.get_mtype_prior_to(mtype='height')
-
-        # convert the mass to the smallest possible exponent
-        mass, mass_unit = None, None
-        if self.mass:
-            mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
-
-        minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
-                                                       sgroups=self.sobj.samplegroups,
-                                                       samples=self.sobj.name,
-                                                       mtypes=self.mtype, ftype=self.ftype,
-                                                       mass=mass, massunit=mass_unit,
-                                                       series=series,
-                                                       suffix=self.idx,
-                                                       read_fpath=False)
-        return minfo_obj.fname
+        # if add_series:
+        #     series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
+        # else:
+        #     series = None
+        #
+        # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
+        # # height = self.get_mtype_prior_to(mtype='height')
+        #
+        # # convert the mass to the smallest possible exponent
+        # mass, mass_unit = None, None
+        # if self.mass:
+        #     mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
+        #
+        # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
+        #                                                sgroups=self.sobj.samplegroups,
+        #                                                samples=self.sobj.name,
+        #                                                mtypes=self.mtype, ftype=self.ftype,
+        #                                                mass=mass, massunit=mass_unit,
+        #                                                series=series,
+        #                                                suffix=self.idx,
+        #                                                read_fpath=False)
+        # return minfo_obj.fname
+        raise NotImplementedError
 
     def _rename_to_RockPy_compatible_filename(self, add_series=True, create_backup=True):
         if self.fpath:
@@ -446,7 +431,6 @@ class Measurement(object):
             backup_name = '#' + os.path.basename(self.fpath)
             fname = self.get_RockPy_compatible_filename(add_series=add_series)
             if create_backup:
-                import shutil
                 shutil.copy(self.fpath, os.path.join(path, backup_name))
             os.rename(self.fpath, os.path.join(path, fname))
 
@@ -589,10 +573,6 @@ class Measurement(object):
         return sorted(set([cm] + dependent_on_cm))
 
     @property
-    def mtype(self):
-        return self._mtype()
-
-    @property
     def base_ids(self):
         """
         returns a list of ids for all base measurements
@@ -654,7 +634,7 @@ class Measurement(object):
             # if one of them does not have the dtype skip it
             if first.data[dtype] is None or other.data[dtype] is None:
                 continue
-             # get the variables for both first, other of that dtype
+                # get the variables for both first, other of that dtype
             vars1 = set(first.data[dtype]['variable'].v)
             vars2 = set(other.data[dtype]['variable'].v)
 
@@ -691,50 +671,6 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
-    def __getstate__(self):
-        """
-        returned dict will be pickled
-        :return:
-        """
-        pickle_me = {k: v for k, v in self.__dict__.items() if k in
-                     (
-                         'id', '_idx', 'idx',
-                         'ftype', 'fpath',
-                         # plotting related
-                         '_plt_props',
-                         'calculation_parameter',
-                         # data related
-                         '_raw_data', '_data',
-                         'initial_state', 'is_initial_state', 'is_normalized',
-                         'is_mean', 'base_measurements',
-                         'results',
-                         # sample related
-                         'sobj',
-                         '_series',
-                         'calibration', 'holder', 'correction',
-                     )
-                     }
-        return pickle_me
-
-    def __setstate__(self, d):
-        """
-        d is unpickled data
-           d:
-        :return:
-        """
-        self.__dict__.update(d)
-        self.__initialize()
-
-    def __initialize(self):
-        """
-        Initialize function is called inside the __init__ function, it is also called when the object is reconstructed
-        with pickle.
-
-        :return:
-        """
-        self.selected_recipe = deepcopy(self.result_recipe())
-        self.cmethods = {result: getattr(self, 'calculate_' + self.get_cmethod_name(result)) for result in
-                         self.result_recipe()}
 
     @property
     def stype_sval_tuples(self):
@@ -832,7 +768,6 @@ class Measurement(object):
 
     ''' Calculation and parameters '''
 
-
     def delete_dtype_var_val(self, dtype, var, val):
         """
         deletes datapoint with var = var and val = val
@@ -885,10 +820,10 @@ class Measurement(object):
         if self._series:
             return self._series
         else:
-            series = (None,np.nan,None) #no series
+            series = (None, np.nan, None)  #no series
             return [series]
 
-    def add_series(self, stype, sval, unit=None:
+    def add_series(self, stype, sval, unit=None):
         """
         adds a series to measurement.series
 
@@ -987,12 +922,12 @@ class Measurement(object):
             return
 
         # dont normalize parameter measurements
-        if isinstance(self, RockPy3.Parameter):
+        if isinstance(self, RockPy.Parameter):
             return
         # print(self.mtype, locals())
         # separate the calc from non calc parameters
-        calculation_parameter, options = RockPy3.core.utils.separate_calculation_parameter_from_kwargs(rpobj=self,
-                                                                                                       **options)
+        calculation_parameter, options = RockPy.core.utils.separate_calculation_parameter_from_kwargs(rpobj=self,
+                                                                                                      **options)
 
         # getting normalization factor
         if not norm_factor:  # if norm_factor specified
@@ -1159,3 +1094,8 @@ class Measurement(object):
 
     ##################################################################################################################
     ''' REPORT '''
+
+
+if __name__ == '__main__':
+    # RockPy.log.setLevel(logging.WARNING)
+    m = Measurement(sobj='test')

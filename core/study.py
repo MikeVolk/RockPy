@@ -107,6 +107,27 @@ class Study(object):
                    sobj=None,
                    **options
                    ):
+        """
+
+        Parameters
+        ----------
+            name : str
+                the name of the sample
+            comment
+            mass
+            mass_unit
+            height
+            diameter
+            x_len
+            y_len
+            z_len
+            length_unit
+            sample_shape
+            coord
+            samplegroup
+            sobj
+            options
+        """
         raise NotImplementedError
 
     def add_samplegroup(self,

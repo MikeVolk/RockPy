@@ -41,11 +41,8 @@ class Sample(object):
     def __init__(self,
                  name=None,
                  comment='',
-                 mass=None, mass_unit='kg', mass_ftype='generic',
-                 height=None, diameter=None,
+                 mass=None, height=None, diameter=None,
                  x_len=None, y_len=None, z_len=None,  # for cubic samples
-                 heightunit='mm', diameterunit='mm',
-                 length_unit='mm', length_ftype='generic',
                  sample_shape='cylinder',
                  coord=None,
                  samplegroup=None,
