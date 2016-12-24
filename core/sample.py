@@ -6,6 +6,7 @@ from collections import OrderedDict
 from functools import partial
 
 import RockPy
+import RockPy.core.study
 
 log = logging.getLogger(__name__)
 
@@ -13,6 +14,11 @@ log = logging.getLogger(__name__)
 class Sample(object):
     snum = 0
 
+    @classmethod
+    def log(cls):
+        # create and return a logger with the pattern RockPy.MTYPE
+        return logging.getLogger('RockPy.Sample')
+    
     def __lt__(self, other):
 
         """
@@ -92,17 +98,25 @@ class Sample(object):
               if True: parameter measurements are created from (mass, x_len, y_len, z_len, height, diameter)
               if False: NO parameter measurements are created
         """
+        # assign a sample id
+        self.id = id(self)
+
+        # added sample -> Sample couter +1
+        Sample.snum += 1
+
         # assign name to sample if no name is specified
         if not name:
             name = 'S%02i' % Sample.snum
         else:
             name = name  # unique name, only one per study
 
+        self.log().debug('Creating Sample[%i] %s:%i' % (self.id, name, self.snum))
+
         if not study:
-            study = RockPy.Study
+            study = RockPy.core.study.Study
         else:
             if not isinstance(study, RockPy.core.study.Study):
-                self.log.error('STUDY not a valid RockPy3.core.Study object. Using RockPy Masterstudy')
+                self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy Masterstudy')
             study = RockPy.Study
 
         self.comment = comment
@@ -110,16 +124,11 @@ class Sample(object):
         # assign the study
         self.study = study
         # add sample to study
-        self.study.add_sample(sobj=self)
+        # self.study.add_sample(sobj=self)
 
         # create a sample index number
         self.idx = self.study.n_samples
 
-        # assign a sample id
-        self.id = id(self)
-
-        # added sample -> Sample couter +1
-        Sample.snum += 1
 
         # initiate samplegroups
         self._samplegroups = []
@@ -253,3 +262,7 @@ class Sample(object):
 
     def __repr__(self):
         return '<< RockPy3.Sample.{} >>'.format(self.name)
+
+
+if __name__ == '__main__':
+    a = Sample('test')
