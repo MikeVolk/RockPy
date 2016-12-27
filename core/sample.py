@@ -200,15 +200,16 @@ class Sample(object):
         else:
             sgroups = None
 
-            # if not minfo:
-            # minfo = RockPy.core.file_operations.minfo(fpath=fpath,
-            #                                            sgroups=sgroups,
-            #                                            samples=self.name,
-            #                                            mtypes=mtype, ftype=ftype,
-            #                                            series=series,
-            #                                            suffix=idx,
-            #                                            comment=comment, #unused for now
-            #                                            read_fpath=False if mtype and ftype else True)
+        # create MINFO if noe is provided
+        if not minfo:
+            minfo = RockPy.core.file_operations.minfo(fpath=fpath,
+                                                      sgroups=sgroups,
+                                                      samples=self.name,
+                                                      mtypes=mtype, ftype=ftype,
+                                                      series=series,
+                                                      suffix=idx,
+                                                      comment=comment,  # unused for now
+                                                      read_fpath=False if mtype and ftype else True)
 
         # """ DATA import from FILE """
         # # if no mdata or measurement object are passed, create measurement file from the minfo object
