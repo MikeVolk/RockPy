@@ -1,5 +1,5 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, _to_tuple
+from RockPy.core.utils import extract_tuple, _to_tuple, split_num_alph
 import os, re
 from copy import deepcopy
 
@@ -96,10 +96,21 @@ class minfo():
         self.samples = extract_tuple(samples)
         self.mtypes = extract_tuple(mtypes)
         self.ftype = ftype
-        self.mtypes = tuple(RockPy.abbrev_to_classname[mtype] for mtype in _to_tuple(self.mtypes))
-        self.ftype = RockPy.abbrev_to_classname[ftype]
+        self.mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in _to_tuple(self.mtypes))
+        self.ftype = RockPy.abbrev_to_classname[ftype.lower()]
 
     def sample_block(self, block):
+        """
+        Sample block holds the sample information e.g. mass, height, diameter
+
+        Parameters
+        ----------
+        block
+
+        Returns
+        -------
+
+        """
         out = [[None, None], [None, None], [None, None]]
         units = []
 
@@ -124,25 +135,63 @@ class minfo():
         [self.mass, self.massunit], [self.height, self.heightunit], [self.diameter, self.diameterunit] = out
 
     def series_block(self, block):
+        """
+        Series block in the minfo
+
+        Parameters
+        ----------
+        block
+
+        Returns
+        -------
+
+        """
         # old style series block: e.g. mtime(h)_0,0_h;mtime(m)_0,0_min;speed_1100,0_rpm
         if not any(s in block for s in ('(', ')')) or ';' in block:
             block = block.translate(str.maketrans(",_;", ".,_", ""))
 
+        # split block parts
         series = block.split('_')
+
         if not series:
             self.series = None
         self.series = [self.extract_series(s) for s in series if s]
 
     def add_block(self, block):
+        """
+        creates the add block. additional information is copmma seperated
+
+        Parameters
+        ----------
+        block
+
+        Returns
+        -------
+
+        """
         if block:
-            self.additional = block
+            self.additional = block.split(',')
         else:
-            self.additional = ''
+            self.additional = []
 
     def comment_block(self, block):
         self.comment = block
 
     def get_measurement_block(self):
+        """
+        Function that joins the parts in the measurement block.
+
+            (Samplegroups)_(Samples)_(MTYPES)_ftype
+
+        Returns
+        -------
+            str
+
+        Examples
+        --------
+
+            (SG1,SG2)_(S1,S2)_(HYS,DCD)_VSM
+        """
         block = deepcopy(self.storage[0])
         block[2] = [RockPy.classname_to_abbrev[mtype][0].upper() for mtype in _to_tuple(block[2]) if mtype]
         block[3] = RockPy.classname_to_abbrev[block[3]][0].upper()
@@ -184,6 +233,7 @@ class minfo():
             return '_'.join(out)
 
     def get_add_block(self):
+        self.additional = _to_tuple(self.additional)
         if self.additional:
             out = tuple(''.join(map(str, a)) for a in self.additional)
             return self.tuple2str(out)
@@ -196,11 +246,42 @@ class minfo():
         else:
             return False
 
+    @staticmethod
+    def read_input(item, unit=None):
+        """
+        takes an input for mass, height ... and reads it. If no unit is given assumes SI
+
+        Parameters
+        ----------
+        item: str, float, tuple
+            The item to be read. Can be '30mg', (30,'mg') or 30
+        unit: str
+            standard unit. e.g. 'kg' if no unit can be found
+
+        Returns
+        -------
+            tuple
+                value, unit
+        """
+
+        # no input is given
+        if not item:
+            return (None, None)
+
+        # if string input then extract float
+        if isinstance(item, str):
+            value, unit = split_num_alph(item)
+
+        elif isinstance(item, (tuple, list)):
+            value, unit = item
+        else:
+            value = item
+        return value, unit
+
     def __init__(self, fpath,
                  sgroups=None, samples=None,
                  mtypes=None, ftype=None,
                  mass=None, height=None, diameter=None,
-                 massunit=None, lengthunit=None, heightunit=None, diameterunit=None,
                  series=None, comment=None, folder=None, suffix=None,
                  read_fpath=True, **kwargs):
 
@@ -232,31 +313,35 @@ class minfo():
         if 'mtype' in kwargs and not mtypes:
             mtypes = kwargs.pop('mtype')
         if 'sgroup' in kwargs and not sgroups:
-            mtypes = kwargs.pop('sgroup')
+            sgroups = kwargs.pop('sgroup')
         if 'sample' in kwargs and not samples:
-            mtypes = kwargs.pop('sample')
+            samples = kwargs.pop('sample')
 
+        # create the blocks
         blocks = (self.measurement_block, self.sample_block, self.series_block, self.add_block, self.comment_block)
-        additional = tuple()
+        self.additional = []
 
         sgroups = _to_tuple(sgroups)
         sgroups = tuple([sg if sg != 'None' else None for sg in sgroups])
 
         if mtypes:
-            mtypes = tuple(RockPy.abbrev_to_classname(mtype) for mtype in _to_tuple(mtypes))
+            mtypes = tuple(RockPy.abbrev_to_classname[mtype] for mtype in _to_tuple(mtypes))
         if ftype:
-            ftype = RockPy.abbrev_to_classname(ftype)
+            ftype = RockPy.abbrev_to_classname[ftype]
 
         self.__dict__.update({i: None for i in ('sgroups', 'samples', 'mtypes', 'ftype',
                                                 'mass', 'height', 'diameter',
                                                 'massunit', 'lengthunit', 'heightunit', 'diameterunit',
-                                                'series', 'additional', 'comment', 'folder', 'suffix')
+                                                'series', 'comment', 'folder', 'suffix')
                               })
         self.fpath = fpath
 
         if read_fpath and fpath:  # todo add check for if path is readable
+            # get the directory
             self.folder = os.path.dirname(fpath)
+            # get the file name and the suffix
             f, self.suffix = os.path.splitext(os.path.basename(fpath))
+            # remove . from suffix
             self.suffix = self.suffix.strip('.')
             splits = f.split('#')
 
@@ -270,26 +355,27 @@ class minfo():
                     except (ValueError,):
                         pass
 
+        # read the mass, height, diameter inputs
+        # read input only if it wasn't already read from the filepath
+        if not self.mass and not self.massunit:
+            self.mass, self.massunit = self.read_input(mass, 'kg')
+        if not self.height and not self.heightunit:
+            self.height, self.heightunit = self.read_input(height, 'm')
+        if not self.diameter and not self.diameterunit:
+            self.diameter, self.diameterunit = self.read_input(diameter, 'm')
+
         # set the attributes
         for i in ('sgroups', 'samples', 'mtypes', 'ftype',
-                  'mass', 'height', 'diameter',
-                  'massunit', 'lengthunit', 'heightunit', 'diameterunit',
-                  'series', 'additional', 'comment', 'folder'):
+                  'series', 'comment', 'folder'):
 
             if locals()[i]:
                 if isinstance(locals()[i], (tuple, list, set)):
                     if not all(locals()[i]):
                         continue
                 setattr(self, i, locals()[i])
-
-        if self.additional is None:
-            self.additional = ''
-
         if kwargs:
             for k, v in kwargs.items():
-                if v:
-                    print(k, v, self.additional)
-                    self.additional += '{}:{}'.format(k, v)
+                self.additional.append('{}:{}'.format(k, v))
 
         if suffix:
             self.suffix = suffix
@@ -312,7 +398,11 @@ class minfo():
     @property
     def fname(self):
         """
-        filename after new RockPy3 convention
+        filename after new RockPy convention
+
+        Examples
+        --------
+            (a,b)_S1_(HYS,DCD)_VSM#30.0mg,30.0mm,30.0mm#(test,2.0,unit).000
         """
 
         out = [self.get_measurement_block(), self.get_sample_block(),
@@ -386,5 +476,11 @@ class minfo():
 
 
 if __name__ == '__main__':
-    for i in minfo('test/(a,b)_(S1,S2)_[hys,coe]_vsm').sample_infos:
-        print(i)
+    a = minfo('testpath', sgroup='a', samples=('S1', 'S2'), mtypes=('hys', 'dcd'), ftype='vsm', mass='30mg',
+              diameter=(30, 'mm'), series=('test', 2, 'A'),
+              std=13, mad=666)
+    print(a.get_sample_block())
+    print(a.fname)
+    b = minfo('FeNi20H_FeNi20-Ha36e060-G01_COE_VSM#11,925[mg]_[]_[]##STD:13,mad:666')
+    print(b.fname)
+    # print(list(a.sample_infos)[0])
