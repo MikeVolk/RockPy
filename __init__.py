@@ -16,3 +16,6 @@ logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))
 log = logging.getLogger('RockPy')
 
 log.debug('This is RockPy')
+
+# create implemented measurements dictionary
+implemented_measurements = {m.__name__.lower(): m for m in measurement.Measurement.inheritors()}

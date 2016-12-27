@@ -21,6 +21,7 @@ class Mass(Parameter):
                  std=None, time=None,
                  series=None,
                  **options):
+
         super(Mass, self).__init__(sobj=sobj,
                                    fpath=fpath, ftype=ftype,
                                    series=series,
@@ -30,9 +31,9 @@ class Mass(Parameter):
         # todo add mass conversion
 
         self.unit = unit if unit else 'kg'
-        self._data = pd.DataFrame(columns=['mass', 'unit'], data=[[mass, self.unit]])
+        self._data = pd.DataFrame(columns=['mass'], data=[[mass]])
 
 
 if __name__ == '__main__':
-    test = Mass('test', mass='23.7 mg')
+    test = Mass('test', mass='23.7 mg', series=('test', 2, 'au'))
     print(test.data)
