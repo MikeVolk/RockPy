@@ -1,5 +1,5 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, _to_tuple, split_num_alph
+from RockPy.core.utils import extract_tuple, _to_tuple, split_num_alph, tuple2str
 import os, re
 from copy import deepcopy
 
@@ -46,30 +46,15 @@ class minfo():
     --------
         The filenames have to be structured in this way to be read in properly.
 
-        MEASUREMENT_BLOCK # SAMPLE_BLOCK #
+        MEASUREMENT_BLOCK # SAMPLE_BLOCK # SERIES_BLOCK # ADDITIONALS_BLOCK # COMMENT .idx
 
-        (samplegroups)_(samples)_(mtypes)_ftype#sample_mass[mass_unit]_
+        (sgroups)_(samples)_(mtypes)_ftype#mass&unit_height&unit_diameter&unit#(STYPE,SVAL,SUNIT)#(add1:addval,add2:addval2)#this is a comment.index
     """
 
     def extract_series(self, s):
         s = extract_tuple(s)
         s = tuple([s[0], float(s[1]), s[2]])
         return s
-
-    @staticmethod
-    def tuple2str(tup):
-        """
-        takes a tuple and converts it to text, if more than one element, brackets are put around it
-        """
-        if tup is None:
-            return ''
-
-        tup = _to_tuple(tup)
-
-        if len(tup) == 1:
-            return str(tup[0])
-        else:
-            return str(tup).replace('\'', ' ').replace(' ', '')
 
     def measurement_block(self, block):
         """
@@ -197,7 +182,7 @@ class minfo():
         block[3] = RockPy.classname_to_abbrev[block[3]][0].upper()
         if not all(block[1:]):
             raise ImportError('sname, mtype, ftype needed for minfo to be generated')
-        return '_'.join((self.tuple2str(b) for b in block))
+        return '_'.join((tuple2str(b) for b in block))
 
     def get_sample_block(self):
         out = ''
@@ -229,14 +214,14 @@ class minfo():
         if block:
             if type(block[0]) != tuple:
                 block = (block,)
-            out = [self.tuple2str(b) for b in block]
+            out = [tuple2str(b) for b in block]
             return '_'.join(out)
 
     def get_add_block(self):
         self.additional = _to_tuple(self.additional)
         if self.additional:
             out = tuple(''.join(map(str, a)) for a in self.additional)
-            return self.tuple2str(out)
+            return tuple2str(out)
 
     def is_readable(self):
         if not os.path.isfile(self.fpath):
@@ -266,7 +251,7 @@ class minfo():
 
         # no input is given
         if not item:
-            return (None, None)
+            return None, None
 
         # if string input then extract float
         if isinstance(item, str):
@@ -297,10 +282,6 @@ class minfo():
         mass
         height
         diameter
-        massunit
-        lengthunit
-        heightunit
-        diameterunit
         series
         comment
         folder
@@ -329,6 +310,7 @@ class minfo():
         if ftype:
             ftype = RockPy.abbrev_to_classname[ftype]
 
+        # initialize the class variables
         self.__dict__.update({i: None for i in ('sgroups', 'samples', 'mtypes', 'ftype',
                                                 'mass', 'height', 'diameter',
                                                 'massunit', 'lengthunit', 'heightunit', 'diameterunit',
@@ -381,7 +363,7 @@ class minfo():
             self.suffix = suffix
 
         if type(self.suffix) == int:
-            self.suffix = '%03i' % self.suffix
+            self.suffix = u'{0:03d}'.format(self.suffix)
 
         if not self.suffix:
             self.suffix = '000'
@@ -419,7 +401,7 @@ class minfo():
 
     @property
     def measurement_infos(self):
-        '''
+        """
         Generator object that cycles through all samples and returns a measurement_info dictionary for each of the samples.
 
         The dictionary has this structure
@@ -432,7 +414,7 @@ class minfo():
         Returns
         -------
 
-        '''
+        """
         idict = {'fpath': self.fpath,
                  'ftype': self.ftype,
                  'idx': self.suffix,
@@ -446,7 +428,7 @@ class minfo():
 
     @property
     def sample_infos(self):
-        '''
+        """
         Generator object that cycles through all samples and returns a sample_info dictionary for each of the samples.
 
         The dictionary has this structure
@@ -464,9 +446,10 @@ class minfo():
         Returns
         -------
 
-        '''
-        sdict = dict(mass=self.mass, diameter=self.diameter, height=self.height,
-                     mass_unit=self.massunit, height_unit=self.heightunit, diameter_unit=self.diameterunit,
+        """
+        sdict = dict(mass=str(self.mass) + self.massunit if self.mass else None,
+                     diameter=str(self.diameter) + self.diameterunit if self.diameter else None,
+                     height=str(self.height) + self.heightunit if self.height else None,
                      samplegroup=self.sgroups)
 
         samples = _to_tuple(self.samples)
@@ -477,10 +460,12 @@ class minfo():
 
 if __name__ == '__main__':
     a = minfo('testpath', sgroup='a', samples=('S1', 'S2'), mtypes=('hys', 'dcd'), ftype='vsm', mass='30mg',
-              diameter=(30, 'mm'), series=('test', 2, 'A'),
+              diameter=(30, 'mm'), series=('test', 2, 'A'), comment='post heating',
               std=13, mad=666)
     print(a.get_sample_block())
     print(a.fname)
+    for i in a.sample_infos:
+        print(i)
     b = minfo('FeNi20H_FeNi20-Ha36e060-G01_COE_VSM#11,925[mg]_[]_[]##STD:13,mad:666')
     print(b.fname)
     # print(list(a.sample_infos)[0])

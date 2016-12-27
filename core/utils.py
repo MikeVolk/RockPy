@@ -84,6 +84,20 @@ def extract_tuple(s: str) -> tuple:
     return tuple(s)
 
 
+def tuple2str(tup):
+    """
+    takes a tuple and converts it to text, if more than one element, brackets are put around it
+    """
+    if tup is None:
+        return ''
+
+    tup = _to_tuple(tup)
+
+    if len(tup) == 1:
+        return str(tup[0])
+    else:
+        return str(tup).replace('\'', ' ').replace(' ', '')
+
 def split_num_alph(item):
     '''
     splits a string with numeric and str values into a float and a string
