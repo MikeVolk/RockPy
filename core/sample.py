@@ -36,13 +36,6 @@ class Sample(object):
 
         return iter(self.measurements)
 
-    @property
-    def samplegroups(self):
-        if self._samplegroups:
-            return self._samplegroups
-        else:
-            return 'None',
-
     def __init__(self,
                  name=None,
                  comment='',
@@ -53,7 +46,7 @@ class Sample(object):
                  samplegroup=None,
                  study=None,
                  create_parameter=True,
-                 ):
+                 **kwargs):
 
         """
         Parameters
@@ -128,9 +121,9 @@ class Sample(object):
         # initiate samplegroups
         self._samplegroups = []
 
-        if samplegroup:
-            for sg in samplegroup:
-                self.add_to_samplegroup(gname=sg)
+        # if samplegroup:#todo samplegroups
+        #     for sg in samplegroup:
+        #         self.add_to_samplegroup(gname=sg)
 
         # coordinate system
         self._coord = coord
@@ -148,10 +141,139 @@ class Sample(object):
             # a number is passed we assume mg
             # todo implement mass
             if mass:
-                print(RockPy.implemented_measurements)
-                # mass = RockPy.implemented_measurements['mass'](sobj=self,
-                #                                                mass=mass, mass_unit=mass_unit, ftype=mass_ftype)
-            #     self.add_measurement(mobj=mass)
+                self.add_measurement(mass=mass)
+
+    def add_measurement(
+            self,
+            mtype=None,  # measurement type
+            fpath=None, ftype=None,  # file path and file type
+            idx=None,
+            mdata=None,
+            mobj=None,  # for special import of a measurement instance
+            series=None,
+            automatic_results=True,
+            comment=None, additional=None,
+            minfo=None,
+            **kwargs):
+
+        '''
+        All measurements have to be added here
+
+        Parameters
+        ----------
+        mtype: str
+          the type of measurement
+          default: None
+
+        fpath: str
+          the complete path to the measurement file
+          default: None
+
+        ftype: str
+          the filetype from which the file is output
+          default: 'generic'
+
+        idx: index of measurement
+          default: None, will be the index of the measurement in sample.measurements
+
+        mdata: any kind of data that must fit the required structure of the data of the measurement
+            will be used instead of data from file
+            example:
+                mdata = dict(mass=10)
+                mdata = dict( x=[1,2,3,4], y = [1,2,3,4],...)
+
+        mobj: RockPy3.Measurement object
+            if provided, the object is added to self.measurements
+
+        Returns
+        -------
+            RockPy3.measurement object
+        '''
+
+        # create the idx
+        if idx is None:
+            idx = len(self.measurements)
+
+        ''' MINFO object generation '''
+        if self.samplegroups:
+            sgroups = self.samplegroups
+        else:
+            sgroups = None
+
+            # if not minfo:
+            # minfo = RockPy.core.file_operations.minfo(fpath=fpath,
+            #                                            sgroups=sgroups,
+            #                                            samples=self.name,
+            #                                            mtypes=mtype, ftype=ftype,
+            #                                            series=series,
+            #                                            suffix=idx,
+            #                                            comment=comment, #unused for now
+            #                                            read_fpath=False if mtype and ftype else True)
+
+        # """ DATA import from FILE """
+        # # if no mdata or measurement object are passed, create measurement file from the minfo object
+        # if not mdata and not mobj:
+        #     # cycle through all samples
+        #     for import_info in minfo.measurement_infos:
+        #         mtype = import_info.pop('mtype')
+        #         # check if mtype is implemented
+        #         if not mtype in RockPy.implemented_measurements:
+        #             self.log().error('{} not implemented'.format(mtype))
+        #             continue
+        #         # create measurement object
+        #         mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
+        #                                                                 automatic_results=automatic_results,
+        #                                                                 **import_info)
+
+        """ DATA import from mass, height, diameter, len ... """
+        parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
+        if parameters:
+            for mtype in parameters:
+                mobj = RockPy.implemented_measurements[mtype](sobj=self, **kwargs)
+
+        """ DATA import from MDATA """
+        if all([mdata, mtype]):
+            if not self.mtype_not_implemented_check(mtype=mtype):
+                return
+            mobj = RockPy3.implemented_measurements[mtype](sobj=self, mdata=mdata, series=series, idx=idx,
+                                                           automatic_results=automatic_results,
+                                                           )
+
+        """ DATA import from MOBJ """
+        if mobj:
+            if isinstance(mobj, tuple) or ftype == 'from_measurement':
+                if not self.mtype_not_implemented_check(mtype=mtype):
+                    return
+                mobj = RockPy3.implemented_measurements[mtype].from_measurement(sobj=self,
+                                                                                mobj=mobj,
+                                                                                automatic_results=automatic_results,
+                                                                                **import_info)
+            if not mobj:
+                return
+
+            self.log().info('ADDING\t << %s, %s >>' % (mobj.ftype, mobj.mtype()))
+
+            self._add_mobj(mobj)
+
+            # if minfo.sgroups:
+            #     for sgroup in minfo.sgroups:
+            #         self.add_to_samplegroup(sgroup, warn=False)
+            return mobj
+
+        else:
+            self.log().error('COULD not create measurement << %s >>' % mtype)
+
+    def _add_mobj(self, mobj):
+        """
+        Adds a measurement object to the Measurements ndarray
+
+        Parameters
+        ----------
+        mobj: RockPy.Measurement object
+        """
+
+        if mobj not in self.measurements:
+            self.measurements = np.append(self.measurements, mobj)
 
     @property
     def series(self):
@@ -163,6 +285,13 @@ class Sample(object):
         set: set of all series in the sample
         """
         return set(s.data for m in self.measurements for s in m.series)
+
+    @property
+    def samplegroups(self):
+        if self._samplegroups:
+            return self._samplegroups
+        else:
+            return 'None',
 
     @property
     def stypes(self):
@@ -214,7 +343,7 @@ class Sample(object):
         -------
             list: measurement ids
         """
-        return [m.id for m in self.measurements]
+        return np.array([m.id for m in self.measurements])
 
     @property
     def mtype(self):
@@ -231,7 +360,7 @@ class Sample(object):
     @property
     def stype(self):
         """
-        returns a numpy array with all mtypes.
+        returns a numpy array with all stypes.
 
         Notes
         -----
@@ -264,5 +393,5 @@ class Sample(object):
 if __name__ == '__main__':
     import RockPy
 
-    # a = Sample('test', mass='30mg')
-    print(RockPy.implemented_measurements)
+    a = Sample('Sample_test', mass=(30.9, 'mg'))
+    print(a.measurements[0].data)

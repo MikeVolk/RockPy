@@ -27,7 +27,15 @@ class Mass(Parameter):
                                    series=series,
                                    **options)
 
-        mass, unit = RockPy.core.utils.split_num_alph(mass)
+        if isinstance(mass, str):
+            mass, unit = RockPy.core.utils.split_num_alph(mass)
+
+        if isinstance(mass, (tuple, list)):
+            if len(mass) == 2:
+                mass, unit = mass
+            else:
+                raise IndexError(
+                    '%s can not be converted into readable format: try (mass, unit) or \'mass unit\'' % mass)
         # todo add mass conversion
 
         self.unit = unit if unit else 'kg'

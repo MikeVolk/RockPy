@@ -603,9 +603,9 @@ class Measurement(object):
             add = 'mean_'
         else:
             add = ''
-        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
-                                                    self.stype_sval_tuples,
-                                                    hex(id(self)))
+        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype(), '',
+                                                    # self.stype_sval_tuples, #todo fix
+                                                    hex(self.id))
 
     def __hash__(self):
         return hash(self.id)
