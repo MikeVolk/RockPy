@@ -148,8 +148,9 @@ class Sample(object):
             # a number is passed we assume mg
             # todo implement mass
             if mass:
-                mass = RockPy.implemented_measurements['mass'](sobj=self,
-                                                               mass=mass, mass_unit=mass_unit, ftype=mass_ftype)
+                print(RockPy.implemented_measurements)
+                # mass = RockPy.implemented_measurements['mass'](sobj=self,
+                #                                                mass=mass, mass_unit=mass_unit, ftype=mass_ftype)
             #     self.add_measurement(mobj=mass)
 
     @property
@@ -261,4 +262,7 @@ class Sample(object):
 
 
 if __name__ == '__main__':
-    a = Sample('test')
+    import RockPy
+
+    # a = Sample('test', mass='30mg')
+    print(RockPy.implemented_measurements)

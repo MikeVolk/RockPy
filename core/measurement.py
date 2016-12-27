@@ -815,7 +815,7 @@ class Measurement(object):
             series = (None, np.nan, None)  #no series
             return [series]
 
-    def add_series(self, stype, sval, unit=None):
+    def add_series(self, stype, sval, unit=None):  # todo add (stype,sval,sunit) type calling
         """
         adds a series to measurement.series
 
