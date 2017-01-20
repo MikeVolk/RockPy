@@ -2,7 +2,6 @@ import logging
 import logging.config
 import RockPy.core.measurement as measurement
 import os
-import pkgutil
 
 import RockPy
 
@@ -17,6 +16,9 @@ logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))
 log = logging.getLogger('RockPy')
 
 log.debug('This is RockPy')
+
+# read the abbreviations.txt file
+abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviations()
 
 ''' automatic import of all subpackages in Packages and core '''
 # get list of tupels with (package.name , bool)
