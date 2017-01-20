@@ -5,6 +5,7 @@ import os
 import pkgutil
 
 import RockPy
+import RockPy.core.file_io
 
 installation_directory = os.path.dirname(RockPy.__file__)
 
