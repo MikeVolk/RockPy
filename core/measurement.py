@@ -603,9 +603,9 @@ class Measurement(object):
             add = 'mean_'
         else:
             add = ''
-        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
-                                                    self.stype_sval_tuples,
-                                                    hex(id(self)))
+        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype(), '',
+                                                    # self.stype_sval_tuples, #todo fix
+                                                    hex(self.id))
 
     def __hash__(self):
         return hash(self.id)
@@ -717,14 +717,6 @@ class Measurement(object):
 
     @property
     def data(self):
-        if self._data == {}:
-            self._data = deepcopy(self._raw_data)
-
-        # transform vectorial x,y,z data to new coordinate system when needed
-        # self.transform_data_coord(final_coord=self.coord)
-        # TODO: fails ->
-        # print self.coord
-
         return self._data
 
     def transform_data_coord(self, final_coord):
@@ -823,7 +815,7 @@ class Measurement(object):
             series = (None, np.nan, None)  #no series
             return [series]
 
-    def add_series(self, stype, sval, unit=None):
+    def add_series(self, stype, sval, unit=None):  # todo add (stype,sval,sunit) type calling
         """
         adds a series to measurement.series
 
