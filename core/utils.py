@@ -1,6 +1,38 @@
 from contextlib import contextmanager
+import numpy as np
+from math import degrees, radians, atan2, asin, cos, sin, tan
+
+def XYZ2DIL(XYZ):
+    """
+    convert XYZ to dec, inc, length
+    :param XYZ:
+    :return:
+    """
+    DIL = []
+    L = np.linalg.norm(XYZ)
+    D = degrees(atan2(XYZ[1], XYZ[0]))  # calculate declination taking care of correct quadrants (atan2)
+    if D < 0: D = D + 360.  # put declination between 0 and 360.
+    if D > 360.: D = D - 360.
+    DIL.append(D)  # append declination to Dir list
+    I = degrees(asin(XYZ[2] / L))  # calculate inclination (converting to degrees)
+    DIL.append(I)  # append inclination to Dir list
+    DIL.append(L)  # append vector length to Dir list
+    return DIL
 
 
+def DIL2XYZ(DIL):
+    """
+    Convert a tuple of D,I,L components to a tuple of x,y,z.
+    :param DIL:
+    :return: (x, y, z)
+    """
+    (D, I, L) = DIL
+    H = L * cos(radians(I))
+    X = H * cos(radians(D))
+    Y = H * sin(radians(D))
+    Z = H * tan(radians(I))
+    return (X, Y, Z)
+    
 @contextmanager
 def ignored(*exceptions):
     """
@@ -80,9 +112,23 @@ def extract_tuple(s: str) -> tuple:
     -------
         tuple
     """
-    s = s.translate(None, "()[]").split(',')
+    s = s.translate(str.maketrans("", "", "(){}[]")).split(',')
     return tuple(s)
 
+
+def tuple2str(tup):
+    """
+    takes a tuple and converts it to text, if more than one element, brackets are put around it
+    """
+    if tup is None:
+        return ''
+
+    tup = _to_tuple(tup)
+
+    if len(tup) == 1:
+        return str(tup[0])
+    else:
+        return str(tup).replace('\'', ' ').replace(' ', '')
 
 def split_num_alph(item):
     '''
@@ -97,11 +143,6 @@ def split_num_alph(item):
     -------
         float, str
     '''
-
-    # if item is a float or int number return that
-    if isinstance(item, (float, int)):
-        return item, None
-
     # replace german decimal comma
     item.replace(',', '.')
 
