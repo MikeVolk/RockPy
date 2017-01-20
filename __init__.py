@@ -2,6 +2,7 @@ import logging
 import logging.config
 import RockPy.core.measurement as measurement
 import os
+import pkgutil
 
 import RockPy
 

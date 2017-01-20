@@ -202,7 +202,7 @@ class Sample(object):
 
         # create MINFO if noe is provided
         if not minfo:
-            minfo = RockPy.core.file_operations.minfo(fpath=fpath,
+            minfo = RockPy.core.file_io.minfo(fpath=fpath,
                                                       sgroups=sgroups,
                                                       samples=self.name,
                                                       mtypes=mtype, ftype=ftype,
