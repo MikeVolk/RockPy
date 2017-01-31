@@ -4,8 +4,6 @@ import RockPy.core.utils
 
 
 class Parameter(Measurement):
-    pass
-
     def format_generic(self):
         pass
 
@@ -26,6 +24,7 @@ class Mass(Parameter):
                                    fpath=fpath, ftype=ftype,
                                    series=series,
                                    **options)
+        unit = None
 
         if isinstance(mass, str):
             mass, unit = RockPy.core.utils.split_num_alph(mass)
@@ -36,12 +35,11 @@ class Mass(Parameter):
             else:
                 raise IndexError(
                     '%s can not be converted into readable format: try (mass, unit) or \'mass unit\'' % mass)
-        # todo add mass conversion
 
         self.unit = unit if unit else 'kg'
-        self._data = pd.DataFrame(columns=['mass'], data=[[mass]])
-
-        self.log.info('creating mass: %f, %s' % (mass[0], self.unit))
+        data = pd.DataFrame(columns=['mass'], data=[[mass]])
+        self.append_to_clsdata(data)
+        self.log().info('creating mass: %f, %s' % (mass, 'unit'))
 
     def format_test(self):
         pass

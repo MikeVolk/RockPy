@@ -1,14 +1,14 @@
-import RockPy
-import RockPy.core
-
-import inspect
 import logging
-import pandas as pd
-
+import os
+import shutil
 from collections import OrderedDict
 from copy import deepcopy
-import shutil
-import os
+
+import RockPy
+import RockPy.core
+import numpy as np
+import pandas as pd
+
 
 class Measurement(object):
     """
@@ -33,6 +33,13 @@ class Measurement(object):
 
 
     """
+
+    mcolumns = ['sID', 'mID']
+
+    _clsdata = pd.DataFrame(columns=mcolumns)  # raw data do not manipulate
+
+    clsdata = pd.DataFrame()
+
     n_created = 0
 
     possible_plt_props = ['agg_filter', 'alpha', 'animated', 'antialiased', 'axes', 'clip_box', 'clip_on', 'clip_path',
@@ -88,6 +95,7 @@ class Measurement(object):
         return subclasses
 
     ''' implemented dicts '''
+
     @classmethod
     def implemented_ftypes(cls):  # todo move into RockPy core.core has nothing to do with measurement
         """
@@ -154,11 +162,11 @@ class Measurement(object):
         where result_name is the name without the result_ prefix
         """
         return {i[7:]: getattr(cls, i) for i in dir(cls) if i.startswith('result_')
-                       if not i.endswith('generic')
-                       if not i.endswith('methods')
-                       if not i.endswith('recipe')
-                       if not i.endswith('category')
-                       }
+                if not i.endswith('generic')
+                if not i.endswith('methods')
+                if not i.endswith('recipe')
+                if not i.endswith('category')
+                }
 
     @classmethod
     def correct_methods(cls) -> dict:
@@ -172,8 +180,8 @@ class Measurement(object):
 
         """
         return {i.replace('correct_', ''): getattr(cls, i) for i in dir(cls)
-                   if i.startswith('correct_')
-                   }
+                if i.startswith('correct_')
+                }
 
     ####################################################################################################################
 
@@ -222,9 +230,9 @@ class Measurement(object):
             RockPy.measurement object
         '''
 
-        #check if measurement is implemented
+        # check if measurement is implemented
         if ftype in cls.implemented_ftypes():
-            #read the ftype data from the file
+            # read the ftype data from the file
             ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name)
         else:
             log.error('CANNOT IMPORT ')
@@ -238,7 +246,7 @@ class Measurement(object):
         else:
             log.error('UNKNOWN ftype: << %s >>' % ftype)
             log.error('most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
-                    ftype, cls.__name__))
+                ftype, cls.__name__))
             return
 
         return cls(sobj=sobj, fpath=fpath, ftype=ftype, mdata=mdata, series=series, idx=idx, **options)
@@ -332,7 +340,7 @@ class Measurement(object):
 
         # create the dictionary the data will be stored in
         if mdata is None:
-            mdata = OrderedDict()  #create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
+            mdata = OrderedDict()  # create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
 
         # the data that is used for calculations and corrections
         self._data = mdata
@@ -379,7 +387,6 @@ class Measurement(object):
         self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
 
         self.__class__.n_created += 1
-
 
     def reset_calculation_params(self):
         """
@@ -572,14 +579,6 @@ class Measurement(object):
 
         return sorted(set([cm] + dependent_on_cm))
 
-    @property
-    def base_ids(self):
-        """
-        returns a list of ids for all base measurements
-        """
-        return [m.id for m in self.base_measurements]
-
-
     def __lt__(self, other):
         """
         for sorting measurements. They are sorted by their index
@@ -596,7 +595,6 @@ class Measurement(object):
             return int(self._idx) < int(other._idx)
         except ValueError:
             pass
-
 
     def __repr__(self):
         if self.is_mean:
@@ -671,6 +669,26 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
+    def append_to_clsdata(self, pdDF):
+        '''
+        Method that adds data to the clsdata and _clsdata of the class
+
+        Parameters
+        ----------
+        pdDF: pandas.Dataframe
+
+        Returns
+        -------
+
+        '''
+        ids = pd.DataFrame(data=np.ones((pdDF.size, 2), dtype=np.int64) * (self.sobj.id, self.id),
+                           columns=['sID', 'mID'])
+        d = pd.concat([ids, pdDF], axis=1)
+
+        # append data to raw data (_clsdata)
+        self.__class__._clsdata = pd.concat([self.__class__._clsdata, d])
+        # append data to manipulate data (clsdata)
+        self.__class__.clsdata = pd.concat([self.__class__.clsdata, d])
 
     @property
     def stype_sval_tuples(self):
@@ -717,7 +735,7 @@ class Measurement(object):
 
     @property
     def data(self):
-        return self._data
+        return self.__class__.clsdata[self.__class__.clsdata['mID'] == self.id]
 
     def transform_data_coord(self, final_coord):
         """
@@ -776,7 +794,6 @@ class Measurement(object):
         self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
         return self
 
-
     def has_result(self, result):
         """
         Checks if the measurement contains a certain result
@@ -812,7 +829,7 @@ class Measurement(object):
         if self._series:
             return self._series
         else:
-            series = (None, np.nan, None)  #no series
+            series = (None, np.nan, None)  # no series
             return [series]
 
     def add_series(self, stype, sval, unit=None):  # todo add (stype,sval,sunit) type calling
@@ -951,7 +968,7 @@ class Measurement(object):
                         dtype_data[ntype] = dtype_data[ntype].v / norm_factor
                     except KeyError:
                         self.log.warning(
-                            'CAN\'T normalize << %s, %s >> to %s' % (self.sobj.name, self.mtype, ntype))
+                                'CAN\'T normalize << %s, %s >> to %s' % (self.sobj.name, self.mtype, ntype))
 
                 if 'mag' in dtype_data.column_names:
                     try:
