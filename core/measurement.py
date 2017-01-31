@@ -101,7 +101,7 @@ class Measurement(object):
 
         dict: classname:
         """
-        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.io.ftype.__subclasses__()}
+        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.file_io.ftype.__subclasses__()}
         return implemented_ftypes
 
     @classmethod

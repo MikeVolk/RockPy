@@ -1,5 +1,10 @@
-import time
 import logging
+import time
+
+import RockPy
+from IPython.display import display
+from ipywidgets import HBox, VBox
+from ipywidgets import widgets
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +61,7 @@ class Study(object):
         return len(self._samples)
 
     @property
-    def samplelist(self):
+    def samples(self):
         """
         Returns a list of all samples
 
@@ -86,7 +91,7 @@ class Study(object):
 
     @property
     def groupnames(self):
-        return sorted(set(i for j in self.samplelist for i in j._samplegroups))
+        return sorted(set(i for j in self.samples for i in j._samplegroups))
 
     @property
     def samplegroups(self):
@@ -97,12 +102,8 @@ class Study(object):
     def add_sample(self,
                    name=None,
                    comment='',
-                   mass=None, mass_unit='kg',
+                   mass=None,
                    height=None, diameter=None,
-                   x_len=None, y_len=None, z_len=None,  # for cubic samples
-                   length_unit='mm',
-                   sample_shape='cylinder',
-                   coord=None,
                    samplegroup=None,
                    sobj=None,
                    **options
@@ -128,7 +129,23 @@ class Study(object):
             sobj
             options
         """
-        raise NotImplementedError
+
+        if name in self.samplenames:
+            log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
+                        'Returning sample' % name)
+            return self._samples[name]
+
+        if not sobj:
+            sobj = RockPy.core.sample.Sample(
+                    name=str(name),
+                    comment=comment,
+                    mass=mass,
+                    height=height, diameter=diameter,
+                    samplegroup=samplegroup,
+            )
+
+        self._samples.setdefault(sobj.name, sobj)
+        return sobj
 
     def add_samplegroup(self,
                         gname=None,
