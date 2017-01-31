@@ -4,6 +4,7 @@ import os, re
 from copy import deepcopy
 
 
+
 def read_abbreviations():
     """
     Reads the abbreviations.txt file into a dictionary
@@ -263,7 +264,7 @@ class minfo():
             value = item
         return value, unit
 
-    def __init__(self, fpath,
+    def __init__(self, fpath=None,
                  sgroups=None, samples=None,
                  mtypes=None, ftype=None,
                  mass=None, height=None, diameter=None,
