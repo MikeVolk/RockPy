@@ -150,12 +150,14 @@ def split_num_alph(item):
     for i, v in enumerate(item):
         if not v in ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.'):
             break
+        else:
+            idx = i
 
-    if not i == len(item) - 1:
-        return float(item[:i]), item[i:].strip()
+    if not idx == len(item) - 1:
+        return float(item[:idx + 1]), item[idx + 1:].strip()
     else:
         return float(item), None
 
 
 if __name__ == '__main__':
-    print(split_num_alph('20.3'))
+    print(split_num_alph('20.3 g'))
