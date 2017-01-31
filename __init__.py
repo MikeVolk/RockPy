@@ -7,6 +7,9 @@ import pkgutil
 import RockPy
 import RockPy.core.file_io
 
+from RockPy.core.study import Study
+from RockPy.core.sample import Sample
+
 installation_directory = os.path.dirname(RockPy.__file__)
 
 ''' LOGGING '''
