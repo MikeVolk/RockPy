@@ -1,20 +1,20 @@
 import logging
 import logging.config
-import RockPy.core.measurement as measurement
 import os
 import pkgutil
 
 import RockPy
+
+installation_directory = os.path.dirname(RockPy.__file__)
+
+import RockPy.core.measurement as measurement
 import RockPy.core.file_io
 
 from RockPy.core.study import Study
 from RockPy.core.sample import Sample
 
-installation_directory = os.path.dirname(RockPy.__file__)
 
 ''' LOGGING '''
-# logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=logging.DEBUG,
-#                     datefmt='%I:%M:%S')
 
 logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))
 # create the RockPy main logger
@@ -52,3 +52,4 @@ print('IMPLEMENTED MEASUREMENT TYPES     : \tFTYPES')
 print('---------------------------------------------------------------------------')
 print('\n'.join(['\t{:<26}: \t{}'.format(m, ', '.join(obj.ftype_formatters().keys()))
                  for m, obj in sorted(RockPy.implemented_measurements.items())]))
+print()

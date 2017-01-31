@@ -1,6 +1,13 @@
-from contextlib import contextmanager
+import RockPy
+import logging
 import numpy as np
+import pandas as pd
+import os
+
+from contextlib import contextmanager
 from math import degrees, radians, atan2, asin, cos, sin, tan
+
+convert = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
 def XYZ2DIL(XYZ):
     """
@@ -32,7 +39,8 @@ def DIL2XYZ(DIL):
     Y = H * sin(radians(D))
     Z = H * tan(radians(I))
     return (X, Y, Z)
-    
+
+
 @contextmanager
 def ignored(*exceptions):
     """
@@ -130,6 +138,7 @@ def tuple2str(tup):
     else:
         return str(tup).replace('\'', ' ').replace(' ', '')
 
+
 def split_num_alph(item):
     '''
     splits a string with numeric and str values into a float and a string
@@ -159,5 +168,3 @@ def split_num_alph(item):
         return float(item), None
 
 
-if __name__ == '__main__':
-    print(split_num_alph('20.3 g'))
