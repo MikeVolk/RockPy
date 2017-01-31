@@ -137,11 +137,12 @@ class Sample(object):
         if create_parameter:
             # for each parameter a measurement is created and then the measurement is added to the sample by calling
             # the add_measurement function
-            pass  # todo maybe it would be better to pass a tuple (mass, massunit) to create the parameters and if only /
-            # a number is passed we assume mg
-            # todo implement mass
             if mass:
                 self.add_measurement(mass=mass)
+            if diameter:
+                self.add_measurement(diameter=diameter)
+            if height:
+                self.add_measurement(height=height)
 
     def add_measurement(
             self,
@@ -200,16 +201,16 @@ class Sample(object):
         else:
             sgroups = None
 
-        # create MINFO if noe is provided
+        # create MINFO if no is provided
         if not minfo:
             minfo = RockPy.core.file_io.minfo(fpath=fpath,
-                                                      sgroups=sgroups,
-                                                      samples=self.name,
-                                                      mtypes=mtype, ftype=ftype,
-                                                      series=series,
-                                                      suffix=idx,
-                                                      comment=comment,  # unused for now
-                                                      read_fpath=False if mtype and ftype else True)
+                                              sgroups=sgroups,
+                                              samples=self.name,
+                                              mtypes=mtype, ftype=ftype,
+                                              series=series,
+                                              suffix=idx,
+                                              comment=comment,  # unused for now
+                                              read_fpath=False if mtype and ftype else True)
 
         # """ DATA import from FILE """
         # # if no mdata or measurement object are passed, create measurement file from the minfo object
@@ -228,20 +229,28 @@ class Sample(object):
 
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
+        print(parameters)
         if parameters:
             for mtype in parameters:
-                mobj = RockPy.implemented_measurements[mtype](sobj=self, **kwargs)
+                mobj = RockPy.implemented_measurements[mtype](sobj=self, value=kwargs.pop(mtype),
+                                                              **kwargs)
+
+                # catch cant create error case where no data is written
+                if mobj.data is None:
+                    return
 
         """ DATA import from MDATA """
         if all([mdata, mtype]):
-            if not self.mtype_not_implemented_check(mtype=mtype):
+            if not mtype in RockPy.implemented_measurements:
                 return
-            mobj = RockPy3.implemented_measurements[mtype](sobj=self, mdata=mdata, series=series, idx=idx,
-                                                           automatic_results=automatic_results,
-                                                           )
+            mobj = RockPy.implemented_measurements[mtype](sobj=self, mdata=mdata, series=series, idx=idx,
+                                                          automatic_results=automatic_results,
+                                                          )
+
 
         """ DATA import from MOBJ """
         if mobj:
+            print(mobj)
             if isinstance(mobj, tuple) or ftype == 'from_measurement':
                 if not self.mtype_not_implemented_check(mtype=mtype):
                     return

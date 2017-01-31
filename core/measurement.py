@@ -735,7 +735,10 @@ class Measurement(object):
 
     @property
     def data(self):
-        return self.__class__.clsdata[self.__class__.clsdata['mID'] == self.id]
+        try:
+            return self.__class__.clsdata[self.__class__.clsdata['mID'] == self.id]
+        except KeyError:
+            return
 
     def transform_data_coord(self, final_coord):
         """

@@ -1,11 +1,62 @@
-import pandas as pd
-
-import RockPy.core.utils
-from RockPy.core.measurement import Measurement
 import RockPy
+import RockPy.core.utils
+import numpy as np
+import pandas as pd
+from RockPy.core.measurement import Measurement
 
 
 class Parameter(Measurement):
+    def __init__(self,
+                 sobj,
+                 fpath=None, ftype='generic',
+                 series=None,
+                 value=None,
+                 Siunit=None,
+                 column=None,
+                 **options):
+
+        super(Parameter, self).__init__(sobj=sobj,
+                                        fpath=fpath, ftype=ftype,
+                                        series=series,
+                                        **options)
+
+        unit = Siunit
+
+        if isinstance(value, str):
+            value, unit = RockPy.core.utils.split_num_alph(value)
+
+        if isinstance(value, (tuple, list)):
+            if len(value) == 2:
+                value, unit = value
+            else:
+                raise IndexError(
+                        '%s can not be converted into readable format: try (value, unit)' % value)
+
+        try:
+            unit_conversion = RockPy.core.utils.convert[unit][Siunit]
+        except KeyError:
+            self.log().error('Unit unknown')
+            return
+
+        if np.isnan(unit_conversion):
+            self.log().warning(
+                    'unit << %s >> most likely not %s-compatible' % (unit, self.__class__.get_subclass_name()))
+            self.log().error('CAN NOT create Measurement')
+            return
+
+        # unit conversion into 'kg'
+        self.value = value * unit_conversion
+        self.unit = Siunit
+        self.passed_unit = unit
+
+        data = pd.DataFrame(columns=[column], data=[[self.value]])
+        self.append_to_clsdata(data)
+
+        self.log().info(
+                'creating %s: %.2f [%s] -> %.2e [%s]' % (self.__class__.get_subclass_name(),
+                                                         self.value / unit_conversion,
+                                                         self.passed_unit, self.value, self.unit))
+
     def format_generic(self):
         pass
 
@@ -17,89 +68,50 @@ class Mass(Parameter):
 
     def __init__(self, sobj,
                  fpath=None, ftype='generic',
-                 mass=None,
+                 value=None,
                  series=None,
                  **options):
-
         super(Mass, self).__init__(sobj=sobj,
                                    fpath=fpath, ftype=ftype,
                                    series=series,
+                                   value=value,
+                                   Siunit='kg',
                                    **options)
-        unit = 'kg'
-
-        if isinstance(mass, str):
-            mass, unit = RockPy.core.utils.split_num_alph(mass)
-
-        if isinstance(mass, (tuple, list)):
-            if len(mass) == 2:
-                mass, unit = mass
-            else:
-                raise IndexError(
-                    '%s can not be converted into readable format: try (mass, unit) or \'mass unit\'' % mass)
-
-        # unit conversion into 'kg'
-        if unit:
-            mass *= RockPy.core.utils.convert[unit]['kg']
 
 
-        self.unit = unit if unit else 'kg'
-        data = pd.DataFrame(columns=['mass'], data=[[mass]])
-        self.append_to_clsdata(data)
-        self.log().info(
-            'creating mass: %.2e [%s] -> %.2e [%s]' % (mass * RockPy.core.utils.convert['kg'][unit], unit, mass, 'kg'))
+class Length(Parameter):
+    """
+    simple 1d measurement for Length
+    """
+
+    def __init__(self, sobj,
+                 fpath=None, ftype='generic',
+                 value=None,
+                 series=None,
+                 **options):
+        super(Length, self).__init__(sobj=sobj,
+                                     fpath=fpath, ftype=ftype,
+                                     series=series,
+                                     value=value,
+                                     Siunit='m',
+                                     **options)
 
 
-# class Length(Parameter):
-#     """
-#     simple 1d measurement for Length
-#     """
-#
-#     def __init__(self, sobj,
-#                  fpath=None, ftype='generic',
-#                  value=None, unit='m',
-#                  direction=None,
-#                  series=None,
-#                  **options):
-#         super(Length, self).__init__(sobj=sobj,
-#                                      fpath=fpath, ftype=ftype,
-#                                      series=series,
-#                                      **options)
-#         if not value:
-#             return
-#
-#         self.ftype = ftype
-#         self.direction = direction
-#
-#         # length_conversion = convert2(unit, 'm', 'length')
-#
-#         if not length_conversion:
-#             self.log().warning('unit << %s >> most likely not %s-compatible' % (unit, self.__class__.get_subclass_name()))
-#             self.log().error('CAN NOT create Measurement')
-#             return
-#
-#         self._data = {'data': RockPy3.Data(column_names=[self.mtype, 'time', 'std_dev'])}
-#         self._data['data'][self.mtype] = value * length_conversion
-#         self._data['data']['time'] = time
-#         self._data['data']['std_dev'] = std
-#
-#     def format_generic(self):
-#         pass
-#
-#
-# class Diameter(Length):
-#     """
-#     simple 1d measurement for Length
-#     """
-#
-#     pass
-#
-#
-# class Height(Length):
-#     """
-#     simple 1d measurement for Length
-#     """
-#     pass
+class Diameter(Length):
+    """
+    simple 1d measurement for Length
+    """
+
+    pass
+
+
+class Height(Length):
+    """
+    simple 1d measurement for Length
+    """
+    pass
 
 if __name__ == '__main__':
-    s = RockPy.Sample('test', mass='1.3827ng')
-    print(s.measurements[0]._clsdata)
+    s = RockPy.Sample('test', mass='14g', diameter='12mm', height='5.4mm')
+    # m = RockPy.Packages.Generic.Measurement.Parameter.Mass(sobj=s, mass='2kg')
+    # m2 = RockPy.implemented_measurements['mass'](sobj=s, mass='3kg')
