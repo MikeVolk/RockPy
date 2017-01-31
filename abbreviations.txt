@@ -54,6 +54,7 @@ mass: mass
 diameter: diameter
 height: height
 volume: volume
+parameter: par
 
 generic: generic
 
@@ -68,3 +69,5 @@ sushibar: sush
 vsm: vsm, vibrating sample magnetometer
 jr6: jr6, jr 6
 mpms: mpms
+
+test: test

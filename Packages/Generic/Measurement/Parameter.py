@@ -41,6 +41,13 @@ class Mass(Parameter):
         self.unit = unit if unit else 'kg'
         self._data = pd.DataFrame(columns=['mass'], data=[[mass]])
 
+        self.log.info('creating mass: %f, %s' % (mass[0], self.unit))
+
+    def format_test(self):
+        pass
+
+    def format_testerich(self):
+        pass
 
 if __name__ == '__main__':
     test = Mass('test', mass='23.7 mg', series=('test', 2, 'au'))

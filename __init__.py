@@ -44,3 +44,8 @@ for i in subpackages:
 
 # create implemented measurements dictionary
 implemented_measurements = {m.__name__.lower(): m for m in measurement.Measurement.inheritors()}
+
+print('IMPLEMENTED MEASUREMENT TYPES     : \tFTYPES')
+print('---------------------------------------------------------------------------')
+print('\n'.join(['\t{:<26}: \t{}'.format(m, ', '.join(obj.ftype_formatters().keys()))
+                 for m, obj in sorted(RockPy.implemented_measurements.items())]))
