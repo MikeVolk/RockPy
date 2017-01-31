@@ -382,7 +382,7 @@ class Measurement(object):
 
         # add series if provided
         if series:
-            self.add_series(series=series)
+            self.add_series(*series)
 
         self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
 
@@ -832,7 +832,7 @@ class Measurement(object):
             series = (None, np.nan, None)  # no series
             return [series]
 
-    def add_series(self, stype, sval, unit=None):  # todo add (stype,sval,sunit) type calling
+    def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
         """
         adds a series to measurement.series
 
@@ -1106,5 +1106,5 @@ class Measurement(object):
 
 
 if __name__ == '__main__':
-    # RockPy.log.setLevel(logging.WARNING)
+    # RockPy.convertlog.setLevel(logging.WARNING)
     m = Measurement(sobj='test')
