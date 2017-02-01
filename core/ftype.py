@@ -1,4 +1,5 @@
 import logging
+
 import RockPy.core.utils
 
 
@@ -6,13 +7,13 @@ class Ftype(object):
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
-        return logging.getLogger('RockPy.%s' % cls.mtype())
+        return logging.getLogger('RockPy.%s' % cls.subclass_name().lower())
 
     def split_tab(self, line):
         return line.split('\t')
 
     @classmethod
-    def get_subclass_name(cls):
+    def subclass_name(cls):
         return cls.__name__
 
     def __init__(self, dfile, snames=None, dialect=None):
