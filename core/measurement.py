@@ -109,7 +109,7 @@ class Measurement(object):
 
         dict: classname:
         """
-        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.file_io.ftype.__subclasses__()}
+        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.ftype.Ftype.__subclasses__()}
         return implemented_ftypes
 
     @classmethod
@@ -230,26 +230,31 @@ class Measurement(object):
             RockPy.measurement object
         '''
 
+        # initialize ftype_data
+        ftype_data = None
+
         # check if measurement is implemented
         if ftype in cls.implemented_ftypes():
             # read the ftype data from the file
             ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name)
         else:
-            log.error('CANNOT IMPORT ')
+            cls.log().error('CANNOT IMPORT ')
 
         # check wether the formatter for the ftype is implemented
-        if ftype in cls.ftype_formatters():
-            log.debug('ftype_formatter << %s >> implemented' % ftype)
-            mdata = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
-            if not mdata:
-                log.debug('mdata is empty -- measurement may not be created')
+        if ftype_data and ftype in cls.ftype_formatters():
+            cls.log().debug('ftype_formatter << %s >> implemented' % ftype)
+            mdata, ftype_data = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
+            if mdata is None:
+                cls.log().debug('mdata is empty -- measurement may not be created, check formatter')
         else:
-            log.error('UNKNOWN ftype: << %s >>' % ftype)
-            log.error('most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
+            cls.log().error('UNKNOWN ftype: << %s >>' % ftype)
+            cls.log().error('most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
                 ftype, cls.__name__))
             return
 
-        return cls(sobj=sobj, fpath=fpath, ftype=ftype, mdata=mdata, series=series, idx=idx, **options)
+        return cls(sobj=sobj, fpath=fpath, ftype=ftype,
+                   mdata=mdata,
+                   series=series, idx=idx, ftype_data=ftype_data, **options)
 
     @classmethod
     def from_simulation(cls, sobj=None, idx=None, **parameter):
@@ -342,11 +347,8 @@ class Measurement(object):
         if mdata is None:
             mdata = OrderedDict()  # create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
 
-        # the data that is used for calculations and corrections
-        self._data = mdata
-
-        # _raw_data is a backup deepcopy of _data it will be used to reset the _data if reset_data() is called
-        self._raw_data = deepcopy(mdata)
+        # add the data to the clsdata
+        self.append_to_clsdata(mdata)
 
         # flags for mean and the base measurements
         self.is_mean = options.get('ismean', False)  # flag for mean measurements
@@ -669,21 +671,23 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
-    def append_to_clsdata(self, pdDF):
+    def append_to_clsdata(self, data):
         '''
         Method that adds data to the clsdata and _clsdata of the class
 
         Parameters
         ----------
-        pdDF: pandas.Dataframe
+        data: pandas.Dataframe
 
         Returns
         -------
 
         '''
-        ids = pd.DataFrame(data=np.ones((pdDF.size, 2), dtype=np.int64) * (self.sobj.id, self.id),
+
+        # create new Dataframe with measurement ids (mID) and sample ids (sID)
+        ids = pd.DataFrame(data=np.ones((data.shape[0], 2), dtype=np.int64) * (self.sobj.id, self.id),
                            columns=['sID', 'mID'])
-        d = pd.concat([ids, pdDF], axis=1)
+        d = pd.concat([ids, data], axis=1)
 
         # append data to raw data (_clsdata)
         self.__class__._clsdata = pd.concat([self.__class__._clsdata, d])

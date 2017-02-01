@@ -213,23 +213,23 @@ class Sample(object):
                                               read_fpath=False if mtype and ftype else True)
 
         # """ DATA import from FILE """
-        # # if no mdata or measurement object are passed, create measurement file from the minfo object
-        # if not mdata and not mobj:
-        #     # cycle through all samples
-        #     for import_info in minfo.measurement_infos:
-        #         mtype = import_info.pop('mtype')
-        #         # check if mtype is implemented
-        #         if not mtype in RockPy.implemented_measurements:
-        #             self.log().error('{} not implemented'.format(mtype))
-        #             continue
-        #         # create measurement object
-        #         mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
-        #                                                                 automatic_results=automatic_results,
-        #                                                                 **import_info)
+        # if no mdata or measurement object are passed, create measurement file from the minfo object
+        if not mdata and not mobj:
+            # cycle through all samples
+            for import_info in minfo.measurement_infos:
+                mtype = import_info.pop('mtype')
+                # check if mtype is implemented
+                if not mtype in RockPy.implemented_measurements:
+                    self.log().error('{} not implemented'.format(mtype))
+                    continue
+                # create measurement object
+                mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
+                                                                        automatic_results=automatic_results,
+                                                                        **import_info)
 
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
-        print(parameters)
+
         if parameters:
             for mtype in parameters:
                 mobj = RockPy.implemented_measurements[mtype](sobj=self, value=kwargs.pop(mtype),

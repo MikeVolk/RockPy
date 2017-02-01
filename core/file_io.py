@@ -423,7 +423,7 @@ class minfo():
         samples = _to_tuple(self.samples)
         for i in samples:
             for j in self.mtypes:
-                mtype = RockPy.abbrev_to_classname(j)
+                mtype = RockPy.abbrev_to_classname[j]
                 idict.update({'mtype': mtype, 'sample': i})
                 yield idict
 
