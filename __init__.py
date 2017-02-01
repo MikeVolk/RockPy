@@ -6,6 +6,7 @@ import pkgutil
 import RockPy
 
 installation_directory = os.path.dirname(RockPy.__file__)
+test_data_path = os.path.join(os.getcwd().split('RockPy')[0], 'RockPy', 'tests', 'test_data')
 
 import RockPy.core.measurement as measurement
 import RockPy.core.file_io

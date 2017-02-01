@@ -6,6 +6,9 @@ from RockPy.core.measurement import Measurement
 
 
 class Parameter(Measurement):
+    '''
+    Parameter measurement
+    '''
     def __init__(self,
                  sobj,
                  fpath=None, ftype='generic',
@@ -111,7 +114,3 @@ class Height(Length):
     """
     pass
 
-if __name__ == '__main__':
-    s = RockPy.Sample('test', mass='14g', diameter='12mm', height='5.4mm')
-    # m = RockPy.Packages.Generic.Measurement.Parameter.Mass(sobj=s, mass='2kg')
-    # m2 = RockPy.implemented_measurements['mass'](sobj=s, mass='3kg')

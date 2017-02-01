@@ -21,7 +21,7 @@ class Measurement(object):
 
     1. measurement formatters
     -------------------------
-        The measurement formatter uses the data from the Package.io.ftype and turns it into a RockPyData
+        The measurement formatter uses the data from the Package.Ftype.ftype and turns it into a RockPyData
         object fitting the Measurement.data specifications of the measurement.
 
     2. results
@@ -101,7 +101,7 @@ class Measurement(object):
         """
         Dictionary of all implemented filetypes.
 
-        Looks for all subclasses of RockPy3.io.base.ftype
+        Looks for all subclasses of RockPy3.core.ftype.Ftype
         generating a dictionary of implemented machines : {implemented out_* method : machine_class}
 
         Returns
