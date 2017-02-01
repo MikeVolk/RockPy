@@ -28,8 +28,7 @@ abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviation
 
 ''' automatic import of all subpackages in Packages and core '''
 # get list of tupels with (package.name , bool)
-subpackages = sorted([(i[1], i[2]) for i in pkgutil.walk_packages([os.path.dirname(RockPy.__file__)],
-                                                                  prefix='RockPy.')])
+subpackages = sorted([(i[1], i[2]) for i in pkgutil.walk_packages([installation_directory], prefix='RockPy.')])
 
 # import all packages
 for i in subpackages:
