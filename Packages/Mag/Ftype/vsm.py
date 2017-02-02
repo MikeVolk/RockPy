@@ -47,7 +47,7 @@ class Vsm(Ftype):
             self.segments = segments
 
         # reading data
-        data_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
+        data_header = [' '.join([str(n) for n in line]).replace('nan', '').replace('�', '2').strip() for line in
                        pd.read_fwf(self.dfile, skiprows=data_start - 4,
                                    nrows=3, widths=data_widths).values.T]
 
