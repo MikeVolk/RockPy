@@ -3,6 +3,7 @@ from copy import deepcopy
 import numpy as np
 from collections import OrderedDict
 from functools import partial
+import pandas as pd
 
 import RockPy
 import RockPy.core.study
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class Sample(object):
     snum = 0
-
+    results = pd.DataFrame()
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
