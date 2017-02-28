@@ -148,4 +148,4 @@ if __name__ == '__main__':
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.002')
 
-    m.field_polarity_switch_idx()
+    print(m.data)
