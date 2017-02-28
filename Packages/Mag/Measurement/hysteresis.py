@@ -146,6 +146,7 @@ class Hysteresis(Measurement):
 if __name__ == '__main__':
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
-                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.002')
-
-    print(m.data)
+                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
+    m = s.add_measurement(mtype='hys', ftype='vsm',
+                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
+    print(m.clsdata)

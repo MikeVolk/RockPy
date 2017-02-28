@@ -3,7 +3,6 @@ from copy import deepcopy
 import numpy as np
 from collections import OrderedDict
 from functools import partial
-import pandas as pd
 
 import RockPy
 import RockPy.core.study
@@ -13,7 +12,7 @@ log = logging.getLogger(__name__)
 
 class Sample(object):
     snum = 0
-    results = pd.DataFrame()
+
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
@@ -129,8 +128,6 @@ class Sample(object):
         # coordinate system
         self._coord = coord
 
-        # logger.info('CREATING\t new sample << %s >>' % self.name) #todo logger
-
         self.measurements = []  # list of all measurements
         self.mean_measurements = []  # list of all mean measurements #todo implement
 
@@ -214,23 +211,22 @@ class Sample(object):
                                               read_fpath=False if mtype and ftype else True)
 
         # """ DATA import from FILE """
-        # if no mdata or measurement object are passed, create measurement file from the minfo object
-        if not mdata and not mobj:
-            # cycle through all samples
-            for import_info in minfo.measurement_infos:
-                mtype = import_info.pop('mtype')
-                # check if mtype is implemented
-                if not mtype in RockPy.implemented_measurements:
-                    self.log().error('{} not implemented'.format(mtype))
-                    continue
-                # create measurement object
-                mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
-                                                                        automatic_results=automatic_results,
-                                                                        **import_info)
+        # # if no mdata or measurement object are passed, create measurement file from the minfo object
+        # if not mdata and not mobj:
+        #     # cycle through all samples
+        #     for import_info in minfo.measurement_infos:
+        #         mtype = import_info.pop('mtype')
+        #         # check if mtype is implemented
+        #         if not mtype in RockPy.implemented_measurements:
+        #             self.log().error('{} not implemented'.format(mtype))
+        #             continue
+        #         # create measurement object
+        #         mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
+        #                                                                 automatic_results=automatic_results,
+        #                                                                 **import_info)
 
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
-
         if parameters:
             for mtype in parameters:
                 mobj = RockPy.implemented_measurements[mtype](sobj=self, value=kwargs.pop(mtype),
@@ -251,7 +247,6 @@ class Sample(object):
 
         """ DATA import from MOBJ """
         if mobj:
-            print(mobj)
             if isinstance(mobj, tuple) or ftype == 'from_measurement':
                 if not self.mtype_not_implemented_check(mtype=mtype):
                     return

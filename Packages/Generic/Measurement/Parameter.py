@@ -6,9 +6,6 @@ from RockPy.core.measurement import Measurement
 
 
 class Parameter(Measurement):
-    '''
-    Parameter measurement
-    '''
     def __init__(self,
                  sobj,
                  fpath=None, ftype='generic',
@@ -24,6 +21,9 @@ class Parameter(Measurement):
                                         **options)
 
         unit = Siunit
+
+        if column is None:
+            column = self.mtype()+'[%s]'%unit
 
         if isinstance(value, str):
             value, unit = RockPy.core.utils.split_num_alph(value)
@@ -114,3 +114,12 @@ class Height(Length):
     """
     pass
 
+if __name__ == '__main__':
+    s = RockPy.Sample('test')
+    s.add_measurement(mass = '13mg')
+    s.add_measurement(mass = '12mg')
+
+    m = RockPy.Packages.Generic.Measurement.Parameter.Mass(sobj=s, value='2kg')
+    m2 = RockPy.implemented_measurements['mass'](sobj=s, value='3kg')
+
+    print(s.measurements[0].clsdata)
