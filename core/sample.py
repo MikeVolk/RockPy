@@ -128,8 +128,6 @@ class Sample(object):
         # coordinate system
         self._coord = coord
 
-        # logger.info('CREATING\t new sample << %s >>' % self.name) #todo logger
-
         self.measurements = []  # list of all measurements
         self.mean_measurements = []  # list of all mean measurements #todo implement
 
@@ -229,7 +227,6 @@ class Sample(object):
 
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
-        print(parameters)
         if parameters:
             for mtype in parameters:
                 mobj = RockPy.implemented_measurements[mtype](sobj=self, value=kwargs.pop(mtype),
@@ -250,7 +247,6 @@ class Sample(object):
 
         """ DATA import from MOBJ """
         if mobj:
-            print(mobj)
             if isinstance(mobj, tuple) or ftype == 'from_measurement':
                 if not self.mtype_not_implemented_check(mtype=mtype):
                     return
