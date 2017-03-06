@@ -45,7 +45,7 @@ class Hysteresis(Measurement):
             Hysteresis.log().debug('ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         data = ftype_data.data.rename(columns={"Field (T)": "B", "Moment (Am2)": "M"})
-        return data, ftype_data
+        return data
 
     ####################################################################################################################
     ''' BRANCHES '''
@@ -66,7 +66,7 @@ class Hysteresis(Measurement):
         else:
             return True
 
-    def add_polarity_column(self, window = 1 ):
+    def get_polarity_switch(self, window = 1):
         '''
 
         Parameters
@@ -83,7 +83,7 @@ class Hysteresis(Measurement):
 
         Returns
         -------
-            np.array of the indices for the sign change
+            pandas.Series with sign of the polarity
         '''
         a = self.data.index.to_series()
 
@@ -106,19 +106,39 @@ class Hysteresis(Measurement):
         # reduce to sign of the differences
         asign = diffs.apply(np.sign)
 
-        signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
+        return asign
 
-        # import matplotlib.pyplot as plt
-        # plt.plot(a.values, '-')
-        # plt.plot(asign.values)
-        # plt.show()
+    def get_polarity_switch_index(self, window=1):
+        '''
+        Method calls hysteresis.get_polarity_switch with window and then calculated the indices of the switch
+
+        Parameters
+        ----------
+        window: int
+            default: 1 - no running mean
+            Size of the moving window. This is the number of observations used for calculating the statistic.
+
+        Returns
+        -------
+            np.array of indices
+        '''
+
+        asign = self.get_polarity_switch()
+
+        signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
 
         return (np.where(signchange!=0)[0] + window/2).astype(int)
 
     @property
     def downfield(self):
-        raise NotImplementedError
+        '''
 
+        Returns
+        -------
+
+        '''
+        sign = self.get_polarity_switch(1)
+        return self.data[sign < 0]
     """ CALCULATIONS """
     @property
     def irreversible(self):
@@ -161,4 +181,5 @@ if __name__ == '__main__':
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
-    print(m.ftype_data)
+
+    print(m.clsdata)
