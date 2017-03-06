@@ -66,18 +66,54 @@ class Hysteresis(Measurement):
         else:
             return True
 
-    def field_polarity_switch_idx(self):
+    def add_polarity_column(self, window = 1 ):
         '''
+
+        Parameters
+        ----------
+        window : int
+            default: 1 - no running mean
+            Size of the moving window. This is the number of observations used for calculating the statistic.
+            Each window will be a fixed size. Moving window is used twice: for smoothing data (mean with hamming window)
+            and smoothing the sign (median, no special window)
+
+        Notes
+        -----
+            A window size of 5 is usually sufficient to smooth out 1% of noise
 
         Returns
         -------
-
+            np.array of the indices for the sign change
         '''
-        a = self.data['B']
-        asign = np.sign(a)
+        a = self.data.index.to_series()
+
+        # adding 2% noise to the data
+        # a += np.random.normal(0,0.05*a.max(),a.size)
+        # todo maybe add convergence with increasing window size for automatic smoothing
+
+        if window > 1:
+            a = a.rolling(window, win_type='hamming', center=True).mean()
+
+
+        # calculating differences between individual points
+        diffs = a.diff()
+        diffs = diffs.rolling(window, center=True).median()
+
+        # filling in missing data due to window size
+        diffs = diffs.fillna(method = 'bfill') #filling missing values at beginning
+        diffs = diffs.fillna(method = 'ffill') #filling missing values at end
+
+        # reduce to sign of the differences
+        asign = diffs.apply(np.sign)
+
         signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
 
-        return signchange
+        # import matplotlib.pyplot as plt
+        # plt.plot(a.values, '-')
+        # plt.plot(asign.values)
+        # plt.show()
+
+        return (np.where(signchange!=0)[0] + window/2).astype(int)
 
     @property
     def downfield(self):
@@ -125,4 +161,4 @@ if __name__ == '__main__':
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
-
+    print(m.ftype_data)
