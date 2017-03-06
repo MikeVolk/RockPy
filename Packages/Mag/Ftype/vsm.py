@@ -38,7 +38,7 @@ class Vsm(Ftype):
         if not 'First-order reversal curves' in mtype:
             # reading segments data
             segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
-                              pd.read_fwf(self.dfile, skiprows=header_end + 2, nrows=segment_start - header_end -2,
+                              pd.read_fwf(self.dfile, skiprows=header_end + 1, nrows=segment_start - header_end -2,
                                           widths=widths, header=None).values.T]
             segments = pd.read_csv(self.dfile, skiprows=segment_start, nrows=int(header[0]['Number of segments']),
                                    names=segment_header,
@@ -54,8 +54,11 @@ class Vsm(Ftype):
         data = pd.read_csv(self.dfile, skiprows=data_start, nrows=int(header[0]['Number of data']),
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
-        self.data = data
+        self.data = data.dropna(axis=0)
 
 
 if __name__ == '__main__':
-    Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
+    dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
+    print(dcd.segments)
+    hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
+    print(hys.segments)
