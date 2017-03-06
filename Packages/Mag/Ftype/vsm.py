@@ -17,7 +17,7 @@ class Vsm(Ftype):
                 if 'Number of data' in l:
                     header_end = i
                 if '0000001' in l:
-                    widths = [len(n) + 1 for n in l.split(',')]
+                    widths = [len(n)+1 for n in l.split(',')]
                     segment_start = i
                 if l.startswith('+') or l.startswith('-'):
                     data_start = i
@@ -38,12 +38,12 @@ class Vsm(Ftype):
         if not 'First-order reversal curves' in mtype:
             # reading segments data
             segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
-                              pd.read_fwf(self.dfile, skiprows=header_end - 1,
-                                          nrows=segment_start - header_end, widths=widths).values.T]
-
+                              pd.read_fwf(self.dfile, skiprows=header_end + 2, nrows=segment_start - header_end -2,
+                                          widths=widths, header=None).values.T]
             segments = pd.read_csv(self.dfile, skiprows=segment_start, nrows=int(header[0]['Number of segments']),
                                    names=segment_header,
                                    )
+
             self.segments = segments
 
         # reading data
@@ -58,4 +58,4 @@ class Vsm(Ftype):
 
 
 if __name__ == '__main__':
-    Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001').data
+    Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
