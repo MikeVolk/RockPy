@@ -306,6 +306,7 @@ class Measurement(object):
 
     def __init__(self, sobj,
                  fpath=None, ftype=None, mdata=None,
+                 ftype_data = None,
                  series=None,
                  idx=None,
                  **options
@@ -357,6 +358,7 @@ class Measurement(object):
 
         self.ftype = ftype
         self.fpath = fpath
+        self.ftype_data = ftype_data
 
         ''' initial state '''
         self.is_initial_state = False
