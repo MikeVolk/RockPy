@@ -245,7 +245,7 @@ class Measurement(object):
         # check wether the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():
             cls.log().debug('ftype_formatter << %s >> implemented' % ftype)
-            mdata, ftype_data = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
+            mdata = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
             if mdata is None:
                 cls.log().debug('mdata is empty -- measurement may not be created, check formatter')
         else:
@@ -674,31 +674,30 @@ class Measurement(object):
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
 
-    def append_to_clsdata(self, data):
+    def append_to_clsdata(self, mdata):
         '''
         Method that adds data to the clsdata and _clsdata of the class
 
         Parameters
         ----------
-        data: pandas.Dataframe
+        mdata: pandas.Dataframe
 
         Returns
         -------
 
         '''
 
-        # create new Dataframe with measurement ids (mID) and sample ids (sID)
-        ids = pd.DataFrame(data=np.ones((data.shape[0], 2), dtype=np.int64) * (self.sid, self.mid),
-                           columns=['sID', 'mID'])
-        d = pd.concat([ids, data], axis=1)
+        # add column with measurement ids (mID) and sample ids (sID)
+        mdata['mid'] = self.mid
+        mdata['sid'] = self.sid
 
         # append data to raw data (_clsdata)
-        self.__class__._clsdata.append(d)
+        self.__class__._clsdata.append(mdata)
         self.__class__._sids.append(self.sid)
         self.__class__._mids.append(self.mid)
 
         # append data to manipulate data (clsdata)
-        self.__class__.clsdata.append(d)
+        self.__class__.clsdata.append(mdata)
 
     @classmethod
     def remove_from_clsdata(cls, mid: int):
@@ -800,7 +799,7 @@ class Measurement(object):
         """
         return self.set_get_attr('_correction', value=list())
 
-    def reset_data(self):
+    def reset_data(self): #todo rewrite new data pandas
         """
         Resets all data back to the original state. Deepcopies _raw_data back to _data and resets correction
         """
