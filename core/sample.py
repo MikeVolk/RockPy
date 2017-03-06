@@ -6,6 +6,7 @@ from functools import partial
 
 import RockPy
 import RockPy.core.study
+import RockPy.core.file_io
 
 log = logging.getLogger(__name__)
 
@@ -283,6 +284,10 @@ class Sample(object):
 
         if mobj not in self.measurements:
             self.measurements = np.append(self.measurements, mobj)
+
+    def remove_measurement(self): #todo write
+        # needs to remove the measurement from measurement list and data from cls data
+        raise NotImplementedError
 
     @property
     def series(self):

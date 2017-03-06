@@ -60,8 +60,8 @@ class Hysteresis(Measurement):
         -------
             bool
         '''
-
-        if self.data['B'].ix[0] > 0.9 * self.data['B'].max():
+        # check if the first point is  close to the maximum/minimum field
+        if np.abs(self.data.index[0]) > 0.9 * self.data.index.max():
             return False
         else:
             return True
@@ -84,8 +84,8 @@ class Hysteresis(Measurement):
         raise NotImplementedError
 
     """ CALCULATIONS """
-
-    def get_irreversible(self, correct_symmetry=True):
+    @property
+    def irreversible(self):
         """
         Calculates the irreversible hysteretic components :math:`M_{ih}` from the data.
 
@@ -125,11 +125,4 @@ if __name__ == '__main__':
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
-    m = s.add_measurement(mtype='hys', ftype='vsm',
-                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
-    m = s.add_measurement(mtype='hys', ftype='vsm',
-                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
 
-    print(len(m.clsdata))
-    m.remove_from_clsdata(m.mid)
-    print(len(m.clsdata))
