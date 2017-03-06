@@ -130,5 +130,6 @@ if __name__ == '__main__':
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
 
-    import pandas as pd
-    print(pd.concat(m.clsdata))
+    print(len(m.clsdata))
+    m.remove_from_clsdata(m.mid)
+    print(len(m.clsdata))

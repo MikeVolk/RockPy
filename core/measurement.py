@@ -671,6 +671,7 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
+
     def append_to_clsdata(self, data):
         '''
         Method that adds data to the clsdata and _clsdata of the class
@@ -696,6 +697,23 @@ class Measurement(object):
 
         # append data to manipulate data (clsdata)
         self.__class__.clsdata.append(d)
+
+    @classmethod
+    def remove_from_clsdata(cls, mid: int):
+        '''
+        method that removes the data of that measurement from the _clsdata and cls data as well as _sids and _mids
+        lists.
+
+        Parameters
+        ----------
+        mid: int
+             the id of the measurement to be removed from the measurement class
+        '''
+
+        midx = cls._mids.index(mid)
+
+        for lst in [cls._clsdata, cls.clsdata, cls._mids, cls._sids]:
+            del lst[midx]
 
     @property
     def stype_sval_tuples(self):
