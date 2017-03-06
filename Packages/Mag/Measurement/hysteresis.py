@@ -4,6 +4,10 @@ import numpy as np
 
 class Hysteresis(Measurement):
 
+    @property
+    def data(self):
+        out = super().data
+        return out.set_index('B')
     ####################################################################################################################
     """ formatting functions """
 
@@ -77,8 +81,7 @@ class Hysteresis(Measurement):
 
     @property
     def downfield(self):
-
-        print(self.data['B'].max(), self.data['B'].min())
+        raise NotImplementedError
 
     """ CALCULATIONS """
 
@@ -97,56 +100,35 @@ class Hysteresis(Measurement):
            Mih: RockPyData
 
         """
+        raise NotImplementedError
 
-        uf = self.data['up_field']  # .interpolate(field_data)
-        field_data = uf[
-            'field'].v  # sorted(list(set(self.data['down_field']['field'].v) | set(self.data['up_field']['field'].v)))
-
-        df = self.data['down_field'].interpolate(field_data)
-
-        M_ih = deepcopy(uf)
-        M_ih['mag'] = (df['mag'].v + uf['mag'].v) / 2
-
-        if correct_symmetry:
-            M_ih_pos = M_ih.filter(M_ih['field'].v >= 0).interpolate(field_data)
-            M_ih_neg = M_ih.filter(M_ih['field'].v <= 0).interpolate(field_data)
-            mean_data = np.nanmean(np.c_[M_ih_pos['mag'].v, -M_ih_neg['mag'].v][::-1], axis=1)
-            M_ih['mag'] = list(-mean_data).extend(list(mean_data))
-
-        return M_ih.filter(~np.isnan(M_ih['mag'].v))
-
-    def get_reversible(self):
-        """
-        Calculates the reversible hysteretic components :math:`M_{rh}` from the data.
-
-        .. math::
-
-           M_{ih} = (M^+(H) - M^-(H)) / 2
-
-        where :math:`M^+(H)` and :math:`M^-(H)` are the upper and lower branches of the hysteresis loop
-
-        Returns
-        -------
-           Mrh: RockPyData
-
-        """
-        # field_data = sorted(list(set(self.data['down_field']['field'].v) | set(self.data['up_field']['field'].v)))
-        # uf = self.data['up_field'].interpolate(field_data)
-
-        uf = self.data['up_field']  # .interpolate(field_data)
-        field_data = uf[
-            'field'].v  # sorted(list(set(self.data['down_field']['field'].v) | set(self.data['up_field']['field'].v)))
-
-        df = self.data['down_field'].interpolate(field_data)
-        M_rh = deepcopy(uf)
-        M_rh['mag'] = (df['mag'].v - uf['mag'].v) / 2
-        return M_rh.filter(~np.isnan(M_rh['mag'].v))
-
+    def get_reversible(self): # todo implement reversible part
+        # """
+        # Calculates the reversible hysteretic components :math:`M_{rh}` from the data.
+        #
+        # .. math::
+        #
+        #    M_{ih} = (M^+(H) - M^-(H)) / 2
+        #
+        # where :math:`M^+(H)` and :math:`M^-(H)` are the upper and lower branches of the hysteresis loop
+        #
+        # Returns
+        # -------
+        #    Mrh: RockPyData
+        #
+        # """
+        raise NotImplementedError
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
-    print(m.clsdata)
+    m = s.add_measurement(mtype='hys', ftype='vsm',
+                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
+
+    import pandas as pd
+    print(pd.concat(m.clsdata))

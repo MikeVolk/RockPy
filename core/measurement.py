@@ -36,9 +36,11 @@ class Measurement(object):
 
     mcolumns = ['sID', 'mID']
 
-    _clsdata = pd.DataFrame(columns=mcolumns)  # raw data do not manipulate
+    _clsdata = []  # raw data do not manipulate
+    _sids = []
+    _mids = []
 
-    clsdata = pd.DataFrame()
+    clsdata = []
 
     n_created = 0
 
@@ -338,14 +340,12 @@ class Measurement(object):
             when creating a new measurement it automatically calculates all results using the standard prameter set
         """
 
-        self.id = id(self)
+        self.mid = id(self)
 
         self.sobj = sobj
-        self.log().debug('Creating measurement: id:{} idx:{}'.format(self.id, self._idx))
+        self.sid = self.sobj.sid
 
-        # create the dictionary the data will be stored in
-        if mdata is None:
-            mdata = OrderedDict()  # create an ordered dict, so that several measurement 'branches' can be in one measurement (e.g. a heating and cooling run for a thermocurve)
+        self.log().debug('Creating measurement: id:{} idx:{}'.format(self.mid, self._idx))
 
         # add the data to the clsdata
         self.append_to_clsdata(mdata)
@@ -605,13 +605,13 @@ class Measurement(object):
             add = ''
         return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype(), '',
                                                     # self.stype_sval_tuples, #todo fix
-                                                    hex(self.id))
+                                                    hex(self.mid))
 
     def __hash__(self):
-        return hash(self.id)
+        return hash(self.mid)
 
     def __eq__(self, other):
-        return self.id == other.id
+        return self.mid == other.mid
 
     def __add__(self, other):
         """
@@ -685,14 +685,17 @@ class Measurement(object):
         '''
 
         # create new Dataframe with measurement ids (mID) and sample ids (sID)
-        ids = pd.DataFrame(data=np.ones((data.shape[0], 2), dtype=np.int64) * (self.sobj.id, self.id),
+        ids = pd.DataFrame(data=np.ones((data.shape[0], 2), dtype=np.int64) * (self.sid, self.mid),
                            columns=['sID', 'mID'])
         d = pd.concat([ids, data], axis=1)
 
         # append data to raw data (_clsdata)
-        self.__class__._clsdata = pd.concat([self.__class__._clsdata, d])
+        self.__class__._clsdata.append(d)
+        self.__class__._sids.append(self.sid)
+        self.__class__._mids.append(self.mid)
+
         # append data to manipulate data (clsdata)
-        self.__class__.clsdata = pd.concat([self.__class__.clsdata, d])
+        self.__class__.clsdata.append(d)
 
     @property
     def stype_sval_tuples(self):
@@ -739,8 +742,14 @@ class Measurement(object):
 
     @property
     def data(self):
+        # get the index of the sample / measurement
         try:
-            return self.__class__.clsdata[self.__class__.clsdata['mID'] == self.id]
+            midx = self._mids.index(self.mid)
+
+            # assertion should be put, but sid may be more than one item
+            # sidx = self._sids.index(self.sid)
+            # assert midx == sidx, 'index of mid (%i) and sid (%i) do not match' %(sidx, midx)
+            return self.clsdata[midx]
         except KeyError:
             return
 
@@ -797,9 +806,10 @@ class Measurement(object):
 
         example: measurement.delete_step(dtype='th', var='temp', val=500) will delete the th step where the variable (temperature) is 500
         """
-        idx = self._get_idx_dtype_var_val(dtype=dtype, var=var, val=val)
-        self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
-        return self
+        # idx = self._get_idx_dtype_var_val(dtype=dtype, var=var, val=val)
+        # self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
+        # return self
+        raise NotImplementedError
 
     def has_result(self, result):
         """
@@ -814,10 +824,11 @@ class Measurement(object):
            out: bool
               True if it has result, False if not
         """
-        if result in self.result_methods():
-            return True
-        else:
-            return False
+        # if result in self.result_methods():
+        #     return True
+        # else:
+        #     return False
+        raise NotImplementedError
 
     ##################################################################################################################
     ''' SERIES related '''

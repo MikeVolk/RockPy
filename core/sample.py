@@ -86,7 +86,7 @@ class Sample(object):
               if False: NO parameter measurements are created
         """
         # assign a sample id
-        self.id = id(self)
+        self.sid = id(self)
 
         # added sample -> Sample counter +1
         Sample.snum += 1
@@ -99,7 +99,7 @@ class Sample(object):
         # set name
         self.name = name
 
-        self.log().debug('Creating Sample[%i] %s:%i' % (self.id, name, self.snum))
+        self.log().debug('Creating Sample[%i] %s:%i' % (self.sid, name, self.snum))
 
         if not study:
             study = RockPy.core.study.Study
@@ -199,31 +199,6 @@ class Sample(object):
         else:
             sgroups = None
 
-        # create MINFO if no is provided
-        if not minfo:
-            minfo = RockPy.core.file_io.minfo(fpath=fpath,
-                                              sgroups=sgroups,
-                                              samples=self.name,
-                                              mtypes=mtype, ftype=ftype,
-                                              series=series,
-                                              suffix=idx,
-                                              comment=comment,  # unused for now
-                                              read_fpath=False if mtype and ftype else True)
-
-        # """ DATA import from FILE """
-        # # if no mdata or measurement object are passed, create measurement file from the minfo object
-        # if not mdata and not mobj:
-        #     # cycle through all samples
-        #     for import_info in minfo.measurement_infos:
-        #         mtype = import_info.pop('mtype')
-        #         # check if mtype is implemented
-        #         if not mtype in RockPy.implemented_measurements:
-        #             self.log().error('{} not implemented'.format(mtype))
-        #             continue
-        #         # create measurement object
-        #         mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
-        #                                                                 automatic_results=automatic_results,
-        #                                                                 **import_info)
 
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
@@ -235,6 +210,34 @@ class Sample(object):
                 # catch cant create error case where no data is written
                 if mobj.data is None:
                     return
+
+        # create MINFO if not provided
+        if not minfo:
+            minfo = RockPy.core.file_io.minfo(fpath=fpath,
+                                              sgroups=sgroups,
+                                              samples=self.name,
+                                              mtypes=mtype, ftype=ftype,
+                                              series=series,
+                                              suffix=idx,
+                                              comment=comment,  # unused for now
+                                              read_fpath=False if mtype and ftype else True)
+
+        """ DATA import from FILE """
+        # if no mdata or measurement object are passed, create measurement file from the minfo object
+        if not mdata and not mobj:
+            # cycle through all samples
+            for import_info in minfo.measurement_infos:
+                mtype = import_info.pop('mtype')
+                # check if mtype is implemented
+                if not mtype in RockPy.implemented_measurements:
+                    self.log().error('{} not implemented'.format(mtype))
+                    continue
+                # create measurement object
+                mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
+                                                                        automatic_results=automatic_results,
+                                                                        **import_info)
+
+
 
         """ DATA import from MDATA """
         if all([mdata, mtype]):
@@ -250,7 +253,7 @@ class Sample(object):
             if isinstance(mobj, tuple) or ftype == 'from_measurement':
                 if not self.mtype_not_implemented_check(mtype=mtype):
                     return
-                mobj = RockPy3.implemented_measurements[mtype].from_measurement(sobj=self,
+                mobj = RockPy.implemented_measurements[mtype].from_measurement(sobj=self,
                                                                                 mobj=mobj,
                                                                                 automatic_results=automatic_results,
                                                                                 **import_info)

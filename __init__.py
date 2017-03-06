@@ -3,10 +3,6 @@ import logging.config
 import os
 import pkgutil
 
-import matplotlib
-
-matplotlib.use('Qt5agg')
-
 import RockPy
 
 installation_directory = os.path.dirname(RockPy.__file__)
