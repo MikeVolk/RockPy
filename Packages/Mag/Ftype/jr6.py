@@ -13,19 +13,20 @@ class jr6(Ftype):
     def __init__(self, dfile, snames=None, dialect=None, volume=10 ** -5):
         super().__init__(dfile, snames=snames, dialect=dialect)
 
-        xyz = ['x', 'y', 'z']
+        xyz = ['magn_x', 'magn_y', 'magn_z']
 
         data = pd.read_fwf(dfile, widths=(10, 8, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 4, 2),
-                           names=['specimen', 'step', 'x', 'y', 'z', 'exp',
+                           names=['specimen', 'step', 'magn_x', 'magn_y', 'magn_z', 'exp',
                                   'azimuth', 'dip',
                                   'foliation plane azimuth of dip', 'foliation plane dip',
                                   'lineation trend', 'lineation plunge',
                                   'P1', 'P2', 'P3', 'P4', 'Precision of measurement', 'CR-LF'
                                   ], usecols=[0, 1, 2, 3, 4, 5], comment='#')
 
+
         data[xyz] = [v * 10 ** data['exp'][i] for i, v in enumerate(data[xyz].values)]
         data[xyz] *= volume
-        data['m'] = np.linalg.norm(data[xyz], axis=1)
+        data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
         data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in data['step']]
         data['treat_temp'] = data['level'] + 273
         data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in data['step']]
