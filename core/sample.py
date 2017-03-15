@@ -202,7 +202,6 @@ class Sample(object):
         else:
             sgroups = None
 
-
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
         if parameters:
@@ -223,6 +222,7 @@ class Sample(object):
                                               series=series,
                                               suffix=idx,
                                               comment=comment,  # unused for now
+                                              dialect=dialect,
                                               read_fpath=False if mtype and ftype else True)
 
         """ DATA import from FILE """

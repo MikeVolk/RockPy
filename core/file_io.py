@@ -266,7 +266,7 @@ class minfo():
 
     def __init__(self, fpath=None,
                  sgroups=None, samples=None,
-                 mtypes=None, ftype=None, d=None,
+                 mtypes=None, ftype=None, dialect=None,
                  mass=None, height=None, diameter=None,
                  series=None, comment=None, folder=None, suffix=None,
                  read_fpath=True, **kwargs):
@@ -299,7 +299,7 @@ class minfo():
         if 'sample' in kwargs and not samples:
             samples = kwargs.pop('sample')
 
-        self.dialect = d
+        self.dialect = dialect
 
         # create the blocks
         blocks = (self.measurement_block, self.sample_block, self.series_block, self.add_block, self.comment_block)
@@ -362,8 +362,8 @@ class minfo():
             for k, v in kwargs.items():
                 self.additional.append('{}:{}'.format(k, v))
 
-        if d is not None:
-            self.additional.append('d:{}'.format(d))
+        if dialect is not None:
+            self.additional.append('d:{}'.format(dialect))
 
         if suffix:
             self.suffix = suffix
@@ -424,7 +424,9 @@ class minfo():
         idict = {'fpath': self.fpath,
                  'ftype': self.ftype,
                  'idx': self.suffix,
-                 'series': self.series}
+                 'series': self.series,
+                 'dialect':self.dialect}
+
         samples = _to_tuple(self.samples)
         for i in samples:
             for j in self.mtypes:

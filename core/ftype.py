@@ -23,5 +23,6 @@ class Ftype(object):
 
         self.snames = RockPy.core.utils._to_tuple(snames)
         self.dfile = dfile
+        self.dialect = dialect
         self.log().info('IMPORTING << %s , %s >> file: << %s >>' % (self.snames,
                                                                     type(self).__name__, dfile))

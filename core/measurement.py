@@ -201,7 +201,7 @@ class Measurement(object):
     def from_file(cls, sobj,
                   fpath=None, ftype='generic',  # file path and file type
                   idx=None, sample_name=None,
-                  series=None,
+                  series=None, dialect=None,
                   **options
                   ):
         '''
@@ -238,7 +238,7 @@ class Measurement(object):
         # check if measurement is implemented
         if ftype in cls.implemented_ftypes():
             # read the ftype data from the file
-            ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name)
+            ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name, dialect=dialect)
         else:
             cls.log().error('CANNOT IMPORT ')
 
@@ -248,6 +248,7 @@ class Measurement(object):
             mdata = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)
             if mdata is None:
                 cls.log().debug('mdata is empty -- measurement may not be created, check formatter')
+                return
         else:
             cls.log().error('UNKNOWN ftype: << %s >>' % ftype)
             cls.log().error('most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
