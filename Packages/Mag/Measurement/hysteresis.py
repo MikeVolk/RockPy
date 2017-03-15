@@ -50,6 +50,39 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     ''' BRANCHES '''
 
+    @property
+    def fieldspacing(self):
+        """
+        Property returns the mean absolute spacing between field steps
+
+        Returns
+        -------
+            float
+        """
+        return np.mean(np.abs(np.diff(self.data.index)))
+
+    @property
+    def max_field(self):
+        """ returns maximum field of measurement """
+        return np.max(np.abs(self.data.index.values))
+    
+    @property
+    def _regularize_fields(self):
+        '''
+        Method generates new field steps using the mean field spacing and the maximum applied field, with regular steps
+        Returns
+        -------
+            np.array with reugularized field steps
+        '''
+        virgin_fields = np.arange(0, self.max_field + self.fieldspacing, self.fieldspacing)
+        df_fields = np.arange(self.max_field, (self.max_field + self.fieldspacing) * -1, -self.fieldspacing)
+        uf_fields = np.arange(-1*self.max_field, self.max_field + self.fieldspacing, self.fieldspacing)
+        if self.has_virgin:
+            fields = np.concatenate([virgin_fields, df_fields, uf_fields])
+        else:
+            fields = np.concatenate([df_fields, uf_fields])
+        return np.round(fields, 2)
+
     def has_virgin(self):
         '''
         Method to determine weather a virgin/MSi branch was measured.
@@ -127,7 +160,8 @@ class Hysteresis(Measurement):
 
         signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
 
-        return (np.where(signchange!=0)[0] + window/2).astype(int)
+        # return np.where(signchange!=0)[0].astype(int)
+        return (np.where(signchange!=0)[0]).astype(int)
 
     @property
     def downfield(self):
@@ -135,10 +169,27 @@ class Hysteresis(Measurement):
 
         Returns
         -------
-
+            pandas.DataFrame with only downfield data. Window size for selecting the polarity change is 5
         '''
-        sign = self.get_polarity_switch(1)
-        return self.data[sign < 0]
+        #todo how to change window size?
+        idx = self.get_polarity_switch_index(5)
+        if len(idx) > 1:
+            return self.data.iloc[int(idx[0]):int(idx[1])]
+        else:
+            return self.data.iloc[0:int(idx[1])]
+
+    @property
+    def upfield(self):
+        '''
+
+        Returns
+        -------
+            pandas.DataFrame with only upfield data. Window size for selecting the polarity change is 5
+        '''
+        #todo how to change window size?
+        idx = self.get_polarity_switch_index(5)
+        return self.data.iloc[int(idx[-1])-1:]
+
     """ CALCULATIONS """
     @property
     def irreversible(self):
@@ -156,6 +207,7 @@ class Hysteresis(Measurement):
            Mih: RockPyData
 
         """
+
         raise NotImplementedError
 
     def get_reversible(self): # todo implement reversible part
@@ -182,4 +234,12 @@ if __name__ == '__main__':
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
 
-    print(m.clsdata)
+    # import matplotlib.pyplot as plt
+    # plt.plot(m.upfield['M'], color='r')
+    # # plt.gca().twinx().plot(m.get_polarity_switch().values)
+    # plt.plot(m.downfield['M'], color='b')
+    # plt.show()
+
+    # print(m.downfield.shape, m.upfield.shape)
+
+    print(m.data.reindex(m._regularize_fields))#.interpolate(method='akima'))
