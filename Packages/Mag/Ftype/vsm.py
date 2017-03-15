@@ -51,10 +51,10 @@ class Vsm(Ftype):
                        pd.read_fwf(self.dfile, skiprows=data_start - 4,
                                    nrows=3, widths=data_widths).values.T]
 
-        data = pd.read_csv(self.dfile, skiprows=data_start, nrows=int(header[0]['Number of data']),
+        data = pd.read_csv(self.dfile, skiprows=data_start, nrows=int(header[0]['Number of data'])+2,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
-        self.data = data.dropna(axis=0)
+        self.data = data#.dropna(axis=0)
 
 
 if __name__ == '__main__':
