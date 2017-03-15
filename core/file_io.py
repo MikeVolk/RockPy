@@ -266,7 +266,7 @@ class minfo():
 
     def __init__(self, fpath=None,
                  sgroups=None, samples=None,
-                 mtypes=None, ftype=None,
+                 mtypes=None, ftype=None, d=None,
                  mass=None, height=None, diameter=None,
                  series=None, comment=None, folder=None, suffix=None,
                  read_fpath=True, **kwargs):
@@ -298,6 +298,8 @@ class minfo():
             sgroups = kwargs.pop('sgroup')
         if 'sample' in kwargs and not samples:
             samples = kwargs.pop('sample')
+
+        self.dialect = d
 
         # create the blocks
         blocks = (self.measurement_block, self.sample_block, self.series_block, self.add_block, self.comment_block)
@@ -359,6 +361,9 @@ class minfo():
         if kwargs:
             for k, v in kwargs.items():
                 self.additional.append('{}:{}'.format(k, v))
+
+        if d is not None:
+            self.additional.append('d:{}'.format(d))
 
         if suffix:
             self.suffix = suffix
@@ -451,7 +456,7 @@ class minfo():
         sdict = dict(mass=str(self.mass) + self.massunit if self.mass else None,
                      diameter=str(self.diameter) + self.diameterunit if self.diameter else None,
                      height=str(self.height) + self.heightunit if self.height else None,
-                     samplegroup=self.sgroups)
+                     samplegroup=self.sgroups, dialect=self.dialect)
 
         samples = _to_tuple(self.samples)
         for i in samples:
@@ -462,11 +467,11 @@ class minfo():
 if __name__ == '__main__':
     a = minfo('testpath', sgroup='a', samples=('S1', 'S2'), mtypes=('hys', 'dcd'), ftype='vsm', mass='30mg',
               diameter=(30, 'mm'), series=('test', 2, 'A'), comment='post heating',
-              std=13, mad=666)
+              std=13, mad=666, d='tdt')
     print(a.get_sample_block())
-    print(a.fname)
-    for i in a.sample_infos:
-        print(i)
-    b = minfo('FeNi20H_FeNi20-Ha36e060-G01_COE_VSM#11,925[mg]_[]_[]##STD:13,mad:666')
-    print(b.fname)
+    print(list(a.sample_infos)[0])
+    # for i in a.sample_infos:
+    #     print(i)
+    # b = minfo('FeNi20H_FeNi20-Ha36e060-G01_COE_VSM#11,925[mg]_[]_[]##STD:13,mad:666')
+    # print(b.fname)
     # print(list(a.sample_infos)[0])
