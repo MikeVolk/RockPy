@@ -146,12 +146,11 @@ class Sample(object):
     def add_measurement(
             self,
             mtype=None,  # measurement type
-            fpath=None, ftype=None,  # file path and file type
+            fpath=None, ftype=None, dialect=None,# file path and file type
             idx=None,
             mdata=None,
             mobj=None,  # for special import of a measurement instance
             series=None,
-            automatic_results=True,
             comment=None, additional=None,
             minfo=None,
             **kwargs):
@@ -172,6 +171,9 @@ class Sample(object):
         ftype: str
           the filetype from which the file is output
           default: 'generic'
+
+        dialect: str
+          deals with small formatting differences in similar ftype
 
         idx: index of measurement
           default: None, will be the index of the measurement in sample.measurements
@@ -235,7 +237,6 @@ class Sample(object):
                     continue
                 # create measurement object
                 mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self,
-                                                                        automatic_results=automatic_results,
                                                                         **import_info)
 
 
