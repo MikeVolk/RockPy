@@ -36,6 +36,8 @@ class Measurement(object):
 
     mcolumns = ['sID', 'mID']
 
+    _results = None
+
     _clsdata = []  # raw data do not manipulate
     _sids = []
     _mids = []
@@ -133,42 +135,6 @@ class Measurement(object):
             i.replace('format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('format_')
             }
         return measurement_formatters
-
-    @classmethod
-    def calculate_methods(cls):
-        '''
-        This is a dictionary with all calculate methods of the class. The design is:
-            method_name:calculate_method
-
-        Returns
-        -------
-        dict
-            Dictionary with all calculate methods.
-        '''
-
-        return {i.replace('calculate_', ''): getattr(cls, i) for i in dir(cls)
-                if i.startswith('calculate_')
-                if not i.endswith('generic')
-                if not i.endswith('result')
-                if not i.endswith('recipe')
-                if not i.endswith('methods')
-                }
-
-    @classmethod
-    def result_methods(cls):
-        """
-        Searches through all :code:`result_*` methods and creates a dictionary with:
-
-            result_name : result_method
-
-        where result_name is the name without the result_ prefix
-        """
-        return {i[7:]: getattr(cls, i) for i in dir(cls) if i.startswith('result_')
-                if not i.endswith('generic')
-                if not i.endswith('methods')
-                if not i.endswith('recipe')
-                if not i.endswith('category')
-                }
 
     @classmethod
     def correct_methods(cls) -> dict:
@@ -357,6 +323,10 @@ class Measurement(object):
         self.base_measurements = options.get('base_measurements',
                                              False)  # list with all measurements used to generate the mean
 
+        ''' initialize results '''
+        self.results = pd.DataFrame()
+        self.__init_results()
+
         self.ftype = ftype
         self.fpath = fpath
         self.ftype_data = ftype_data
@@ -369,13 +339,6 @@ class Measurement(object):
         self.calibration = None
         self.holder = None
         self._correction = []
-
-        # initialize the calculation_parameter dictionary  and results data
-        self.results = pd.DataFrame(columns=self.result_methods().keys())
-
-        self.calculation_parameter = {res: {} for res in self.result_methods()}
-
-        # self.__initialize()
 
         # normalization
         self.is_normalized = False  # normalized flag for visuals, so its not normalized twice
@@ -392,6 +355,30 @@ class Measurement(object):
         self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
 
         self.__class__.n_created += 1
+
+    def __init_results(self, **parameters):
+        """ creates a list of results for that measurement """
+
+        if self._results is None:
+            self._results = {}
+            for i in dir(self):
+                if i.startswith('result') and not isinstance(i, pd.DataFrame) and not i.endswith('results'):
+                    res = i.replace('result_', '')
+                    method = getattr(self, i)
+                    instance = method(mobj=self, **parameters)
+                    # replace the method with the instance
+                    self._results[res] = instance
+                    self.log().debug('setting method %s with instance %s' % (i, instance))
+                    setattr(self, i, instance)
+
+                    if instance.default is None and len(instance._recipes()) == 1:
+                        method.default = list(instance._recipes().keys())[0]
+                        self.log().debug('default recipe for %s not specified setting to only available << %s >>' % (
+                        instance.name, instance.default))
+
+                    self.log().debug('setting default recipe << %s >> for %s' % (instance.default, instance.name))
+                    instance.recipe = method.default
+        return self._results
 
     def reset_calculation_params(self):
         """
@@ -829,25 +816,6 @@ class Measurement(object):
         # idx = self._get_idx_dtype_var_val(dtype=dtype, var=var, val=val)
         # self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
         # return self
-        raise NotImplementedError
-
-    def has_result(self, result):
-        """
-        Checks if the measurement contains a certain result
-
-        Parameters
-        ----------
-           result: str
-              the result that should be found e.g. result='ms' would give True for 'hys' and 'backfield'
-        Returns
-        -------
-           out: bool
-              True if it has result, False if not
-        """
-        # if result in self.result_methods():
-        #     return True
-        # else:
-        #     return False
         raise NotImplementedError
 
     ##################################################################################################################

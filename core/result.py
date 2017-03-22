@@ -2,9 +2,9 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import logging
+import inspect
 
-
-class result():
+class Result():
     dependencies = None
     default = None
     indirect = False
@@ -48,6 +48,8 @@ class result():
             try:
                 signature = inspect.signature(self._recipes()[recipe]).parameters
                 for p in signature:
+                    if p == 'check':
+                        continue
                     if p == 'self':
                         continue
                     if p in parameters:
@@ -87,6 +89,9 @@ class result():
                 dep_res(recipe=recipe, clist=clist, **parameters)
 
         if calculate:
+            # update parameters with new parameters
+            self.params.update(**parameters)
+
             if recipe not in self._recipes():
                 self.log().error('result %s recipe has no recipe << %s >>:' % (self.name, recipe))
                 for r in self._recipes():
@@ -111,8 +116,15 @@ class result():
             self.log().debug('%s NOT calculated' % self.name)
             return False
 
+
     def _parameters_changed(self, **params):
         self.log().debug('checking if parameters changed')
+
+        # force recalculation for checking results and or forced recalculation with 'recalc'
+        if 'check' in params or 'reclac' in params:
+            self.log().debug('  FORCED RECALCULATION')
+            return True
+
         if all(params[p] == self.params[p] for p in params if p in self.params):
             self.log().debug('  NO parameters changed')
             return False

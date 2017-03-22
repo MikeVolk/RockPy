@@ -1,6 +1,11 @@
 import RockPy
 from RockPy.core.measurement import Measurement
+from RockPy.core.result import Result
 import numpy as np
+from scipy import stats
+from scipy.interpolate import UnivariateSpline
+import matplotlib.pyplot as plt
+
 
 class Hysteresis(Measurement):
 
@@ -174,9 +179,9 @@ class Hysteresis(Measurement):
         #todo how to change window size?
         idx = self.get_polarity_switch_index(5)
         if len(idx) > 1:
-            return self.data.iloc[int(idx[0]):int(idx[1])]
+            return self.data.iloc[int(idx[0]):int(idx[1])].dropna()
         else:
-            return self.data.iloc[0:int(idx[1])]
+            return self.data.iloc[0:int(idx[1])].dropna()
 
     @property
     def upfield(self):
@@ -188,7 +193,7 @@ class Hysteresis(Measurement):
         '''
         #todo how to change window size?
         idx = self.get_polarity_switch_index(5)
-        return self.data.iloc[int(idx[-1])-1:]
+        return self.data.iloc[int(idx[-1])-1:].dropna()
 
     """ CALCULATIONS """
     @property
@@ -227,8 +232,141 @@ class Hysteresis(Measurement):
         # """
         raise NotImplementedError
 
+    """ RESULTS """
+    ####################################################################################################################
+    """ BC """
+
+    class result_bc(Result):
+        default = 'linear'
+
+        def recipe_linear(self, npoints=4, check=False, **unused_params):
+            """
+            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield and down field slope.
+
+            Parameters
+            ----------
+                field_limit: float
+                    default: 0, 0mT
+                    the maximum/ minimum fields used for the linear regression
+
+            Note
+            ----
+                Uses scipy.linregress for calculation
+            """
+            # initialize result
+            result = []
+
+            m = self.mobj
+
+            # get magnetization limits for a calculation using the n points closest to 0 fro each direction
+            df_moment = sorted(abs(m.downfield['M'].values))[npoints - 1]
+            uf_moment = sorted(abs(m.upfield['M'].values))[npoints - 1]
+
+            # filter data for fields higher than field_limit
+            down_f = m.downfield[m.downfield['M'].abs() <= df_moment]
+            up_f = m.upfield[m.upfield['M'].abs() <= uf_moment]
+
+            # calculate bc for both measurement directions
+            for i, dir in enumerate([down_f, up_f]):
+
+                # calculate the linear regression
+                res = stats.linregress(dir['M'],dir.index)
+                result.append(res[1])
+
+                # check plot
+                if check:
+                    slope, intercept, r_value, p_value, std_err = stats.linregress(dir.index, dir['M'])
+                    x = dir.index
+                    y_new = slope * x + intercept
+                    l, = plt.plot(x, dir['M'], '.', label='data')
+                    plt.plot(x, y_new, '--', color=l.get_color(), label='fit')
+
+            # check plot
+            if check:
+                plt.plot(result, [0, 0], 'ko', mfc='w', label='Bc (branch)')
+                plt.plot([-np.nanmean(np.abs(result)), np.nanmean(np.abs(result))], [0, 0], 'xk', label='mean Bc')
+                plt.grid()
+                plt.xlabel('Field')
+                plt.ylabel('Moment')
+                plt.title('Bc - check')
+                plt.legend()
+                plt.text(0.8,0.1, '$B_c = $ %.1f mT'%(np.nanmean(np.abs(result))*1000),
+                         transform=plt.gca().transAxes,
+                         bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
+
+                plt.tight_layout()
+                plt.show()
+
+            result = np.abs(result)
+            self.mobj.results.loc[0, self.name] = np.nanmean(result)
+
+        def recipe_nonlinear(self, npoints=8, check=False, **unused_params):
+            """
+            Calculates the coercivity using a spline interpolation between the points crossing
+            the x axis for upfield and down field slope.
+
+            Parameters
+            ----------
+                npoints: int
+                    default: 4
+                    number of points used for fit
+
+            Note
+            ----
+                Uses scipy Univariate spline for interpolation
+            """
+            # retireve measurement instance
+            m = self.mobj
+
+            # initialize result
+            result = []
+
+            # the field_limit has to be set higher than the lowest field
+            # if not the field_limit will be chosen to be 2 points for uf and df separately
+            if npoints < 2:
+                self.log().warning('NPOINTS INCOMPATIBLE minimum 2 required' % (npoints))
+                self.log().warning('\t\t setting NPOINTS - << 2 >> ')
+                npoints = 2
+                self.params['npoints'] = npoints
+
+            # get magnetization limits for a calculation using the n points closest to 0 fro each direction
+            df_moment = sorted(abs(m.downfield['M'].values))[npoints - 1]
+            uf_moment = sorted(abs(m.upfield['M'].values))[npoints - 1]
+
+            # filter data for fields higher than field_limit
+            down_f = m.downfield[m.downfield['M'].abs() <= df_moment]
+            up_f = m.upfield[m.upfield['M'].abs() <= uf_moment]
+
+            for i, dir in enumerate([down_f, up_f]):
+                spl = UnivariateSpline(dir['M'].values, dir.index)
+                bc = spl(0)
+                result.append(bc)
+
+                if check:
+                    spl = UnivariateSpline(dir.index, dir['M'].values)
+                    x_new = np.linspace(min(dir.index), max(dir.index), 100)
+                    l, = plt.plot(x_new, spl(x_new), '--', label='fit')
+                    plt.plot(dir.index, dir['M'], '.', label='data', color=l.get_color())
+
+            if check:
+                plt.plot(result, [0,0], 'ko', mfc='w', label='Bc(branch)')
+                plt.plot([-np.nanmean(np.abs(result)), np.nanmean(np.abs(result))], [0, 0], 'xk', label='mean Bc')
+                plt.grid()
+                plt.xlabel('Field')
+                plt.ylabel('Moment')
+                plt.title('Bc [%s]- check'%'nonlinear')
+                plt.text(0.8,0.1, '$B_c = $ %.1f mT'%(np.nanmean(np.abs(result))*1000),
+                         transform=plt.gca().transAxes,
+                         bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
+
+                plt.legend()
+                plt.show()
+
+            result = np.abs(result)
+            self.mobj.results.loc[0, self.name] = np.nanmean(result)
+
+
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
 
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
@@ -242,4 +380,10 @@ if __name__ == '__main__':
 
     # print(m.downfield.shape, m.upfield.shape)
 
-    print(m.data.reindex(m._regularize_fields))#.interpolate(method='akima'))
+    # for r in m._results:
+    #     print(r, m._results[r]._recipes())
+
+    print(m.result_bc(npoints=6, check=True))
+    print(m.result_bc(npoints=15, check=True))
+    print(m.result_bc(recipe='nonlinear', npoints=10, check=True))
+
