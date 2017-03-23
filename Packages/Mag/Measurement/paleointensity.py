@@ -107,7 +107,7 @@ class Paleointensity (measurement.Measurement):
         """
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-I'].set_index ('ti')
-        return d\
+        return d
 
     @property
     def ac(self):
@@ -120,7 +120,7 @@ class Paleointensity (measurement.Measurement):
         """
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-Z'].set_index ('ti')
-        return d\
+        return d
 
     @property
     def tr(self):

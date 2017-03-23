@@ -69,7 +69,7 @@ class Hysteresis(Measurement):
     @property
     def max_field(self):
         """ returns maximum field of measurement """
-        return np.max(np.abs(self.data.index.values))
+        return np.nanmax(np.abs(self.data.index.values))
     
     @property
     def _regularize_fields(self):
@@ -298,7 +298,7 @@ class Hysteresis(Measurement):
                 plt.show()
 
             result = np.abs(result)
-            self.mobj.results.loc[0, self.name] = np.nanmean(result)
+            return np.nanmean(result)
 
         def recipe_nonlinear(self, npoints=8, check=False, **unused_params):
             """
@@ -363,7 +363,169 @@ class Hysteresis(Measurement):
                 plt.show()
 
             result = np.abs(result)
-            self.mobj.results.loc[0, self.name] = np.nanmean(result)
+            return np.nanmean(result)
+
+    ####################################################################################################################
+    """ MRS """
+
+    class result_mrs(Result):
+        def recipe_default(self, npoints=4, check=False, **unused_params):
+
+            # set measurement instance
+            m = self.mobj
+            # initialize result
+            result = []
+
+            # get magnetization limits for a calculation using the n points closest to 0 fro each direction
+            df_moment = sorted(abs(m.downfield['M'].values))[npoints - 1]
+            uf_moment = sorted(abs(m.upfield['M'].values))[npoints - 1]
+
+            # filter data for fields higher than field_limit
+            down_f = m.downfield[m.downfield['M'].abs() <= df_moment]
+            up_f = m.upfield[m.upfield['M'].abs() <= uf_moment]
+
+            for i, dir in enumerate([down_f, up_f]):
+                slope, intercept, r_value, p_value, std_err = stats.linregress(dir.index, dir['M'])
+                result.append(intercept)
+
+                # check plot
+                if check:
+                    x = np.linspace(dir.index.min(), dir.index.max(), 100)
+                    y_new = slope * x + intercept
+                    l, = plt.plot(dir.index, dir['M'], '.')
+                    plt.plot(x, y_new, '--', color=l.get_color())
+
+            # check plot
+            if check:
+                plt.plot([0, 0], result, 'ko', mfc='w', label='$M_{rs}$ (branch)')
+                plt.plot([0, 0], [-np.nanmean(np.abs(result)), np.nanmean(np.abs(result))], 'xk', label='mean $M_{rs}$')
+                plt.grid()
+                plt.xlabel('Field')
+                plt.ylabel('Moment')
+                plt.title('$M_{rs}$ - check')
+                plt.legend()
+                plt.text(0.8,0.1, '$M_{rs} = $ %.1f '%(np.nanmean(np.abs(result))),
+                         transform=plt.gca().transAxes,
+                         bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
+
+                plt.tight_layout()
+                plt.show()
+
+            result = np.abs(result)
+            return np.nanmean(result)
+
+    ####################################################################################################################
+    """ MS """
+
+    class result_ms(Result):
+        # def get_df_uf_plus_minus(self, saturation_percent, ommit_last_n):
+        #     """
+        #     Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters the last :code:`ommit_last_n` and splits into pos and negative components
+        #     """
+        #     # transform from percent value
+        #     saturation_percent /= 100
+        #
+        #     # filter ommitted points
+        #     df = self.data['down_field'].filter_idx(
+        #         [i for i in range(len(self.data['down_field']['field'].v))
+        #          if ommit_last_n - 1 < i < len(self.data['down_field']['field'].v) - ommit_last_n])
+        #     uf = self.data['up_field'].filter_idx(
+        #         [i for i in range(len(self.data['up_field']['field'].v))
+        #          if ommit_last_n - 1 < i < len(self.data['up_field']['field'].v) - ommit_last_n])
+        #
+        #     # filter for field limits
+        #     df_plus = df.filter(df['field'].v >= saturation_percent * self.max_field)
+        #     df_minus = df.filter(df['field'].v >= saturation_percent * self.max_field)
+        #
+        #     uf_plus = uf.filter(uf['field'].v >= saturation_percent * self.max_field)
+        #     uf_minus = uf.filter(uf['field'].v >= saturation_percent * self.max_field)
+        #
+        #     return df_plus, df_minus, uf_plus, uf_minus
+        #
+        # @calculate
+        # def calculate_ms_APP2SAT(self, saturation_percent=75., ommit_last_n=0, check=False, **non_method_parameters):
+        #     """
+        #     Calculates the high field susceptibility using approach to saturation
+        #     :return:
+        #     """
+        #
+        #     ms, slope, alpha = self.calc_approach2sat(saturation_percent=saturation_percent,
+        #                                               ommit_last_n=ommit_last_n)
+        #
+        #     self.results['ms'] = [[[np.mean(ms), np.std(ms)]]]
+        #     self.results['hf_sus'] = [[[np.mean(slope), np.std(slope)]]]
+        #     self.results = self.results.append_columns(column_names=['alpha'],
+        #                                                data=[[[np.mean(slope), np.std(slope)]]])
+        #
+        def recipe_simple(self, saturation_percent=75., ommit_last_n=0, check=False, **unused_params):
+            """
+            Calculates High-Field susceptibility using a simple linear regression on all branches
+
+            Parameters
+            ----------
+                saturation_percent: float
+                    default: 75.0
+                    Defines the field limit in percent of max(field) at which saturation is assumed.
+                     e.g. max field : 1T -> saturation asumed at 750mT
+                ommit_last_n: int, pos
+                    last n points of each branch are not used for the calculation
+
+            Calculation
+            -----------
+                calculates the slope using SciPy.linregress for each branch at positive and negative fields. Giving four values for the slope. The result is the mean for all four values, and the error is the standard deviation
+
+            """
+
+            # initialize result
+            hf_sus_result = []
+            ms_result = []
+
+            if saturation_percent >= 100:
+                self.log().warning('SATURATION > 100%! setting to default value (75%)')
+                saturation_percent = 75.0
+
+            # transform from percent value
+            saturation_percent /= 100
+
+            # filter ommitted points
+            if ommit_last_n >0:
+                df = self.mobj.downfield.iloc[ommit_last_n:-ommit_last_n]
+                uf = self.mobj.upfield.iloc[ommit_last_n:-ommit_last_n]
+            else:
+                df = self.mobj.downfield
+                uf = self.mobj.upfield
+
+            # filter for field limits
+            print(self.mobj.max_field)
+            df_plus = df[df.index >= saturation_percent * self.mobj.max_field]
+            df_minus = df[df.index <= saturation_percent * self.mobj.max_field]
+
+            print(df_plus)
+            print(df_minus)
+            # uf_plus = uf.filter(uf['field'].v >= saturation_percent * self.max_field)
+            # uf_minus = uf.filter(uf['field'].v >= saturation_percent * self.max_field)
+        #
+        #     for i, dir in enumerate([df_plus, df_minus, uf_plus, uf_minus]):
+        #         slope, intercept, r_value, p_value, std_err = stats.linregress(dir['field'].v, dir['mag'].v)
+        #         hf_sus_result.append(abs(slope))
+        #         ms_result.append(abs(intercept))
+        #         # check plot
+        #         if check:
+        #             x = np.linspace(0, self.max_field)
+        #             y_new = slope * x + intercept
+        #             plt.plot(abs(df['field'].v), abs(df['mag'].v), '-', color=Hysteresis.colors[i])
+        #             plt.plot(x, y_new, '--', color=Hysteresis.colors[i])
+        #
+        #     # check plot
+        #     if check:
+        #         plt.plot([0, 0], [-np.nanmean(hf_sus_result), np.nanmean(hf_sus_result)], 'xk')
+        #         plt.grid()
+        #         plt.show()
+        #
+        #     self.results['hf_sus'] = [[(np.nanmean(hf_sus_result), np.nanstd(hf_sus_result))]]
+        #     self.results['ms'] = [[(np.nanmean(ms_result), np.nanstd(ms_result))]]
+
+
 
 
 if __name__ == '__main__':
@@ -382,8 +544,10 @@ if __name__ == '__main__':
 
     # for r in m._results:
     #     print(r, m._results[r]._recipes())
-
-    print(m.result_bc(npoints=6, check=True))
-    print(m.result_bc(npoints=15, check=True))
-    print(m.result_bc(recipe='nonlinear', npoints=10, check=True))
+    # m.calc_all(check=True)
+    # print(m.result_bc(npoints=6, check=True))
+    # print(m.result_bc(npoints=15, check=True))
+    # print(m.result_bc(recipe='nonlinear', npoints=10, check=True))
+    # print(m.result_ms(ommit_last_n=4))
+    # print(m.results)
 

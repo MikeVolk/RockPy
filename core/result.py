@@ -73,7 +73,7 @@ class Result():
         calculate = False
 
         if not self.indirect:
-            if not self._is_calculated():
+            if not self._is_calculated:
                 calculate = True
             if not calculate and self._parameters_changed(**parameters):
                 calculate = True
@@ -99,22 +99,26 @@ class Result():
             else:
                 self.log().debug('calling result %s recipe %s' % (self.name, recipe))
                 self.log().debug('\t%s' % self._recipes()[recipe])
-                self._recipes()[recipe](self, **parameters)
+                res = self._recipes()[recipe](self, **parameters)
 
         if self._subjects:
             for subj_res in self._subjects:
                 self.log().debug('calling subject << %s >> of result %s' % (subj_res.name, self.name))
                 subj_res(recipe=recipe, clist=clist, **parameters)
-        return self.mobj.results.loc[0, self.name]
 
+        self.mobj.sobj.results.loc[self.mobj.mid, self.name] = res
+
+        return res
+
+    @property
     def _is_calculated(self):
         self.log().debug('checking if %s calculated' % self.name)
-        if self.name in self.mobj.results:
-            self.log().debug('%s IS calculated' % self.name)
-            return True
-        else:
+        if self.mobj.results is None or self.name in self.mobj.results:
             self.log().debug('%s NOT calculated' % self.name)
             return False
+        else:
+            self.log().debug('%s IS calculated' % self.name)
+            return True
 
 
     def _parameters_changed(self, **params):

@@ -34,9 +34,9 @@ class Measurement(object):
 
     """
 
-    mcolumns = ['sID', 'mID']
 
     _results = None
+
 
     _clsdata = []  # raw data do not manipulate
     _sids = []
@@ -324,7 +324,6 @@ class Measurement(object):
                                              False)  # list with all measurements used to generate the mean
 
         ''' initialize results '''
-        self.results = pd.DataFrame()
         self.__init_results()
 
         self.ftype = ftype
@@ -817,6 +816,29 @@ class Measurement(object):
         # self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
         # return self
         raise NotImplementedError
+
+    ##################################################################################################################
+    ''' RESULT related '''
+
+    @property
+    def results(self):
+        '''
+        Property that returns the
+
+        Returns
+        -------
+
+        '''
+        try:
+            return self.sobj.results.loc[self.mid, :]
+        except KeyError:
+            return
+
+    def calc_all(self, **parameters):
+        for resname, res in self._results.items():
+            self.log().debug("calculating %s" % resname)
+            r = res(**parameters)
+
 
     ##################################################################################################################
     ''' SERIES related '''

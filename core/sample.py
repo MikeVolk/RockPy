@@ -7,12 +7,24 @@ from functools import partial
 import RockPy
 import RockPy.core.study
 import RockPy.core.file_io
+import pandas as pd
 
 log = logging.getLogger(__name__)
 
 
 class Sample(object):
     snum = 0
+
+    # create the results Dataframe
+    mcolumns = ['sID', 'mID']
+
+    _results = pd.DataFrame(columns=mcolumns)
+    _results = _results.set_index('mID', drop=True)
+
+    @property
+    def results(self):
+        self._results['sID']=self.sid
+        return self._results
 
     @classmethod
     def log(cls):
