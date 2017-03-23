@@ -37,7 +37,6 @@ class Result():
 
         if self.name in clist:
             self.log().debug('%s is already calculated in current run' % self.name)
-            print(self.mobj.results.columns)
             return
         else:
             clist.append(self.name)
@@ -106,9 +105,7 @@ class Result():
                 self.log().debug('calling subject << %s >> of result %s' % (subj_res.name, self.name))
                 subj_res(recipe=recipe, clist=clist, **parameters)
 
-        self.mobj.sobj.results.loc[self.mobj.mid, self.name] = res
-
-        return res
+        return  self.mobj.sobj.results.loc[self.mobj.mid, self.name]
 
     @property
     def _is_calculated(self):
