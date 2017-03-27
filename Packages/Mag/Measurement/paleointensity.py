@@ -19,7 +19,7 @@ import datetime
 from RockPy.core import measurement
 
 
-class Paleointensity (measurement.Measurement):
+class Paleointensity(measurement.Measurement):
     # def __init__(self, sobj,
     #              fpath=None, ftype=None, mdata=None,
     #              ftype_data = None,
@@ -34,6 +34,11 @@ class Paleointensity (measurement.Measurement):
     #                      idx=idx,
     #                      **options
     #                      )
+
+    @classmethod
+    def simulate(cls, sobj, m_idx=0, color=None, noise=None, ):
+        pass
+
     @staticmethod
     def format_jr6(ftype_data, sobj_name=None):
         """
@@ -45,18 +50,18 @@ class Paleointensity (measurement.Measurement):
 
         # check if sample name in file
         if sobj_name not in ftype_data.data['specimen'].values:
-            Paleointensity.log ().error ('CANNOT IMPORT -- sobj_name not in ftype_data specimen list.')
-            Paleointensity.log ().error ('wrong sample name?')
+            Paleointensity.log().error('CANNOT IMPORT -- sobj_name not in ftype_data specimen list.')
+            Paleointensity.log().error('wrong sample name?')
             return
 
         # read ftype
-        data = ftype_data.data[ftype_data.data['specimen'] == sobj_name].reset_index (drop=True)
+        data = ftype_data.data[ftype_data.data['specimen'] == sobj_name].reset_index(drop=True)
 
         # rename the columns from magic format -> RockPy internal names
-        print (data)
-        data = data.rename (
+        print(data)
+        data = data.rename(
             columns={'magn_x': 'x', 'magn_y': 'y', 'magn_z': 'z', 'magn_moment': 'm', 'treat_temp': 'ti'})
-        print (data)
+        print(data)
 
         # add tj column:
         # tj := temperature prior to ti step e.g. temperature before ck step
@@ -76,7 +81,7 @@ class Paleointensity (measurement.Measurement):
         -------
             pandas.DataFrame
         """
-        d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index ('ti')
+        d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
         return d
 
     @property
@@ -93,7 +98,7 @@ class Paleointensity (measurement.Measurement):
         -------
             pandas.DataFrame
         """
-        d = self.data[(self.data['LT_code'] == 'LT-T-I') | (self.data['LT_code'] == 'LT-NO')].set_index ('ti')
+        d = self.data[(self.data['LT_code'] == 'LT-T-I') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
         return d
 
     @property
@@ -106,7 +111,7 @@ class Paleointensity (measurement.Measurement):
             pandas.DataFrame
         """
 
-        d = self.data[self.data['LT_code'] == 'LT-PTRM-I'].set_index ('ti')
+        d = self.data[self.data['LT_code'] == 'LT-PTRM-I'].set_index('ti')
         return d
 
     @property
@@ -119,7 +124,7 @@ class Paleointensity (measurement.Measurement):
             pandas.DataFrame
         """
 
-        d = self.data[self.data['LT_code'] == 'LT-PTRM-Z'].set_index ('ti')
+        d = self.data[self.data['LT_code'] == 'LT-PTRM-Z'].set_index('ti')
         return d
 
     @property
@@ -132,7 +137,7 @@ class Paleointensity (measurement.Measurement):
             pandas.DataFrame
         """
 
-        d = self.data[self.data['LT_code'] == 'LT-PTRM-MD'].set_index ('ti')
+        d = self.data[self.data['LT_code'] == 'LT-PTRM-MD'].set_index('ti')
         return d
 
     @property
@@ -149,7 +154,7 @@ class Paleointensity (measurement.Measurement):
         d = self.pt.copy()
         d.loc[:, ('x', 'y', 'z')] -= self.th.loc[:, ('x', 'y', 'z')]
         d['LT_code'] = 'PTRM'
-        d['m'] = np.linalg.norm (d[['x', 'y', 'z']], axis=1)
+        d['m'] = np.linalg.norm(d[['x', 'y', 'z']], axis=1)
 
         return d
 
@@ -157,9 +162,9 @@ class Paleointensity (measurement.Measurement):
 
 
 if __name__ == '__main__':
-    s = RockPy.Sample ('61')
-    m = s.add_measurement (mtype='paleointensity',
-                           ftype='jr6',
-                           fpath=os.path.join (RockPy.test_data_path, 'TT-paleointensity.jr6'),
-                           dialect='tdt')
-    print (m.tr)
+    s = RockPy.Sample('61')
+    m = s.add_measurement(mtype='paleointensity',
+                          ftype='jr6',
+                          fpath=os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'),
+                          dialect='tdt')
+    print(m.tr)
