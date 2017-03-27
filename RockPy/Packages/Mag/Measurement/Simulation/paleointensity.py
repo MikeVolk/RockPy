@@ -14,10 +14,6 @@ import tabulate
 
 import logging
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s.%(funcName)s >> %(message)s', level=logging.DEBUG,
-                    datefmt='%I:%M:%S')
-
-
 class Fabian2001(object):
     presets = {'Fabian4a': dict(a11=0.01, a12=0, a13=0.5, a1t=0.5,
                                 a21=0.01, a22=0, a23=0.5, a2t=0.5,
@@ -246,6 +242,10 @@ class Fabian2001(object):
         # calculate gamma function for each blocking temperature
         self.gammas = [self.gamma(tau_b) for tau_b in self.tau_b]
 
+        # calculate lambda functions for each blocking temperature
+        self.l1 = self.lambda1(self.tau_b)
+        self.l2 = self.lambda2(self.tau_b)
+
         # initiate dataframe for characteristic function
         self.chi = self.get_chi_grid()
 
@@ -277,27 +277,25 @@ class Fabian2001(object):
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
+        x = np.array(t)
+
         return (t - 20) / (self.tc - 20)
 
     def beta(self, tau, call=''):
-        if self.debug:
-            print('\t\t:%s:calculating beta(%f) [%f,%f,%f,%f]' % (call, tau, self.b1, self.b2, self.bt, self.b3))
         return self.b1 + self.b2 * self.cauchy(tau - self.bt, self.b3)
 
     def lambda1(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub > tb
         '''
-        if self.debug:
-            print('\t\t:%s:calculating lambda1(%f) [%f,%f,%f,%f]' % (call, tau, self.a11, self.a12, self.a1t, self.a13))
+        tau = np.array(tau)
         return self.a11 + self.a12 * self.cauchy(tau - self.a1t, self.a13)
 
     def lambda2(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub < tb
         '''
-        if self.debug:
-            print('\t\t:%s:calculating lambda2(%f) [%f,%f,%f,%f]' % (call, tau, self.a21, self.a22, self.a2t, self.a23))
+        tau = np.array(tau)
         return self.a21 + self.a22 * self.cauchy(tau - self.a2t, self.a23)
 
     @classmethod
@@ -308,9 +306,6 @@ class Fabian2001(object):
         """
         normalizes the integral of chi(tau_b, )
         """
-        if self.debug:
-            print('\tcalculating gamma(%f)' % tau_b)
-
         beta = self.beta(tau_b, call='gamma')
 
         lambda1 = self.lambda1(tau_b, call='gamma')
@@ -324,9 +319,14 @@ class Fabian2001(object):
 
         return beta * 1 / (int1 + int2)  # as described by Fabian2001
 
-    def chi(self, tau_b, tau_ub):
-        if self.debug:
-            print('\t\tcalculating Chi(%.2f,%.2f):' % (tau_b, tau_ub))
+    def get_chi(self, tau_b, tau_ub):
+        """
+        Calculates the unblocking distribution for a given blocking temperature
+        Returns
+        -------
+            ndarray
+        """
+        # tau_ub = np.array(tau_ub)
 
         gamma = self.gammas[self.tau_b.index(tau_b)]
 
@@ -395,7 +395,7 @@ class Fabian2001(object):
     def get_chi_grid(self):
         """
         Method that calculates a matrix of chi values.
-        For each tb there is a distribution of tub, chi calculates them all
+        For each tb there is a distribution of tub, get_chi_grid calculates them for a given tb
         
         Returns
         -------
@@ -405,7 +405,7 @@ class Fabian2001(object):
         for row, tb in enumerate(self.tau_b):
             gamma = self.gamma(tb)
             for column, tub in enumerate(self.tau_ub):
-                data[column, row] = self.chi(tb, tub)
+                data[column, row] = self.get_chi(tb, tub)
         return pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
 
     def get_moment_old(self, tau_i, hlab=1, pressure_demag=False):
@@ -466,3 +466,8 @@ class Fabian2001(object):
                         prev = t
 
         return data.T
+
+if __name__ == '__main__':
+    f = Fabian2001()
+
+    print(f.chi)
