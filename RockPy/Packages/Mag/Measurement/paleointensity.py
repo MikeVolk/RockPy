@@ -1,5 +1,6 @@
 __author__ = 'volk'
 import RockPy
+from RockPy.core.result import Result
 
 from copy import deepcopy
 from math import tanh, cosh
@@ -15,6 +16,8 @@ from scipy.interpolate import UnivariateSpline
 from lmfit import minimize, Parameters, report_fit
 import matplotlib.dates
 import datetime
+
+from RockPy.Packages.Mag.Measurement.Simulation import paleointensity
 
 from RockPy.core import measurement
 
@@ -36,8 +39,13 @@ class Paleointensity(measurement.Measurement):
     #                      )
 
     @classmethod
-    def simulate(cls, sobj, m_idx=0, color=None, noise=None, ):
-        pass
+    def from_simulation(cls, sobj, idx=0, **simparams):
+
+        method = simparams.pop('method', 'fabian')
+
+        if method == 'fabian':
+            simobj = paleointensity.Fabian2001(**simparams)
+        return cls(sobj=sobj, mdata=simobj.get_data(), ftype_data=simobj)
 
     @staticmethod
     def format_jr6(ftype_data, sobj_name=None):
@@ -73,7 +81,7 @@ class Paleointensity(measurement.Measurement):
         return data
 
     @property
-    def th(self):
+    def demag(self):
         """
         Thermal demagnetization steps of the experiments, also giving NRM step
 
@@ -81,11 +89,13 @@ class Paleointensity(measurement.Measurement):
         -------
             pandas.DataFrame
         """
-        d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
+        # depending if NRM is added....
+        # d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
+        d = self.data[(self.data['LT_code'] == 'LT-T-Z')].set_index('ti')
         return d
 
     @property
-    def pt(self):
+    def acqu(self):
         """
         Acquisition of partial Thermal remanent magnetization steps of the experiments, also giving NRM step.
 
@@ -151,8 +161,8 @@ class Paleointensity(measurement.Measurement):
             pandas.DataFrame
         """
 
-        d = self.pt.copy()
-        d.loc[:, ('x', 'y', 'z')] -= self.th.loc[:, ('x', 'y', 'z')]
+        d = self.acqu.copy()
+        d.loc[:, ('x', 'y', 'z')] -= self.demag.loc[:, ('x', 'y', 'z')]
         d['LT_code'] = 'PTRM'
         d['m'] = np.linalg.norm(d[['x', 'y', 'z']], axis=1)
 
@@ -160,11 +170,57 @@ class Paleointensity(measurement.Measurement):
 
         ####################################################################################################################
 
+    ####################################################################################################################
+    """ RESULTS CALCULATED USING CALCULATE_SLOPE  METHODS """
+
+    class result_slope(Result):
+
+        def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
+            """
+            calculates the least squares slope for the specified temperature interval
+
+            :param parameter:
+
+            """
+
+            # get equal temperature steps for both demagnetization and acquisition measurements
+            equal_steps = list(set(self.mobj.demag['level'].values) & set(self.mobj.acqu['level'].values))
+
+            # Filter data for the equal steps and filter steps outside of tmin-tmax range
+            # True if step between var_min, var_max
+            equal_steps = sorted(i for i in equal_steps if vmin <= i <= vmax)
+
+            # filtering for equal variables
+            demag_data = self.mobj.demag.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
+            acqu_data = self.mobj.acqu.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
+
+            # data = RockPyData(['demagnetization', 'acquisition'])
+            #
+            # # setting the data
+            # data['demagnetization'] = demag_data[component].v
+            # data['acquisition'] = acq_data[component].v
+            #
+            # try:
+            #     slope, sigma, y_int, x_int = data.lin_regress('acquisition', 'demagnetization')
+            #     self.results['slope'] = [[[slope, sigma]]]
+            #     self.results['sigma'] = sigma
+            #     self.results['y_int'] = y_int
+            #     self.results['x_int'] = x_int
+            #     self.results['n'] = len(demag_data[component].v)
+            # except TypeError:
+            #     self.log.error('No data found')
+            self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.nan
+
+
 
 if __name__ == '__main__':
     s = RockPy.Sample('61')
-    m = s.add_measurement(mtype='paleointensity',
-                          ftype='jr6',
-                          fpath=os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'),
-                          dialect='tdt')
-    print(m.tr)
+    # m = s.add_measurement(mtype='paleointensity',
+    #                       ftype='jr6',
+    #                       fpath=os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'),
+    #                       dialect='tdt')
+    #
+    # print(m.data)
+
+    m = s.add_simulation(mtype='pint')
+    print(m.result_slope())

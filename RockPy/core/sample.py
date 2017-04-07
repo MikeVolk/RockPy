@@ -155,6 +155,38 @@ class Sample(object):
             if height:
                 self.add_measurement(height=height)
 
+    def add_simulation(self, mtype, idx=None, **sim_param):
+        """
+        add simulated measurements
+
+        Parameters
+        ----------
+           mtype: str - the type of simulated measurement
+           idx:
+           sim_param: dict of parameters to specify simulation
+        :return: RockPy.measurement object
+        """
+        mtype = mtype.lower()
+        if mtype in RockPy.abbrev_to_classname:
+            mtype = RockPy.abbrev_to_classname[mtype]
+
+        if idx is None:
+            idx = len(self.measurements)  # if there is no measurement index
+
+        if mtype in RockPy.implemented_measurements:
+
+            mobj = RockPy.implemented_measurements[mtype].from_simulation(sobj=self, idx=idx, **sim_param)
+
+            if mobj:
+                self.add_measurement(mtype=mtype, ftype='simulation', mobj=mobj, series=sim_param.get('series', None),
+                                     warnings=False)
+                return mobj
+            else:
+                self.log().info('CANT ADD simulated measurement << %s >>' % mtype)
+                return None
+        else:
+            self.log().error(' << %s >> not implemented, yet' % mtype)
+
     def add_measurement(
             self,
             mtype=None,  # measurement type

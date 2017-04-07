@@ -6,6 +6,7 @@ import os
 
 from contextlib import contextmanager
 from math import degrees, radians, atan2, asin, cos, sin, tan
+from numba import jit
 
 convert = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
@@ -87,7 +88,7 @@ def tuple2list_of_tuples(item) -> list:
 
     return item
 
-
+@jit
 def _to_tuple(oneormoreitems):
     """
     convert argument to tuple of elements

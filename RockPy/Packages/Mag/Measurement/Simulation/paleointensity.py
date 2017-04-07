@@ -2,9 +2,11 @@
 import pandas as pd
 import numpy as np
 import scipy as sp
+from numba import jit
 
 import os
 import matplotlib.pylab as plt
+import RockPy.Packages.Mag.Measurement.Simulation.utils as SimUtils
 
 from pylatex import Document, Section, Subsection, Tabular, Math, TikZ, Axis, \
     Plot, Figure, Matrix, Package
@@ -13,6 +15,7 @@ from copy import deepcopy
 import tabulate
 
 import logging
+
 
 class Fabian2001(object):
     presets = {'Fabian4a': dict(a11=0.01, a12=0, a13=0.5, a1t=0.5,
@@ -60,7 +63,7 @@ class Fabian2001(object):
     @staticmethod
     def get_steps(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
         """
-        Creates a pandas DataFrame and a list of measurement steps.
+        Wrapper function that creates a pandas DataFrame and a list of measurement steps.
 
         If filepath is provided a latex document is created
 
@@ -71,65 +74,26 @@ class Fabian2001(object):
             'TR': 'LT-PTRM-MD'
             'AC': 'LT-PTRM-Z'
             'NRM': 'LT-NO'
+            
+        Notes
+        -----
+            calls RockPy.Packages.Mag.Measurement.Simulation.utils.ThellierStepMaker
         """
-
-        if isinstance(steps, int):
-            steps = np.linspace(20, tmax, steps)[1:]
-
-        steps = sorted(list(steps))
-
-        out = pd.DataFrame(columns=('LT-NO', 'LT-T-Z', 'LT-PTRM-I', 'LT-T-I', 'LT-PTRM-Z', 'LT-PTRM-MD'))
-        out.loc[0, 'LT-NO'] = 20
-        out.loc[0, 'LT-T-Z'] = 20
-
-        pTH = 20  # previous th step
-
-        for i, t in enumerate(steps):
-            i += 1
-            pTH = t
-
-            out.loc[i, 'LT-T-Z'] = t
-
-            if ck_every != 0 and i != 0 and not i % ck_every:
-                ck_step = steps[i - ck_every]
-
-                try:
-                    if ck_step == pTH:
-                        ck_step = steps[i - ck_every]
-                        if i < len(steps):
-                            out.loc[i + 1, 'LT-PTRM-I'] = ck_step
-                    else:
-                        out.loc[i, 'LT-PTRM-I'] = ck_step
-
-                except IndexError:
-                    pass
-
-            out.loc[i, 'LT-T-I'] = t
-
-            if ac_every != 0 and i != 0 and not i % ac_every:
-                ac_step = steps[i - ac_every]
-
-                if ac_step == pTH:
-                    ac_step = steps[i - ac_every]
-                    if i < len(steps):
-                        out.loc[i + 1, 'LT-PTRM-Z'] = ac_step
-                elif i <= len(steps):
-                    out.loc[i, 'LT-PTRM-Z'] = ac_step
-
-            if tr_every != 0 and not i % tr_every and not i == 0:
-                out.loc[i, 'LT-PTRM-MD'] = t
-
+        out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every, ac_every=ac_every)
         return out
 
     def __init__(self, preset=None,
-                 a11=None, a12=None, a13=None, a1t=None,
-                 a21=None, a22=None, a23=None, a2t=None,
-                 b1=None, b2=None, b3=None, bt=None,
+             a11=None, a12=None, a13=None, a1t=None,
+             a21=None, a22=None, a23=None, a2t=None,
+             b1=None, b2=None, b3=None, bt=None,
                  d1=0, d2=0, d3=None, dt=None, R=1, dc=1,
-                 grid=100, hpal=1, ms=1, sum=True,
+                 grid=100, hpal=1, hlab=1, ms=1, sum=True,
                  tc=560, temp_steps=11,
                  tmax=560, ck_every=2, tr_every=2, ac_every=2,
                  ):
+        # todo alpha
+        # todo high temperature tails
+
         """
         Standard parameters as used by Leonhard 2004, Fig.2c, a1t,a2t,a13,a23 are not specified in the paper
 
@@ -192,9 +156,10 @@ class Fabian2001(object):
                 saturation magnetization of the simulated sample
             
             # measurement simulation parameters e.g. how many points
-            temp_steps: int, arraylike
+            temp_steps: int, arraylike, pd.DataFrame
                 int will create an evenly spaced number of measurement temperatures up to tmax
                 a list of temperatuires will create these temperatures
+                - if a DataFrame is passed (mostly for fitting) no new DF will be generated
             tmax: float
                 maximum temperature of the experiment
             ck_every: int
@@ -210,12 +175,16 @@ class Fabian2001(object):
                   'a21': a21, 'a22': a22, 'a23': a23, 'a2t': a2t,
                   'b1': b1, 'b2': b2, 'b3': b3, 'bt': bt,
                   'd3': d3, 'dt': dt, 'R': 1, 'dc': 1,
-                  'tc': tc, 'grid': grid, 'hpal': hpal, 'ms': ms, 'sum': sum,
+                  'tc': tc, 'grid': grid,
+                  'hpal': hpal, 'hlab' : hlab,
+                  'ms': ms,
                   'temp_steps': temp_steps,
                   }
 
-
-        self.steps = self.get_steps(temp_steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every, ac_every=ac_every)
+        if not isinstance(temp_steps, pd.DataFrame):
+            self.steps = self.get_steps(temp_steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every, ac_every=ac_every)
+        else:
+            self.steps = temp_steps
 
         if preset is None:
             preset = 'Fabian4a'
@@ -236,22 +205,24 @@ class Fabian2001(object):
         self.simparams = {k: self.__dict__[k] for k in params.keys()}
 
         # create reduced blocking and unblocking temperatures
-        self.tau_b = [i / grid for i in range(0, grid + 1, 1)]
+        self.tau_b = np.arange(0, grid + 1, 1)/grid
         self.tau_ub = self.tau_b
-
-        # calculate gamma function for each blocking temperature
-        self.gammas = [self.gamma(tau_b) for tau_b in self.tau_b]
 
         # calculate lambda functions for each blocking temperature
         self.l1 = self.lambda1(self.tau_b)
         self.l2 = self.lambda2(self.tau_b)
+
+        # calculate lambda functions for each blocking temperature
+        self.betas = self.beta(self.tau_b)
+
+        # calculate gamma function for each blocking temperature
+        self.gammas = [self.gamma(tau_b) for tau_b in self.tau_b]
 
         # initiate dataframe for characteristic function
         self.chi = self.get_chi_grid()
 
         # calculate the NRM (not pressure demagnetized)
         self.nrm = self.get_moment(1, self.hpal, pressure_demag=False)
-
 
         if temp_steps is not None:
             self.steps = self.steps.fillna('-')
@@ -261,7 +232,7 @@ class Fabian2001(object):
             self.demag_dist = [R for t in self.tau_ub]
             demag = self.demag_dist
         else:
-            self.demag_dist = d1 + d2*self.cauchy(np.array(self.tau_ub) - dt, d3)
+            self.demag_dist = d1 + d2 * self.cauchy(self.tau_ub - dt, d3)
             demag = np.cumsum(self.demag_dist)
             demag /= np.max(demag)
 
@@ -273,29 +244,34 @@ class Fabian2001(object):
 
     @classmethod
     def cauchy(cls, x, s):
-        x = np.array(x)
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
-        x = np.array(t)
-
         return (t - 20) / (self.tc - 20)
 
     def beta(self, tau, call=''):
+        """
+        Calculates the beta function for the distribution
+        Parameters
+        ----------
+        tau
+
+        Returns
+        -------
+            np.array
+        """
         return self.b1 + self.b2 * self.cauchy(tau - self.bt, self.b3)
 
     def lambda1(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub > tb
         '''
-        tau = np.array(tau)
         return self.a11 + self.a12 * self.cauchy(tau - self.a1t, self.a13)
 
     def lambda2(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub < tb
         '''
-        tau = np.array(tau)
         return self.a21 + self.a22 * self.cauchy(tau - self.a2t, self.a23)
 
     @classmethod
@@ -306,36 +282,38 @@ class Fabian2001(object):
         """
         normalizes the integral of chi(tau_b, )
         """
-        beta = self.beta(tau_b, call='gamma')
-
-        lambda1 = self.lambda1(tau_b, call='gamma')
-        lambda2 = self.lambda2(tau_b, call='gamma')
 
         # get the index of tau_b
-        idx = self.tau_ub.index(tau_b)
+        idx = np.where(self.tau_ub == tau_b)[0][0]
 
-        int1 = sum(self.cauchy(x, lambda1) for x in self.tau_b[idx:])
-        int2 = sum(self.cauchy(x, lambda2) for x in self.tau_b[:idx + 1])
+        beta = self.betas[idx]
+
+        lambda1 = self.l1[idx]
+        lambda2 = self.l2[idx]
+
+        int1 = np.sum(self.cauchy(self.tau_b[idx:], lambda1))
+        int2 = np.sum(self.cauchy(self.tau_b[:idx+1], lambda2))
 
         return beta * 1 / (int1 + int2)  # as described by Fabian2001
 
-    def get_chi(self, tau_b, tau_ub):
+    def get_chi(self, tau_b):
         """
         Calculates the unblocking distribution for a given blocking temperature
         Returns
         -------
             ndarray
         """
-        # tau_ub = np.array(tau_ub)
+        # get index of tb in array
+        idx = np.where(self.tau_ub == tau_b)[0][0]
 
-        gamma = self.gammas[self.tau_b.index(tau_b)]
+        gamma = self.gammas[idx]
 
-        if tau_b < tau_ub:
-            cauchy = self.cauchy(tau_ub - tau_b, self.lambda1(tau_b, call='chi'))
-        else:
-            cauchy = self.cauchy(tau_ub - tau_b, self.lambda2(tau_b, call='chi'))
+        # distribution for tb<tub
+        c1 = self.cauchy(self.tau_ub[:idx + 1] - tau_b, self.l1[idx])
+        # distribution for tb>tub
+        c2 = self.cauchy(self.tau_ub[idx + 1:] - tau_b, self.l2[idx])
+        return gamma * np.concatenate([c1, c2])
 
-        return gamma * cauchy
 
     def get_H_matrix(self, tau_i, hlab, pressure_demag=False):
         """
@@ -352,12 +330,13 @@ class Fabian2001(object):
         for row, tau_b in enumerate(self.tau_b):
             for column, tau_ub in enumerate(self.tau_ub):
                 data[column, row] = self.H(tau_i, tau_b=tau_b, tau_ub=tau_ub, hlab=hlab, pressure_demag=pressure_demag)
-        out = pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
-        return out
+
+        # out = pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
+        return data
 
     def H(self, tau_i, tau_b, tau_ub, hlab, pressure_demag=False):
         """
-        Calculates the potential field for a given tauu_i and tau_b
+        Calculates the potential field for a given tau_i and tau_b
         Parameters
         ----------
         tau_i
@@ -382,7 +361,7 @@ class Fabian2001(object):
 
         if tau_ub > tau_i or tau_i == 0:
             if pressure_demag:
-                idx = np.argmin(np.abs(np.array(self.tau_ub) - tau_ub))
+                idx = np.where(self.tau_ub == tau_ub)[0][0]
                 return self.demag[idx] * self.hpal
             else:
                 return self.hpal
@@ -403,18 +382,8 @@ class Fabian2001(object):
         """
         data = np.zeros((len(self.tau_ub), len(self.tau_b)))
         for row, tb in enumerate(self.tau_b):
-            gamma = self.gamma(tb)
-            for column, tub in enumerate(self.tau_ub):
-                data[column, row] = self.get_chi(tb, tub)
+            data[:, row] = self.get_chi(tb)
         return pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
-
-    def get_moment_old(self, tau_i, hlab=1, pressure_demag=False):
-        integral = []
-        for j, t_b in enumerate(self.tau_b):
-            integral.append(sum(self.H(tau_i, t_b, t_ub, hlab, pressure_demag) * self.chi.values[i, j] for i, t_ub in
-                                enumerate(self.tau_ub)))
-        integral = sum(integral)
-        return integral
 
     def get_moment(self, tau_i, hlab=1, pressure_demag=False):
         """
@@ -431,24 +400,27 @@ class Fabian2001(object):
         return (h * self.chi).sum().sum()
 
     def get_data(self, steps=None, hlab=1, pressure_demag=False):
-        data = pd.DataFrame(index=('type', 'ti', 'tj', 'm'))
 
+        # initiate data pd.DataFrame with LT_code and K ti,tj
+        data = pd.DataFrame(index=('LT_code', 'x', 'y', 'z', 'm', 'level', 'ti', 'tj'))
+
+        # if no steps are given, use internal
         if steps == None:
             steps = self.steps
 
-        i = 0
         prev = 20
         for row, d in steps.iterrows():
             for column, t in enumerate(d):
-                i += 1
                 typ = steps.columns[column]
                 if not t == '-':
                     tau = self.tau(t)
-                    if typ == 'LT-T-Z':
-                        m = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
+                    if typ == 'LT-NO': #todo moment in x,y,z
+                        m = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)/self.nrm
+                    elif typ == 'LT-T-Z':
+                        m = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)/self.nrm
                     elif typ == 'LT-T-I':
-                        m = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
-                    # elif typ == 'LT-PTRM-I':
+                        m = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)/self.nrm
+                    # elif typ == 'LT-PTRM-I': #todo add AC, TR, CK steps
                     #     NRM_Tj = self.get_moment(tau_i=self.tau(prev), hlab=0, pressure_demag=pressure_demag)
                     #     pTRM_Ti = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
                     #     NRM_Ti = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
@@ -458,16 +430,23 @@ class Fabian2001(object):
                     else:
                         continue
 
-                    data[i] = [typ, t, prev, m]
+                    # add NRM step
                     if typ == 'LT-T-Z' and tau == 0:
-                        i += 1
-                        data[i] = ['LT-T-I', t, prev, m]
+                        data[0] = ['LT-NO', 0, 0, m, m, t, t + 273, prev + 273]
+
+                    i = data.shape[1]
+                    data[i] = [typ, 0, 0, m, m, t, t + 273, prev + 273]
+                    # # add extra PT step after TH(rt)
+                    # if typ == 'LT-T-Z' and tau == 0:
+                    #     data[i+1] = ['LT-T-I', 0, 0, m, m, t, t + 273, prev + 273]
                     if typ == 'LT-T-Z':
                         prev = t
 
         return data.T
 
+
 if __name__ == '__main__':
     f = Fabian2001()
 
-    print(f.chi)
+    plt.imshow(f.chi)
+    plt.show()

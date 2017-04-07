@@ -23,8 +23,11 @@ class jr6(Ftype):
                                   'P1', 'P2', 'P3', 'P4', 'Precision of measurement', 'CR-LF'
                                   ], usecols=[0, 1, 2, 3, 4, 5], comment='#')
 
-
-        data[xyz] = [v * 10 ** data['exp'][i] for i, v in enumerate(data[xyz].values)]
+        if snames:
+            snames = RockPy._to_tuple(snames)
+            data = data[np.in1d(data['specimen'], snames)]
+            data = data.reset_index(drop=True)
+        data[xyz] = [v * 10 ** data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
         data[xyz] *= volume
         data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
         data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in data['step']]
