@@ -23,8 +23,8 @@ class Hysteresis(Measurement):
 
         Parameters
         ----------
-        ftype_data: RockPy.Ftype
-            data read by Mag.Ftype.Vsm.vsm function.
+        ftype_data: RockPy.io
+            data read by Mag.io.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -37,8 +37,8 @@ class Hysteresis(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: Ftype object
-                Ftype object as read by Mag.Ftype.Vsm.vsm
+            ftype_data: io object
+                io object as read by Mag.io.Vsm.vsm
 
 
         '''
