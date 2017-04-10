@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import scipy as sp
-from numba import jit
+import RockPy
 
 import os
 import matplotlib.pylab as plt
@@ -18,42 +18,7 @@ import logging
 
 
 class Fabian2001(object):
-    presets = {'Fabian4a': dict(a11=0.01, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.01, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.9),
-               'Fabian4b': dict(a11=0.01, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.01, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.1),
-               'Fabian4c': dict(a11=0.1, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.1, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.5),
-               'Fabian5a': dict(a11=0.1, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.1, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.1),
-               'Fabian5b': dict(a11=0.1, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.1, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.9),
-               'Fabian5c': dict(a11=0.4, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.4, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.9),
-               'Fabian5d': dict(a11=0.4, a12=0, a13=0.5, a1t=0.5,
-                                a21=0.4, a22=0, a23=0.5, a2t=0.5,
-                                b1=0, b2=1, b3=0.5, bt=0.1),
-               'Fabian5e': dict(a11=0., a12=0.5, a13=0.5, a1t=0.1,
-                                a21=0., a22=0.5, a23=0.5, a2t=0.1,
-                                b1=0, b2=1, b3=0.5, bt=0.1),
-               'Fabian5f': dict(a11=0., a12=0.5, a13=0.5, a1t=0.9,
-                                a21=0., a22=0.5, a23=0.5, a2t=0.9,
-                                b1=0, b2=1, b3=0.5, bt=0.9),
-               'Leonhard2a': dict(a11=0.001, a12=0, a13=0.5, a1t=0.5,
-                                  a21=0.001, a22=0, a23=0.5, a2t=0.5,
-                                  b1=0, b2=1, b3=0.2, bt=0.9),
-               'Leonhard2b': dict(a11=0.05, a12=0, a13=0.5, a1t=0.5,
-                                  a21=0.05, a22=0, a23=0.5, a2t=0.5,
-                                  b1=0, b2=1, b3=0.5, bt=0.9),
-               'Leonhard2c': dict(a11=0.4, a12=0, a13=0.5, a1t=0.5,
-                                  a21=0.4, a22=0, a23=0.5, a2t=0.5,
-                                  b1=0, b2=1, b3=0.5, bt=0.9)}
+    presets = pd.read_csv(os.path.join(RockPy.installation_directory, 'Packages','Mag', 'Measurement', 'Simulation', 'paleointensity_presets.csv'), index_col=0)
 
     @classmethod
     def log(cls):
@@ -196,7 +161,7 @@ class Fabian2001(object):
             preset = 'Fabian4a'
 
         # update the instance dictionary  with the preset
-        self.__dict__.update(self.presets[preset])
+        self.__dict__.update(self.presets.to_dict()[preset])
 
         # update the instance dictionary  with the parameters, specified
         self.__dict__.update({k: v for k, v in params.items() if v is not None or k in ('d3', 'dt', 'R')})
@@ -222,7 +187,7 @@ class Fabian2001(object):
         self.chi = self.get_chi_grid()
 
         # calculate the NRM (not pressure demagnetized)
-        self.nrm = self.get_moment(1, self.hpal, pressure_demag=False)
+        self.nrm = self.moment(1, self.hpal, pressure_demag=False)
 
         if temp_steps is not None:
             self.steps = self.steps.fillna('-')
@@ -235,7 +200,6 @@ class Fabian2001(object):
             self.demag_dist = d1 + d2 * self.cauchy(self.tau_ub - dt, d3)
             demag = np.cumsum(self.demag_dist)
             demag /= np.max(demag)
-
             if dc:
                 demag += dc
                 demag /= np.max(demag)
@@ -314,8 +278,7 @@ class Fabian2001(object):
         c2 = self.cauchy(self.tau_ub[idx + 1:] - tau_b, self.l2[idx])
         return gamma * np.concatenate([c1, c2])
 
-
-    def get_H_matrix(self, tau_i, hlab, pressure_demag=False):
+    def get_H_matrix_OLD(self, tau_i, hlab, pressure_demag=False):
         """
 
         Parameters
@@ -330,9 +293,36 @@ class Fabian2001(object):
         for row, tau_b in enumerate(self.tau_b):
             for column, tau_ub in enumerate(self.tau_ub):
                 data[column, row] = self.H(tau_i, tau_b=tau_b, tau_ub=tau_ub, hlab=hlab, pressure_demag=pressure_demag)
+        out = pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
+        return out
 
-        # out = pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
+    def get_H_matrix(self, tau_i,hlab, pressure_demag=False):
+
+        data = np.ones((self.tau_ub.size, self.tau_b.size))*10
+
+        # the index is where ti == tau_b and tau_ub
+        idx = np.argmin(np.abs(self.tau_b-tau_i)) +1
+
+        # self.log().debug('Tau_i = %.2f, idx = %i'%(tau_i, idx))
+        data[:idx, :idx] = hlab
+        # self.log().debug('hlab rectangle shape: (%s, %s)'%data[:idx, :idx].shape)
+        data[:idx, idx:] = 0
+        # self.log().debug('demag rectangle shape: (%s, %s)'%(data[:idx, idx:].shape))
+        data[idx:, :] = self.hpal
+        # self.log().debug('paleomag rectangle shape: (%s, %s)'%data[idx:, :].shape)
+
+        if pressure_demag:
+            pdem = self.demag[idx:].reshape(self.demag[idx:].shape[0],1)
+            data[idx:, :] *= pdem
+
         return data
+
+    # def get_H_matrix(self, tau_i,hlab, pressure_demag=False):
+    #
+    #     data = [self.H(tau_i, tau_b=tau_b, tau_ub=tau_ub, hlab=hlab, pressure_demag=pressure_demag)
+    #             for tau_ub in self.tau_ub for tau_b in self.tau_b]
+    #
+    #     return np.array(data).reshape(self.tau_b.size, self.tau_ub.size)
 
     def H(self, tau_i, tau_b, tau_ub, hlab, pressure_demag=False):
         """
@@ -359,15 +349,16 @@ class Fabian2001(object):
         #     else
         #         return 0, 0, 0
 
-        if tau_ub > tau_i or tau_i == 0:
+        if tau_i >= tau_ub and tau_i >= tau_b and tau_i > 0:
+            return hlab
+
+        elif tau_ub > tau_i or tau_i == 0:
             if pressure_demag:
-                idx = np.where(self.tau_ub == tau_ub)[0][0]
+                idx = np.where(self.tau_ub == tau_b)[0][0]
                 return self.demag[idx] * self.hpal
             else:
                 return self.hpal
 
-        elif tau_ub <= tau_i and tau_b <= tau_i and tau_i > 0:
-            return hlab
         else:
             return 0
 
@@ -385,7 +376,7 @@ class Fabian2001(object):
             data[:, row] = self.get_chi(tb)
         return pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
 
-    def get_moment(self, tau_i, hlab=1, pressure_demag=False):
+    def moment(self, tau_i, hlab=1, pressure_demag=False):
         """
 
         Parameters
@@ -399,51 +390,183 @@ class Fabian2001(object):
         h = self.get_H_matrix(tau_i=tau_i, hlab=hlab, pressure_demag=pressure_demag)
         return (h * self.chi).sum().sum()
 
-    def get_data(self, steps=None, hlab=1, pressure_demag=False):
+    def get_data(self, steps=None, pressure_demag=False):
 
         # initiate data pd.DataFrame with LT_code and K ti,tj
         data = pd.DataFrame(index=('LT_code', 'x', 'y', 'z', 'm', 'level', 'ti', 'tj'))
 
         # if no steps are given, use internal
-        if steps == None:
+        if steps is None:
             steps = self.steps
 
         prev = 20
         for row, d in steps.iterrows():
             for column, t in enumerate(d):
+
+                if t == '-':
+                    continue
+
                 typ = steps.columns[column]
-                if not t == '-':
-                    tau = self.tau(t)
-                    if typ == 'LT-NO': #todo moment in x,y,z
-                        m = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)/self.nrm
-                    elif typ == 'LT-T-Z':
-                        m = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)/self.nrm
-                    elif typ == 'LT-T-I':
-                        m = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)/self.nrm
-                    # elif typ == 'LT-PTRM-I': #todo add AC, TR, CK steps
-                    #     NRM_Tj = self.get_moment(tau_i=self.tau(prev), hlab=0, pressure_demag=pressure_demag)
-                    #     pTRM_Ti = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
-                    #     NRM_Ti = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
-                    #     m = pTRM_Ti - NRM_Ti + NRM_Tj
-                    # #                         print(row, column, typ, t, tau, prev, m)
 
-                    else:
-                        continue
 
-                    # add NRM step
-                    if typ == 'LT-T-Z' and tau == 0:
-                        data[0] = ['LT-NO', 0, 0, m, m, t, t + 273, prev + 273]
+                if np.isnan(t):
+                    continue
 
-                    i = data.shape[1]
-                    data[i] = [typ, 0, 0, m, m, t, t + 273, prev + 273]
-                    # # add extra PT step after TH(rt)
-                    # if typ == 'LT-T-Z' and tau == 0:
-                    #     data[i+1] = ['LT-T-I', 0, 0, m, m, t, t + 273, prev + 273]
-                    if typ == 'LT-T-Z':
-                        prev = t
+                tau = self.tau(t)
+                # self.log().debug('Calculating temperature %i (tau_i = %.2f)'%(t, tau))
+
+                if typ == 'LT-NO': #todo moment in x,y,z
+                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag) / self.nrm
+                elif typ == 'LT-T-Z':
+                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag) / self.nrm
+                elif typ == 'LT-T-I':
+                    m = self.moment(tau_i=tau, hlab=self.hlab, pressure_demag=pressure_demag) / self.nrm
+                # elif typ == 'LT-PTRM-I': #todo add AC, TR, CK steps
+                #     NRM_Tj = self.get_moment(tau_i=self.tau(prev), hlab=0, pressure_demag=pressure_demag)
+                #     pTRM_Ti = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
+                #     NRM_Ti = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
+                #     m = pTRM_Ti - NRM_Ti + NRM_Tj
+                # #                         print(row, column, typ, t, tau, prev, m)
+
+                else:
+                    continue
+
+                # add NRM step
+                if typ == 'LT-T-Z' and tau == 0:
+                    data[0] = ['LT-NO', 0, 0, m, m, t, t + 273, prev + 273]
+
+                i = data.shape[1]
+                data[i] = [typ, 0, 0, m, m, t, t + 273, prev + 273]
+
+                # # add extra PT step after TH(rt)
+                # if typ == 'LT-T-Z' and tau == 0:
+                #     data[i+1] = ['LT-T-I', 0, 0, m, m, t, t + 273, prev + 273]
+                if typ == 'LT-T-Z':
+                    prev = t
 
         return data.T
 
+    ################################################################
+    # PLOTTING
+
+    def plot_surface(self, ax=None, title=None):
+        #         from mpl_toolkits.mplot3d import proj3d
+        #         def orthogonal_proj(zfront, zback):
+        #             a = (zfront+zback)/(zfront-zback)
+        #             b = -2*(zfront*zback)/(zfront-zback)
+        #             return numpy.array([[1,0,0,0],
+        #                                 [0,1,0,0],
+        #                                 [0,0,a,b],
+        #                                 [0,0,0,zback]])
+        #         proj3d.persp_transformation = orthogonal_proj
+
+        if ax is None:
+            fig = plt.figure(figsize=plt.figaspect(0.45))
+            ax = fig.add_subplot(111, projection='3d')
+
+        x, y = plt.meshgrid(self.chi.columns, self.chi.index)
+        ax.plot_surface(x, y, self.chi, color='w', alpha=1, antialiased=True, linewidth=0)
+        ax.plot_wireframe(x, y, self.chi.values, color='k', rcount=20, ccount=20,
+                          linewidth=0.2, antialiased=False)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+        ax.grid()
+
+        ax.view_init(elev=34, azim=-120)
+
+        ax.set_xlabel('$\\tau_b$')
+        ax.set_ylabel('$\\tau_{ub}$')
+
+        ax.auto_scale_xyz([0, 1], [0, 1], [self.chi.min().min(), self.chi.max().max()])
+        if title:
+            ax.set_title(title)
+
+    def plot_contour(self, ax=None, colorbar=True, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+
+        ax.set_title(kwargs.pop('title', None))
+        im = ax.imshow(self.chi.values.astype(float) / self.chi.max().max(), aspect='equal', origin=(0, 0),
+                       extent=(0, 1, 0, 1), **kwargs)
+
+        ax.set_xlabel('$\\tau_b$')
+        ax.set_ylabel('$\\tau_{ub}$')
+
+        if colorbar:
+            plt.colorbar(im, ax=ax)
+        else:
+            return im
+
+    def plot_arai(self, steps=None, hlab=1, pressure_demag=False, norm=False, ax=None, **kwargs):
+
+
+        if self.steps is None and steps is None:
+            print('cant plot Arai diagram,')
+            return
+
+        data = self.get_data(steps=steps, pressure_demag=pressure_demag)
+
+        if ax is None:
+            f, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('ti')
+        pt = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])].set_index('ti')
+        ck = data[data['LT_code'] == 'LT-PTRM-I'].set_index('ti')
+        ax.set_title(kwargs.pop('title', None))
+
+
+        ax.plot([1,0],[0,1], '--', color='grey')
+
+        if norm:
+            ax.plot((pt['m'] - th['m']) / th['m'].max(), th['m'] / th['m'].max(), '.--', **kwargs)
+        else:
+            ax.plot((pt['m'] - th['m']), th['m'], '.--', **kwargs)
+
+        #        for ti, d in ck.iterrows():
+        #            ax.plot([d['m'] - th[th.index == d['tj']]['m'].values[0],
+        #                     pt[pt.index == d['tj']]['m'].values[0] - th[th.index == d['tj']]['m'].values[0]],
+        #                    [th[th.index == d['tj']]['m'].values[0], th[th.index == d['tj']]['m'].values[0]], 'k-', lw=1.2)
+        #            ax.plot([d['m'] - th[th.index == d['tj']]['m'].values[0], d['m'] - th[th.index == d['tj']]['m'].values[0]],
+        #                    [th[th.index == d['tj']]['m'].values[0], th[th.index == ti]['m'].values[0]], 'k-', lw=1.2)
+        #            ax.plot(d['m'] - th[th.index == d['tj']]['m'], th[th.index == ti]['m'], marker='^', mfc='None', mec='k')
+
+        ax.set_xlabel('pTRM gained')
+        ax.set_ylabel('NRM remaining')
+
+        return data
+
+    def plot_roquet(self, steps=None, hlab=1, pressure_demag=False, norm=False, ax=None, **kwargs):
+
+        if self.steps is None and steps is None:
+            print('cant plot Arai diagram,')
+            return
+
+        data = self.get_data(steps=steps, pressure_demag=pressure_demag)
+
+        if ax is None:
+            f, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('ti')
+        pt = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])].set_index('ti')
+
+        ax.set_title(kwargs.pop('title', None))
+
+        if norm:
+            # pTRM plot
+            ax.plot(th.index, (pt['m'] - th['m']) / th['m'].max(), '.--', color='g',**kwargs)
+            # TH plot
+            ax.plot(pt.index, pt['m']/ th['m'].max(), '.--', color='r', **kwargs)
+            # SUM plot
+            ax.plot(th.index, th['m']/ th['m'].max(), '.--', color='b',**kwargs)
+        else:
+            # pTRM plot
+            ax.plot(th.index, (pt['m'] - th['m']), '.--', color='g',**kwargs)
+            # TH plot
+            ax.plot(pt.index, pt['m'], '.--', color='r', **kwargs)
+            # SUM plot
+            ax.plot(th.index, th['m'], '.--', color='b',**kwargs)
 
 if __name__ == '__main__':
     f = Fabian2001()
