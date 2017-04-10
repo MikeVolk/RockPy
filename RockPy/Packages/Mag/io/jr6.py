@@ -12,6 +12,7 @@ class jr6(Ftype):
 
     def __init__(self, dfile, snames=None, dialect=None, volume=10 ** -5):
         super().__init__(dfile, snames=snames, dialect=dialect)
+        self.volume = volume
 
         xyz = ['magn_x', 'magn_y', 'magn_z']
 
@@ -27,6 +28,7 @@ class jr6(Ftype):
             snames = RockPy._to_tuple(snames)
             data = data[np.in1d(data['specimen'], snames)]
             data = data.reset_index(drop=True)
+
         data[xyz] = [v * 10 ** data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
         data[xyz] *= volume
         data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
@@ -36,6 +38,9 @@ class jr6(Ftype):
         data = data.drop('step', 1)
         data = data.drop('exp', 1)
         self.data = data
+
+    def read_file(self):
+        pass
 
     def lookup_lab_treatment_code(self, item):
         '''
