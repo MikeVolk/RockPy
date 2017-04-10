@@ -17,7 +17,7 @@ def ThellierStepMaker(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
     """
 
     if isinstance(steps, int):
-        steps = np.linspace(20, tmax, steps)[1:]
+        steps = np.linspace(20, tmax, steps)
 
     steps = sorted(list(steps))
 
@@ -34,7 +34,7 @@ def ThellierStepMaker(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
         out.loc[i, 'LT-T-Z'] = t
 
         if ck_every != 0 and i != 0 and not i % ck_every:
-            ck_step = steps[i - ck_every]
+            ck_step = steps[i - ck_every+1]
 
             try:
                 if ck_step == pTH:
@@ -50,7 +50,7 @@ def ThellierStepMaker(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
         out.loc[i, 'LT-T-I'] = t
 
         if ac_every != 0 and i != 0 and not i % ac_every:
-            ac_step = steps[i - ac_every]
+            ac_step = steps[i - ac_every +1]
 
             if ac_step == pTH:
                 ac_step = steps[i - ac_every]

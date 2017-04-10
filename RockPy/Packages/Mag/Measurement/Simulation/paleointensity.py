@@ -66,7 +66,7 @@ class Fabian2001(object):
         ----------
             Distibution for tau_b < tau_ub
             preset: str
-                A collection of presets from the Fabian2001 and Leonhard2004 paper
+                A collection of models from the Fabian2001 and Leonhard2004 paper
 
             a11: float
                 costant part of the distribution
@@ -160,6 +160,7 @@ class Fabian2001(object):
             print('using: Fabian Fig. 4a')
             preset = 'Fabian4a'
 
+
         # update the instance dictionary  with the preset
         self.__dict__.update(self.presets.to_dict()[preset])
 
@@ -168,6 +169,11 @@ class Fabian2001(object):
 
         # create a dictionary with the simulation_parameters
         self.simparams = {k: self.__dict__[k] for k in params.keys()}
+
+        # self.log().debug('Calculating simulation using these parameters:')
+        # self.log().debug('='*50)
+        # for k, v in self.simparams.items():
+        #     self.log().debug('\t%s: %s'%(k,v))
 
         # create reduced blocking and unblocking temperatures
         self.tau_b = np.arange(0, grid + 1, 1)/grid
@@ -189,8 +195,8 @@ class Fabian2001(object):
         # calculate the NRM (not pressure demagnetized)
         self.nrm = self.moment(1, self.hpal, pressure_demag=False)
 
-        if temp_steps is not None:
-            self.steps = self.steps.fillna('-')
+        # if temp_steps is not None: #todo remove
+        #     self.steps = self.steps.fillna('-')
 
         # calculate demagnetization function
         if d3 is None and dt is None:
@@ -213,7 +219,7 @@ class Fabian2001(object):
     def tau(self, t):
         return (t - 20) / (self.tc - 20)
 
-    def beta(self, tau, call=''):
+    def beta(self, tau):
         """
         Calculates the beta function for the distribution
         Parameters
@@ -230,17 +236,20 @@ class Fabian2001(object):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub > tb
         '''
-        return self.a11 + self.a12 * self.cauchy(tau - self.a1t, self.a13)
+
+        if self.a12 > 0:
+            return self.a11 + self.a12 * self.cauchy(tau - self.a1t, self.a13)
+        else:
+            return np.ones(tau.shape) * self.a11
 
     def lambda2(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub < tb
         '''
-        return self.a21 + self.a22 * self.cauchy(tau - self.a2t, self.a23)
-
-    @classmethod
-    def lam(cls, tau, a1, a2, at, a3):
-        return a1 + a2 * cls.cauchy(tau - at, a3)
+        if self.a22 > 0:
+            return self.a21 + self.a22 * self.cauchy(tau - self.a2t, self.a23)
+        else:
+            return np.ones(tau.shape) * self.a21
 
     def gamma(self, tau_b):
         """
@@ -267,41 +276,29 @@ class Fabian2001(object):
         -------
             ndarray
         """
-        # get index of tb in array
+        # get index of tb in array (tb == tub)
+        # indices < idx -> tau_b < tau_ub
+        # indices >= idx -> tau_b >= tau_ub
         idx = np.where(self.tau_ub == tau_b)[0][0]
 
         gamma = self.gammas[idx]
 
         # distribution for tb<tub
-        c1 = self.cauchy(self.tau_ub[:idx + 1] - tau_b, self.l1[idx])
+        c1 = self.cauchy(self.tau_ub[tau_b < self.tau_ub] - tau_b, self.l1[idx])
         # distribution for tb>tub
-        c2 = self.cauchy(self.tau_ub[idx + 1:] - tau_b, self.l2[idx])
-        return gamma * np.concatenate([c1, c2])
+        c2 = self.cauchy(self.tau_ub[tau_b >= self.tau_ub] - tau_b, self.l2[idx])
 
-    def get_H_matrix_OLD(self, tau_i, hlab, pressure_demag=False):
-        """
+        return gamma * np.concatenate([c2, c1])
 
-        Parameters
-        ----------
-        tau_i
-
-        Returns
-        -------
-
-        """
-        data = np.zeros((len(self.tau_ub), len(self.tau_b)))
-        for row, tau_b in enumerate(self.tau_b):
-            for column, tau_ub in enumerate(self.tau_ub):
-                data[column, row] = self.H(tau_i, tau_b=tau_b, tau_ub=tau_ub, hlab=hlab, pressure_demag=pressure_demag)
-        out = pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
-        return out
-
-    def get_H_matrix(self, tau_i,hlab, pressure_demag=False):
+    def FieldMatrix(self, tau_i, hlab, pressure_demag=False):
 
         data = np.ones((self.tau_ub.size, self.tau_b.size))*10
 
         # the index is where ti == tau_b and tau_ub
-        idx = np.argmin(np.abs(self.tau_b-tau_i)) +1
+        if tau_i == 0:
+            idx = 0
+        else:
+            idx = np.argmin(np.abs(self.tau_b-tau_i))+1
 
         # self.log().debug('Tau_i = %.2f, idx = %i'%(tau_i, idx))
         data[:idx, :idx] = hlab
@@ -372,9 +369,9 @@ class Fabian2001(object):
             pandas DataFrame with chi values (columns = blocking temperatures, indices = unblocking temperatures)
         """
         data = np.zeros((len(self.tau_ub), len(self.tau_b)))
-        for row, tb in enumerate(self.tau_b):
-            data[:, row] = self.get_chi(tb)
-        return pd.DataFrame(index=self.tau_ub, columns=self.tau_b, data=data)
+        for col, tb in enumerate(self.tau_b):
+            data[:, col] = self.get_chi(tb)
+        return data
 
     def moment(self, tau_i, hlab=1, pressure_demag=False):
         """
@@ -387,7 +384,7 @@ class Fabian2001(object):
             default: False
             if True a cauchy distributed demagnetization of unblocking temperatures is calculated
         """
-        h = self.get_H_matrix(tau_i=tau_i, hlab=hlab, pressure_demag=pressure_demag)
+        h = self.FieldMatrix(tau_i=tau_i, hlab=hlab, pressure_demag=pressure_demag)
         return (h * self.chi).sum().sum()
 
     def get_data(self, steps=None, pressure_demag=False):
@@ -416,11 +413,11 @@ class Fabian2001(object):
                 # self.log().debug('Calculating temperature %i (tau_i = %.2f)'%(t, tau))
 
                 if typ == 'LT-NO': #todo moment in x,y,z
-                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag) / self.nrm
+                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
                 elif typ == 'LT-T-Z':
-                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag) / self.nrm
+                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
                 elif typ == 'LT-T-I':
-                    m = self.moment(tau_i=tau, hlab=self.hlab, pressure_demag=pressure_demag) / self.nrm
+                    m = self.moment(tau_i=tau, hlab=self.hlab, pressure_demag=pressure_demag)
                 # elif typ == 'LT-PTRM-I': #todo add AC, TR, CK steps
                 #     NRM_Tj = self.get_moment(tau_i=self.tau(prev), hlab=0, pressure_demag=pressure_demag)
                 #     pTRM_Ti = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
@@ -488,7 +485,7 @@ class Fabian2001(object):
             ax = plt.gca()
 
         ax.set_title(kwargs.pop('title', None))
-        im = ax.imshow(self.chi.values.astype(float) / self.chi.max().max(), aspect='equal', origin=(0, 0),
+        im = ax.imshow(self.chi.astype(float) / self.chi.max().max(), aspect='equal', origin=(0, 0),
                        extent=(0, 1, 0, 1), **kwargs)
 
         ax.set_xlabel('$\\tau_b$')
@@ -517,7 +514,7 @@ class Fabian2001(object):
         ax.set_title(kwargs.pop('title', None))
 
 
-        ax.plot([1,0],[0,1], '--', color='grey')
+
 
         if norm:
             ax.plot((pt['m'] - th['m']) / th['m'].max(), th['m'] / th['m'].max(), '.--', **kwargs)
@@ -531,6 +528,9 @@ class Fabian2001(object):
         #            ax.plot([d['m'] - th[th.index == d['tj']]['m'].values[0], d['m'] - th[th.index == d['tj']]['m'].values[0]],
         #                    [th[th.index == d['tj']]['m'].values[0], th[th.index == ti]['m'].values[0]], 'k-', lw=1.2)
         #            ax.plot(d['m'] - th[th.index == d['tj']]['m'], th[th.index == ti]['m'], marker='^', mfc='None', mec='k')
+
+        mx = ax.lines[0].get_data()[1].max()
+        ax.plot([mx, 0], [0, mx], '--', color='grey')
 
         ax.set_xlabel('pTRM gained')
         ax.set_ylabel('NRM remaining')
