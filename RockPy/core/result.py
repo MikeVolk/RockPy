@@ -17,6 +17,20 @@ class Result():
         # create and return a logger with the pattern RockPy.MTYPE
         return logging.getLogger('RockPy.%s' % cls.__name__)
 
+    def set_result(self, result, result_name=None):
+
+        if result_name is None:
+            result_name = self.name
+
+        self.mobj.sobj.results.loc[self.mobj.mid, result_name] = result
+
+    def get_result(self, result_name=None):
+
+        if result_name is None:
+            result_name = self.name
+
+        return self.mobj.sobj.results.loc[self.mobj.mid, result_name]
+
     def __call__(self, recipe=None, **parameters):
         """
         calling method for the result. iterates over the current worker of the mobj.
@@ -33,13 +47,18 @@ class Result():
         # initialize signature
         signature = None
 
-        clist = parameters.pop('clist', list())
+        # list of results that were calculated
+        # when initially called by the user, the list is created.
+        # only the first element is returned
 
-        if self.name in clist:
+        calculation_stack = parameters.pop('calculation_stack', list())
+
+        # check if result was calculated keeps results from being recalculated all the time
+        if self.name in calculation_stack:
             self.log().debug('%s is already calculated in current run' % self.name)
             return
         else:
-            clist.append(self.name)
+            calculation_stack.append(self.name)
 
         # set default parameters
         if not self.indirect:
@@ -62,6 +81,7 @@ class Result():
 
         self.log().debug('called: %s' % self)
         self.log().debug('with parameters:')
+        
         for k, v in parameters.items():
             # remove unused parameters
             if signature and k not in signature:
@@ -74,18 +94,19 @@ class Result():
         if not self.indirect:
             if not self._is_calculated:
                 calculate = True
-            if not calculate and self._parameters_changed(**parameters):
+            if self._parameters_changed(**parameters):
                 calculate = True
-            if not calculate and self._recipe_changed(recipe):
+            if self._recipe_changed(recipe):
                 calculate = True
 
-            if not calculate:
-                return self.mobj.results.loc[0, self.name]
-
+            # if not calculate:
+            #     return self.mobj.results.loc[self.name]
+        
+        # calculate all dependencies
         if self.dependencies:
             for dep_res in self._dependencies:
                 self.log().debug('calling dependent << %s >> for result %s' % (dep_res.name, self.name))
-                dep_res(recipe=recipe, clist=clist, **parameters)
+                dep_res(recipe=recipe, calculation_stack=calculation_stack, **parameters)
 
         if calculate:
             # update parameters with new parameters
@@ -99,18 +120,27 @@ class Result():
                 self.log().debug('calling result %s recipe %s' % (self.name, recipe))
                 self.log().debug('\t%s' % self._recipes()[recipe])
                 res = self._recipes()[recipe](self, **parameters)
-
+        
+        # calculate the subjects of the result
         if self._subjects:
             for subj_res in self._subjects:
                 self.log().debug('calling subject << %s >> of result %s' % (subj_res.name, self.name))
-                subj_res(recipe=recipe, clist=clist, **parameters)
+                subj_res(recipe=recipe, calculation_stack=calculation_stack, **parameters)
 
-        return  self.mobj.sobj.results.loc[self.mobj.mid, self.name]
+        # only the first iun the stack is the one to be called and calculated 
+        if self.name == calculation_stack[0]:
+            return self.get_result()
 
     @property
     def _is_calculated(self):
+        """
+        Checks if the result has been calculated e.g. checks in Measurement.results
+        Returns
+        -------
+
+        """
         self.log().debug('checking if %s calculated' % self.name)
-        if self.mobj.results is None or self.name in self.mobj.results:
+        if self.mobj.results is None or self.name not in self.mobj.results:
             self.log().debug('%s NOT calculated' % self.name)
             return False
         else:
@@ -133,7 +163,10 @@ class Result():
             self.log().debug('parameters changed')
             for p in params:
                 if p in self.params and not params[p] == self.params[p]:
-                    self.log().debug('%s %f --> %f' % (p, self.params[p], params[p]))
+                    try:
+                        self.log().debug('%s %f --> %f' % (p, self.params[p], params[p]))
+                    except TypeError:
+                        self.log().debug('%s %s --> %s' % (p, self.params[p], params[p]))
                 else:
                     self.log().debug('parameter %s not used' % p)
             return True
