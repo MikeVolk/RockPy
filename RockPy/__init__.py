@@ -24,6 +24,9 @@ log = logging.getLogger('RockPy')
 log.debug('This is RockPy')
 log.debug('Installation dr: %s'%installation_directory)
 
+import matplotlib
+matplotlib.use('Qt5Agg')
+
 # read the abbreviations.txt file
 abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviations()
 
