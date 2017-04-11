@@ -169,3 +169,56 @@ def split_num_alph(item):
         return float(item), None
 
 
+def lin_regress(pdd, column_name_x, column_name_y):
+        """
+        calculates a least squares linear regression for given x/y data
+
+        Parameters
+        ----------
+           column_name_x:
+           column_name_y:
+        Returns
+        -------
+            slope
+            sigma
+            y_intercept
+            x_intercept
+        """
+
+        x = pdd[column_name_x].values
+        y = pdd[column_name_y].values
+        if len(x) < 2 or len(y) < 2:
+            return None
+
+        """ calculate averages """
+        x_mean = np.mean(x)
+        y_mean = np.mean(y)
+
+        """ calculate differences """
+        x_diff = x - x_mean
+        y_diff = y - y_mean
+
+        """ square differences """
+        x_diff_sq = x_diff ** 2
+        y_diff_sq = y_diff ** 2
+
+        """ sum squared differences """
+        x_sum_diff_sq = np.sum(x_diff_sq)
+        y_sum_diff_sq = np.sum(y_diff_sq)
+
+        mixed_sum = np.sum(x_diff * y_diff)
+
+        """ calculate slopes """
+        n = len(x)
+
+        slope = np.sqrt(y_sum_diff_sq / x_sum_diff_sq) * np.sign(mixed_sum)
+
+        if n <= 2:  # stdev not valid for two points
+            sigma = np.nan
+        else:
+            sigma = np.sqrt((2 * y_sum_diff_sq - 2 * slope * mixed_sum) / ((n - 2) * x_sum_diff_sq))
+
+        y_intercept = y_mean - (slope * x_mean)
+        x_intercept = - y_intercept / slope
+
+        return slope, sigma, y_intercept, x_intercept
