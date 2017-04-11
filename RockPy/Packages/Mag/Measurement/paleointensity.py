@@ -1,6 +1,7 @@
 __author__ = 'volk'
 import RockPy
 from RockPy.core.result import Result
+from RockPy.core.utils import lin_regress
 
 from copy import deepcopy
 from math import tanh, cosh
@@ -23,20 +24,7 @@ from RockPy.core import measurement
 
 
 class Paleointensity(measurement.Measurement):
-    # def __init__(self, sobj,
-    #              fpath=None, ftype=None, mdata=None,
-    #              ftype_data = None,
-    #              series=None,
-    #              idx=None,
-    #              **options
-    #              ):
-    #     super().__init__(fpath=fpath, ftype=ftype,
-    #                      ftype_data=ftype_data,
-    #                      mdata=mdata,
-    #                      series=series,
-    #                      idx=idx,
-    #                      **options
-    #                      )
+
 
     @classmethod
     def from_simulation(cls, sobj, idx=0, **simparams):
@@ -89,9 +77,7 @@ class Paleointensity(measurement.Measurement):
         -------
             pandas.DataFrame
         """
-        # depending if NRM is added....
-        # d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
-        d = self.data[(self.data['LT_code'] == 'LT-T-Z')].set_index('ti')
+        d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
         return d
 
     @property
@@ -164,8 +150,7 @@ class Paleointensity(measurement.Measurement):
         d = self.acqu.copy()
         d.loc[:, ('x', 'y', 'z')] -= self.demag.loc[:, ('x', 'y', 'z')]
         d['LT_code'] = 'PTRM'
-        d['m'] = np.linalg.norm(d[['x', 'y', 'z']], axis=1)
-
+        d['m'] = np.sqrt(d.loc[:,['x', 'y', 'z']].apply(lambda x:x**2).sum(axis=1))
         return d
 
         ####################################################################################################################
@@ -192,25 +177,23 @@ class Paleointensity(measurement.Measurement):
 
             # filtering for equal variables
             demag_data = self.mobj.demag.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
-            acqu_data = self.mobj.acqu.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
+            acqu_data = self.mobj.ptrm.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
 
-            # data = RockPyData(['demagnetization', 'acquisition'])
-            #
-            # # setting the data
-            # data['demagnetization'] = demag_data[component].v
-            # data['acquisition'] = acq_data[component].v
-            #
-            # try:
-            #     slope, sigma, y_int, x_int = data.lin_regress('acquisition', 'demagnetization')
-            #     self.results['slope'] = [[[slope, sigma]]]
-            #     self.results['sigma'] = sigma
-            #     self.results['y_int'] = y_int
-            #     self.results['x_int'] = x_int
-            #     self.results['n'] = len(demag_data[component].v)
-            # except TypeError:
-            #     self.log.error('No data found')
-            self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.nan
+            slope, sigma, y_int, x_int = lin_regress(pdd=acqu_data, column_name_x='m', ypdd=demag_data, column_name_y='m')
+            self.mobj.sobj.results.loc[self.mobj.mid, 'slope'] = slope
+            self.mobj.sobj.results.loc[self.mobj.mid, 'sigma'] = sigma
+            self.mobj.sobj.results.loc[self.mobj.mid, 'y_int'] = y_int
+            self.mobj.sobj.results.loc[self.mobj.mid, 'x_int'] = x_int
+            self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(equal_steps)
 
+    class result_sigma(result_slope):
+        dependencies = ['slope']
+    class result_y_int(result_slope):
+        dependencies = ['slope']
+    class result_x_int(result_slope):
+        dependencies = ['slope']
+    class result_n(result_slope):
+        dependencies = ['slope']
 
 
 if __name__ == '__main__':
@@ -223,4 +206,5 @@ if __name__ == '__main__':
     # print(m.data)
 
     m = s.add_simulation(mtype='pint')
-    print(m.result_slope())
+    m.calc_all()
+    print(m.sobj.results)

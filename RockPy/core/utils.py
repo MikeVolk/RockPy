@@ -185,7 +185,6 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
             x_intercept
         """
 
-
         x = pdd[column_name_x].values
 
         if ypdd is not None:

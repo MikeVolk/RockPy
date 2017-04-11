@@ -48,11 +48,11 @@ class Fabian2001(object):
         return out
 
     def __init__(self, preset=None,
-             a11=None, a12=None, a13=None, a1t=None,
-             a21=None, a22=None, a23=None, a2t=None,
-             b1=None, b2=None, b3=None, bt=None,
-                 d1=0, d2=0, d3=None, dt=None, R=1, dc=1,
-                 grid=100, hpal=1, hlab=1, ms=1, sum=True,
+                 a11=None, a12=None, a13=None, a1t=None,
+                 a21=None, a22=None, a23=None, a2t=None,
+                 b1=None, b2=None, b3=None, bt=None,
+                 d1=0, d2=0, d3=0, dt=0,
+                 grid=100, hpal=1, hlab=1, ms=1,
                  tc=560, temp_steps=11,
                  tmax=560, ck_every=2, tr_every=2, ac_every=2,
                  ):
@@ -105,8 +105,6 @@ class Fabian2001(object):
                 width of the demagnetization distribution
             dt: float
                 center of the distribution
-            R
-            dc
             
             grid: int
                 default:100
@@ -139,7 +137,7 @@ class Fabian2001(object):
         params = {'a11': a11, 'a12': a12, 'a13': a13, 'a1t': a1t,
                   'a21': a21, 'a22': a22, 'a23': a23, 'a2t': a2t,
                   'b1': b1, 'b2': b2, 'b3': b3, 'bt': bt,
-                  'd3': d3, 'dt': dt, 'R': 1, 'dc': 1,
+                  'd1':d1, 'd2':d2, 'd3': d3, 'dt': dt,
                   'tc': tc, 'grid': grid,
                   'hpal': hpal, 'hlab' : hlab,
                   'ms': ms,
@@ -199,21 +197,12 @@ class Fabian2001(object):
         #     self.steps = self.steps.fillna('-')
 
         # calculate demagnetization function
-        if d3 is None and dt is None:
-            self.demag_dist = [R for t in self.tau_ub]
-            demag = self.demag_dist
-        else:
-            self.demag_dist = d1 + d2 * self.cauchy(self.tau_ub - dt, d3)
-            demag = np.cumsum(self.demag_dist)
-            demag /= np.max(demag)
-            if dc:
-                demag += dc
-                demag /= np.max(demag)
-
-        self.demag = demag
+        self.demag_dist = d1 + d2 * self.cauchy(self.tau_ub - dt, d3)
+        self.demag = np.ones(self.demag_dist.shape) -self.demag_dist
 
     @classmethod
     def cauchy(cls, x, s):
+        if s == 0: s += 1E-15
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
@@ -284,11 +273,11 @@ class Fabian2001(object):
         gamma = self.gammas[idx]
 
         # distribution for tb<tub
-        c1 = self.cauchy(self.tau_ub[tau_b < self.tau_ub] - tau_b, self.l1[idx])
+        c2 = self.cauchy(self.tau_ub[tau_b < self.tau_ub] - tau_b, self.l1[idx])
         # distribution for tb>tub
-        c2 = self.cauchy(self.tau_ub[tau_b >= self.tau_ub] - tau_b, self.l2[idx])
+        c1 = self.cauchy(self.tau_ub[tau_b >= self.tau_ub] - tau_b, self.l2[idx])
 
-        return gamma * np.concatenate([c2, c1])
+        return gamma * np.concatenate([c1, c2])
 
     def FieldMatrix(self, tau_i, hlab, pressure_demag=False):
 
@@ -310,7 +299,7 @@ class Fabian2001(object):
 
         if pressure_demag:
             pdem = self.demag[idx:].reshape(self.demag[idx:].shape[0],1)
-            data[idx:, :] *= pdem
+            data[idx:, :] = data[idx:, :] * pdem
 
         return data
 
@@ -540,7 +529,7 @@ class Fabian2001(object):
     def plot_roquet(self, steps=None, hlab=1, pressure_demag=False, norm=False, ax=None, **kwargs):
 
         if self.steps is None and steps is None:
-            print('cant plot Arai diagram,')
+            print('cant plot Roquet plot,')
             return
 
         data = self.get_data(steps=steps, pressure_demag=pressure_demag)
@@ -548,28 +537,35 @@ class Fabian2001(object):
         if ax is None:
             f, ax = plt.subplots(1, 1, figsize=(6, 6))
 
-        th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('ti')
-        pt = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])].set_index('ti')
+        th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('level')
+        pt = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])].set_index('level')
 
         ax.set_title(kwargs.pop('title', None))
 
+        ls = kwargs.pop('ls','-')
+        marker = kwargs.pop('marker','.')
+
         if norm:
-            # pTRM plot
-            ax.plot(th.index, (pt['m'] - th['m']) / th['m'].max(), '.--', color='g',**kwargs)
-            # TH plot
-            ax.plot(pt.index, pt['m']/ th['m'].max(), '.--', color='r', **kwargs)
-            # SUM plot
-            ax.plot(th.index, th['m']/ th['m'].max(), '.--', color='b',**kwargs)
-        else:
-            # pTRM plot
-            ax.plot(th.index, (pt['m'] - th['m']), '.--', color='g',**kwargs)
-            # TH plot
-            ax.plot(pt.index, pt['m'], '.--', color='r', **kwargs)
-            # SUM plot
-            ax.plot(th.index, th['m'], '.--', color='b',**kwargs)
+            for d in (th, pt):
+                d['m'] /= th['m'].max()
+
+        # pTRM plot
+        ax.plot(th.index, (pt['m'] - th['m']),
+                ls=ls,
+                marker=marker,
+                color=kwargs.pop('color','g'),
+                **kwargs)
+        # SUM plot
+        ax.plot(pt.index, pt['m'],
+                ls=ls,
+                marker=marker,
+                color=kwargs.pop('color', 'b'), **kwargs)
+        # TH plot
+        ax.plot(th.index, th['m'],
+                ls=ls,
+                marker=marker,
+                color=kwargs.pop('color','r'),**kwargs)
 
 if __name__ == '__main__':
-    f = Fabian2001()
-
-    plt.imshow(f.chi)
-    plt.show()
+    s= RockPy.Sample('test')
+    m = s.add_simulation('paleointensity')
