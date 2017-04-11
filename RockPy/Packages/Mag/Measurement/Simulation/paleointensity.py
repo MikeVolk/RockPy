@@ -384,7 +384,6 @@ class Fabian2001(object):
         # if no steps are given, use internal
         if steps is None:
             steps = self.steps
-
         prev = 20
         for row, d in steps.iterrows():
             for column, t in enumerate(d):
@@ -419,10 +418,10 @@ class Fabian2001(object):
 
                 # add NRM step
                 if typ == 'LT-T-Z' and tau == 0:
-                    data[0] = ['LT-NO', 0, 0, m, m, t, t + 273, prev + 273]
+                    data[0] = ['LT-NO', 0, 0, m, m, t, t, prev]
 
                 i = data.shape[1]
-                data[i] = [typ, 0, 0, m, m, t, t + 273, prev + 273]
+                data[i] = [typ, 0, 0, m, m, t, t, prev]
 
                 # # add extra PT step after TH(rt)
                 # if typ == 'LT-T-Z' and tau == 0:
