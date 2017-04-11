@@ -169,7 +169,7 @@ def split_num_alph(item):
         return float(item), None
 
 
-def lin_regress(pdd, column_name_x, column_name_y):
+def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
         """
         calculates a least squares linear regression for given x/y data
 
@@ -185,8 +185,14 @@ def lin_regress(pdd, column_name_x, column_name_y):
             x_intercept
         """
 
+
         x = pdd[column_name_x].values
-        y = pdd[column_name_y].values
+
+        if ypdd is not None:
+            y = ypdd[column_name_y].values
+        else:
+            y = pdd[column_name_y].values
+
         if len(x) < 2 or len(y) < 2:
             return None
 
