@@ -24,16 +24,34 @@ from RockPy.core import measurement
 
 
 class Paleointensity(measurement.Measurement):
+    def filter_demagnetization_ptrm(self, vmin=20, vmax=700):
+        """
+        Filters the th and ptrm data so that the temperatures are within vmin, vmax and only temperatures in both
+        th and ptrm are returned.
+        """
 
+        # get equal temperature steps for both demagnetization and acquisition measurements
+        equal_steps = list(set(self.demag['level'].values) & set(self.acqu['level'].values))
+
+        # Filter data for the equal steps and filter steps outside of tmin-tmax range
+        # True if step between vmin, vmax
+        equal_steps = sorted(i for i in equal_steps if vmin <= i <= vmax)
+
+        # filtering for equal variables
+        y = self.demag.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
+        x = self.ptrm.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
+
+        return x, y
 
     @classmethod
     def from_simulation(cls, sobj, idx=0, **simparams):
 
+        pressure_demag = simparams.pop('pressure_demag', False)
         method = simparams.pop('method', 'fabian')
 
         if method == 'fabian':
             simobj = paleointensity.Fabian2001(**simparams)
-        return cls(sobj=sobj, mdata=simobj.get_data(), ftype_data=simobj)
+        return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag), ftype_data=simobj, ftype='simulation')
 
     @staticmethod
     def format_jr6(ftype_data, sobj_name=None):
@@ -150,7 +168,7 @@ class Paleointensity(measurement.Measurement):
         d = self.acqu.copy()
         d.loc[:, ('x', 'y', 'z')] -= self.demag.loc[:, ('x', 'y', 'z')]
         d['LT_code'] = 'PTRM'
-        d['m'] = np.sqrt(d.loc[:,['x', 'y', 'z']].apply(lambda x:x**2).sum(axis=1))
+        d['m'] = np.sqrt(d.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
         return d
 
         ####################################################################################################################
@@ -160,6 +178,122 @@ class Paleointensity(measurement.Measurement):
 
     class result_slope(Result):
 
+        def calculate_vd(self, vmin, vmax,
+                         **unused_params):
+            """
+            Vector differences
+
+            :param parameter:
+            :return:
+
+            """
+            acqu, demag = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+            vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
+            return vd
+
+        def calculate_vds(self, vmin, vmax, **unused_params):
+            """
+            The vector difference sum of the entire NRM vector :math:`\\mathbf{NRM}`.
+
+            .. math::
+
+               VDS=\\left|\\mathbf{NRM}_{n_{max}}\\right|+\\sum\\limits_{i=1}^{n_{max}-1}{\\left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right|}
+
+            where :math:`\\left|\\mathbf{NRM}_{i}\\right|` denotes the length of the NRM vector at the :math:`i^{demagnetization}` step.
+
+            Parameters
+            ----------
+                vmin: float
+                vmax: float
+                recalc: bool
+                non_method_parameters: dict
+            """
+            acqu, demag = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+
+            NRM_var_max = np.linalg.norm(demag.loc[:, ['x', 'y', 'z']])
+            NRM_sum = np.sum(np.abs(self.calculate_vd(vmin=0, vmax=700)))
+            return abs(NRM_var_max) + NRM_sum
+
+        def x_dash(self, vmin, vmax, component,
+                   **unused_params):
+            """
+
+            :math:`x_0 and :math:`y_0` the x and y points on the Arai plot projected on to the best-fit line. These are
+            used to
+            calculate the NRM fraction and the length of the best-fit line among other parameters. There are
+            multiple ways of calculating :math:`x_0 and :math:`y_0`, below is one example.
+
+            ..math:
+
+              x_i' = \\frac{1}{2} \\left( x_i + \\frac{y_i - Y_{int}}{b}
+
+
+            :param parameter:
+            :return:
+
+            """
+
+            demagnetization, acquisition = self.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+            x_dash = (
+                demagnetization[component].v - self.result_y_int(vmin=vmin, vmax=vmax, component=component)[0])
+            x_dash = x_dash / self.result_slope(vmin=vmin, vmax=vmax, component=component)[0]
+            x_dash = acquisition[component].v + x_dash
+            x_dash = x_dash / 2.
+
+            return x_dash
+
+        def y_dash(self, vmin, vmax, component,
+                   **unused_params):
+            """
+
+            :math:`x_0` and :math:`y_0` the x and y points on the Arai plot projected on to the best-fit line. These are
+            used to
+            calculate the NRM fraction and the length of the best-fit line among other parameters. There are
+            multiple ways of calculating :math:`x_0` and :math:`y_0`, below is one example.
+
+            ..math:
+
+               y_i' = \\frac{1}{2} \\left( x_i + \\frac{y_i - Y_{int}}{b}
+
+
+            :param parameter:
+            :return:
+
+            """
+            acqu_data, demag_data = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+
+            y_dash = acqu_data[component].values + (demag_data[component].values - self.get_result(
+                'yint')) / self.get_result('slope')
+            y_dash = y_dash / 2
+            return y_dash
+
+        def delta_x_dash(self, vmin, vmax, component,
+                         **unused_params):
+            """
+
+            :math:`\Delta x_0` is the TRM length of the best-fit line on the Arai plot.
+
+            """
+            x_dash = self.x_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
+            out = abs(np.max(x_dash) - np.min(x_dash))
+            return out
+
+        def delta_y_dash(self, vmin, vmax, component,
+                         **unused_params):
+            """
+
+            :math:`\Delta y_0`  is the NRM length of the best-fit line on the Arai plot.
+
+            """
+            y_dash = self.y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
+            out = abs(np.max(y_dash) - np.min(y_dash))
+            return out
+
+        def best_fit_line_length(self, vmin=20, vmax=700, component='m'):
+            L = np.sqrt((self.delta_x_dash(vmin=vmin, vmax=vmax, component=component)) ** 2 +
+                        (self.delta_y_dash(vmin=vmin, vmax=vmax, component=component)) ** 2)
+            return L
+
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
             """
             calculates the least squares slope for the specified temperature interval
@@ -167,33 +301,254 @@ class Paleointensity(measurement.Measurement):
             :param parameter:
 
             """
+            acqu_data, demag_data = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
 
-            # get equal temperature steps for both demagnetization and acquisition measurements
-            equal_steps = list(set(self.mobj.demag['level'].values) & set(self.mobj.acqu['level'].values))
+            slope, sigma, yint, xint = lin_regress(pdd=acqu_data, column_name_x=component,
+                                                   ypdd=demag_data, column_name_y=component)
 
-            # Filter data for the equal steps and filter steps outside of tmin-tmax range
-            # True if step between var_min, var_max
-            equal_steps = sorted(i for i in equal_steps if vmin <= i <= vmax)
-
-            # filtering for equal variables
-            demag_data = self.mobj.demag.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
-            acqu_data = self.mobj.ptrm.set_index('level').loc[equal_steps]  # filtered data for var_min var_max
-
-            slope, sigma, y_int, x_int = lin_regress(pdd=acqu_data, column_name_x='m', ypdd=demag_data, column_name_y='m')
             self.mobj.sobj.results.loc[self.mobj.mid, 'slope'] = slope
             self.mobj.sobj.results.loc[self.mobj.mid, 'sigma'] = sigma
-            self.mobj.sobj.results.loc[self.mobj.mid, 'y_int'] = y_int
-            self.mobj.sobj.results.loc[self.mobj.mid, 'x_int'] = x_int
-            self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(equal_steps)
+            self.mobj.sobj.results.loc[self.mobj.mid, 'yint'] = yint
+            self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
+            self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
     class result_sigma(result_slope):
         dependencies = ['slope']
-    class result_y_int(result_slope):
+
+    class result_yint(result_slope):
         dependencies = ['slope']
-    class result_x_int(result_slope):
+
+    class result_xint(result_slope):
         dependencies = ['slope']
+
     class result_n(result_slope):
         dependencies = ['slope']
+
+    class result_banc(Result):
+        dependencies = ('slope', 'sigma')
+
+        def recipe_default(self, vmin=20, vmax=700, component='m', b_lab=35.0,
+                           **unused_params):
+            """
+            calculates the :math:`B_{anc}` value for a given lab field in the specified temperature interval.
+    
+            :param parameter:
+    
+            Note
+            ----
+                This calculation method calls calculate_slope if you call it again afterwards, with different
+                calculation_parameters, it will not influence this result. Therfore you have to be careful when calling
+                this.
+            """
+            slope = self.mobj.sobj.results.loc[self.mobj.mid, 'slope']
+            sigma = self.mobj.sobj.results.loc[self.mobj.mid, 'sigma']
+
+            self.mobj.sobj.results.loc[self.mobj.mid, 'banc'] = abs(b_lab * slope)
+            self.mobj.sobj.results.loc[self.mobj.mid, 'sigma_banc'] = abs(b_lab * sigma)
+
+    class result_sigma_banc(result_banc):
+        dependencies = ('slope', 'banc')
+        indirect = True
+
+    class result_f(result_slope):
+        dependencies = ('slope', 'yint')
+
+        def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
+            """
+    
+            The remanence fraction, f, was defined by Coe et al. (1978) as:
+    
+            .. math::
+    
+               f =  \\frac{\\Delta y^T}{y_0}
+    
+            where :math:`\Delta y^T` is the length of the NRM/TRM segment used in the slope calculation.
+    
+    
+            :param parameter:
+            :return:
+    
+            """
+            delta_y_dash = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
+            y_int = self.get_result('yint')
+
+            self.set_result(result=delta_y_dash / abs(y_int), result_name='f')
+
+    # ####################################################################################################################
+    # """ F_VDS """
+    # 
+    class result_fvds(result_slope):
+
+        def recipe_default(self, vmin=20, vmax=700, component='m',
+                           **unused_params):
+            """
+    
+            NRM fraction used for the best-fit on an Arai diagram calculated as a vector difference sum (Tauxe and Staudigel, 2004).
+    
+            .. math::
+    
+               f_{VDS}=\\frac{\Delta{y'}}{VDS}
+    
+            :param parameter:
+            :return:
+    
+            """
+            delta_y = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
+            VDS = self.calculate_vds(vmin, vmax)
+            self.set_result(result=delta_y / VDS, result_name='fvds')
+
+    ####################################################################################################################
+    """ FRAC """
+
+    class result_frac(result_slope):
+        def recipe_default(self, vmin=20, vmax=700, **unused_params):
+            """
+    
+            NRM fraction used for the best-fit on an Arai diagram determined entirely by vector difference sum
+            calculation (Shaar and Tauxe, 2013).
+    
+            .. math::
+    
+                FRAC=\\frac{\sum\limits_{i=start}^{end-1}{ \left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right| }}{VDS}
+    
+            :param parameter:
+            :return:
+    
+            """
+
+            NRM_sum = np.sum(np.abs(self.calculate_vd(vmin=vmin, vmax=vmax, **unused_params)))
+            VDS = self.calculate_vds(vmin, vmax)
+            self.set_result(result=NRM_sum / VDS, result_name='frac')
+
+    ####################################################################################################################
+    """ BETA """
+
+    class result_beta(result_slope):
+        dependencies = ('slope','sigma')
+
+        def recipe_default(self, vmin=20, vmax=700, component='m',
+                           **unused_params):
+            """
+    
+            :math:`\beta` is a measure of the relative data scatter around the best-fit line and is the ratio of the
+            standard error of the slope to the absolute value of the slope (Coe et al., 1978)
+    
+            .. math::
+    
+               \\beta = \\frac{\sigma_b}{|b|}
+    
+    
+            :param parameters:
+            :return:
+    
+            """
+
+            slope = self.get_result('slope')
+            sigma = self.get_result('sigma')
+            result = sigma / abs(slope)
+            self.set_result(result)
+
+    ####################################################################################################################
+    """ G """
+
+    class result_g(result_slope):
+
+        def recipe_default(self, vmin=20, vmax=700, component='m',
+                        **unused_params):
+            """
+    
+            Gap factor: A measure of the gap between the points in the chosen segment of the Arai plot and the least-squares
+            line. :math:`g` approaches :math:`(n-2)/(n-1)` (close to unity) as the points are evenly distributed.
+    
+            """
+            y_dash = self.y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
+            delta_y_dash = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
+            y_dash_diff = [(y_dash[i + 1] - y_dash[i]) ** 2 for i in range(len(y_dash) - 1)]
+            y_sum_dash_diff_sq = np.sum(y_dash_diff, axis=0)
+
+            result = 1 - y_sum_dash_diff_sq / delta_y_dash ** 2
+            self.set_result(result)
+
+
+    ####################################################################################################################
+    """ GAP MAX """
+    class result_gapmax(result_slope):
+        def recipe_default(self, vmin=20, vmax=700, **unused_params):
+            """
+            The gap factor is a measure of the average Arai plot point spacing and may not represent extremes
+            of spacing. To account for this Shaar and Tauxe (2013)) proposed :math:`GAP_{\text{MAX}}`, which is the maximum
+            gap between two points determined by vector arithmetic.
+    
+            .. math::
+               GAP_{\\text{MAX}}=\\frac{\\max{\{\\left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right|\}}_{i=start, \\ldots, end-1}}
+               {\\sum\\limits_{i=start}^{end-1}{\\left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right|}}
+    
+            :return:
+    
+            """
+            vd = self.calculate_vd(vmin=vmin, vmax=vmax)
+            max_vd = np.max(vd)
+            sum_vd = np.sum(vd)
+            result =  max_vd / sum_vd
+            self.set_result(result)
+
+    ####################################################################################################################
+    """ Q """
+
+    class result_q(result_slope):
+        dependencies = ['beta', 'f', 'g']
+        def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
+            """
+            The quality factor (:math:`q`) is a measure of the overall quality of the paleointensity estimate and combines
+            the relative scatter of the best-fit line, the NRM fraction and the gap factor (Coe et al., 1978).
+    
+            .. math::
+               q=\\frac{\\left|b\\right|fg}{\\sigma_b}=\\frac{fg}{\\beta}
+    
+            :param parameter:
+            :return:
+    
+            """
+            beta = self.get_result('beta')
+            f = self.get_result('f')
+            gap = self.get_result('g')
+            result = (f * gap) / beta
+            self.set_result(result)
+
+    ####################################################################################################################
+    """ W """
+
+    class result_w(Result):
+        dependencies =  ('q','n')
+
+        def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
+            """
+            Weighting factor of Prevot et al. (1985). It is calculated by
+
+            .. math::
+
+               w=\\frac{q}{\\sqrt{n-2}}
+
+            Originally it is :math:`w=\\frac{fg}{s}`, where :math:`s^2` is given by
+
+            .. math::
+
+               s^2 = 2+\\frac{2\\sum\\limits_{i=start}^{end}{(x_i-\\bar{x})(y_i-\\bar{y})}}
+                  {\\left( \\sum\\limits_{i=start}^{end}{(x_i- \\bar{x})^{\\frac{1}{2}}}
+                  \\sum\\limits_{i=start}^{end}{(y_i-\\bar{y})^2} \\right)^2}
+
+            It can be noted, however, that :math:`w` can be more readily calculated as:
+
+            .. math::
+
+               w=\\frac{q}{\\sqrt{n-2}}
+
+            :param parameter:
+            """
+            q = self.get_result('q')
+            n = self.get_result('n')
+            result = q / np.sqrt((n - 2))
+            self.set_result(result)
 
 
 if __name__ == '__main__':
@@ -205,6 +560,11 @@ if __name__ == '__main__':
     #
     # print(m.data)
 
-    m = s.add_simulation(mtype='pint')
-    m.calc_all()
-    print(m.sobj.results)
+    m = s.add_simulation(mtype='pint', preset='Fabian7a', pressure_demag= True, d2=0.2, d3=0.4, dt=0.2)
+    m.calc_all(vmin=200)
+    m.ftype_data.plot_arai()
+    # m.result_banc(vmin=200)
+    # f = m.result_f()
+
+    print(m.results)
+    plt.show()
