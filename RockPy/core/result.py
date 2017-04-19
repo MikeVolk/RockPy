@@ -31,6 +31,26 @@ class Result():
 
         return self.mobj.sobj.results.loc[self.mobj.mid, result_name]
 
+    def get_stack(self, stack=None):
+
+        if stack is None:
+            stack = []
+
+        if self.dependencies:
+            for dep_res in self._dependencies:
+                stack = dep_res.get_stack(stack)
+
+        if not self in stack:
+            stack.append(self)
+        else:
+            return stack
+
+        if self._subjects:
+            for subj_res in self._subjects:
+                stack = subj_res.get_stack(stack)
+
+        return stack
+
     def __call__(self, recipe=None, **parameters):
         """
         calling method for the result. iterates over the current worker of the mobj.
@@ -47,89 +67,61 @@ class Result():
         # initialize signature
         signature = None
 
-        # list of results that were calculated
-        # when initially called by the user, the list is created.
-        # only the first element is returned
+        # calculation stack with all dependents and subjects of the result, that need to be calculated
+        stack = self.get_stack()
 
-        calculation_stack = parameters.pop('calculation_stack', list())
+        # cycle throught the stack
+        for result in stack:
 
-        # check if result was calculated keeps results from being recalculated all the time
-        if self.name in calculation_stack:
-            self.log().debug('%s is already calculated in current run' % self.name)
-            return
-        else:
-            calculation_stack.append(self.name)
+            #assume we dont haveto calculate
+            calculate = False
 
-        # set default parameters
-        if not self.indirect:
-            # todo so only parameters are passed on to a function that the recipe function likes
-            try:
-                signature = inspect.signature(self._recipes()[recipe]).parameters
-                for p in signature:
-                    if p == 'check':
-                        continue
-                    if p == 'self':
-                        continue
-                    if p in parameters:
-                        continue
-                    if p == 'unused_params':
-                        continue
-                    else:
-                        parameters[p] = signature[p].default
-            except KeyError:
-                pass
+            # set default parameters
+            signature = inspect.signature(result._recipes()[recipe]).parameters
+            for p in signature:
+                if p == 'check':
+                    continue
+                if p == 'self':
+                    continue
+                if p in parameters:
+                    continue
+                if p == 'unused_params':
+                    continue
+                else:
+                    parameters[p] = signature[p].default
 
-        self.log().debug('called: %s' % self)
-        self.log().debug('with parameters:')
-        
-        for k, v in parameters.items():
-            # remove unused parameters
-            if signature and k not in signature:
-                self.log().debug('\tunused %s: %s' % (k, v))
-            else:
-                self.log().debug('\t%s: %s' % (k, v))
+            result.log().info('called: %s' % result)
+            result.log().debug('with parameters:')
 
-        calculate = False
+            for k, v in parameters.items():
+                # remove unused parameters
+                if signature and k not in signature:
+                    result.log().debug('\tunused %s: %s' % (k, v))
+                else:
+                    result.log().debug('\t%s: %s' % (k, v))
 
-        if not self.indirect:
-            if not self._is_calculated:
+            if not result._is_calculated:
                 calculate = True
-            if self._parameters_changed(**parameters):
+            if result._parameters_changed(**parameters):
                 calculate = True
-            if self._recipe_changed(recipe):
+            if result._recipe_changed(recipe):
                 calculate = True
 
-            # if not calculate:
-            #     return self.mobj.results.loc[self.name]
-        
-        # calculate all dependencies
-        if self.dependencies:
-            for dep_res in self._dependencies:
-                self.log().debug('calling dependent << %s >> for result %s' % (dep_res.name, self.name))
-                dep_res(recipe=recipe, calculation_stack=calculation_stack, **parameters)
 
-        if calculate:
-            # update parameters with new parameters
-            self.params.update(**parameters)
+            if calculate:
+                # update parameters with new parameters
+                result.params.update(**parameters)
 
-            if recipe not in self._recipes():
-                self.log().error('result %s recipe has no recipe << %s >>:' % (self.name, recipe))
-                for r in self._recipes():
-                    self.log().error('%s' % r)
-            else:
-                self.log().debug('calling result %s recipe %s' % (self.name, recipe))
-                self.log().debug('\t%s' % self._recipes()[recipe])
-                res = self._recipes()[recipe](self, **parameters)
-        
-        # calculate the subjects of the result
-        if self._subjects:
-            for subj_res in self._subjects:
-                self.log().debug('calling subject << %s >> of result %s' % (subj_res.name, self.name))
-                subj_res(recipe=recipe, calculation_stack=calculation_stack, **parameters)
+                if recipe not in result._recipes():
+                    result.log().error('result %s recipe has no recipe << %s >>:' % (result.name, recipe))
+                    for r in result._recipes():
+                        result.log().error('%s' % r)
+                else:
+                    result.log().debug('calling result %s recipe %s' % (result.name, recipe))
+                    result.log().debug('\t%s' % result._recipes()[recipe])
+                    result._recipes()[recipe](result, **parameters)
 
-        # only the first iun the stack is the one to be called and calculated 
-        if self.name == calculation_stack[0]:
-            return self.get_result()
+        return self.get_result()
 
     @property
     def _is_calculated(self):
@@ -140,13 +132,15 @@ class Result():
 
         """
         self.log().debug('checking if %s calculated' % self.name)
-        if self.mobj.results is None or self.name not in self.mobj.results:
-            self.log().debug('%s NOT calculated' % self.name)
-            return False
-        else:
-            self.log().debug('%s IS calculated' % self.name)
-            return True
 
+        if self.mobj.results is not None:
+            if self.name in self.mobj.results:
+                if not np.isnan(self.get_result()):
+                    self.log().debug('%s IS calculated' % self.name)
+                    return True
+
+        self.log().debug('%s NOT calculated' % self.name)
+        return False
 
     def _parameters_changed(self, **params):
         self.log().debug('checking if parameters changed')
