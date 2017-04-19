@@ -61,6 +61,7 @@ generic: generic
 simulation: sim, simulation
 
 none: none
+
 # ftypes
 cryomag: cryo
 cryomagcsv: cry
@@ -70,4 +71,4 @@ vsm: vsm, vibrating sample magnetometer
 jr6: jr6, jr 6
 mpms: mpms
 
-test: test
+tdt: tdt, thelliertool
