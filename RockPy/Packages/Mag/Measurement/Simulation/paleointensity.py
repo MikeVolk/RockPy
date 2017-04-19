@@ -198,11 +198,10 @@ class Fabian2001(object):
 
         # calculate demagnetization function
         self.demag_dist = d1 + d2 * self.cauchy(self.tau_ub - dt, d3)
-        self.demag = np.ones(self.demag_dist.shape) -self.demag_dist
+        self.zf_steps = 1 - self.demag_dist
 
     @classmethod
     def cauchy(cls, x, s):
-        if s == 0: s += 1E-15
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
@@ -298,7 +297,7 @@ class Fabian2001(object):
         # self.log().debug('paleomag rectangle shape: (%s, %s)'%data[idx:, :].shape)
 
         if pressure_demag:
-            pdem = self.demag[idx:].reshape(self.demag[idx:].shape[0],1)
+            pdem = self.zf_steps[idx:].reshape(self.zf_steps[idx:].shape[0], 1)
             data[idx:, :] = data[idx:, :] * pdem
 
         return data
@@ -341,7 +340,7 @@ class Fabian2001(object):
         elif tau_ub > tau_i or tau_i == 0:
             if pressure_demag:
                 idx = np.where(self.tau_ub == tau_b)[0][0]
-                return self.demag[idx] * self.hpal
+                return self.zf_steps[idx] * self.hpal
             else:
                 return self.hpal
 
@@ -566,5 +565,11 @@ class Fabian2001(object):
                 color=kwargs.pop('color','r'),**kwargs)
 
 if __name__ == '__main__':
-    s= RockPy.Sample('test')
-    m = s.add_simulation('paleointensity')
+    # RockPy.log.setLevel('INFO')
+    s = RockPy.Sample('test')
+    mnp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=False)
+    mp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=True)
+    mp.calc_all()
+    mnp.calc_all()
+    print(mp.results)
+    print(mnp.results)

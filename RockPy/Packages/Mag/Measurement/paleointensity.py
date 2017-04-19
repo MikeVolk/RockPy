@@ -24,22 +24,22 @@ from RockPy.core import measurement
 
 
 class Paleointensity(measurement.Measurement):
-    def filter_demagnetization_ptrm(self, vmin=20, vmax=700):
+    def equal_acqu_demag_steps(self, vmin=20, vmax=700):
         """
         Filters the th and ptrm data so that the temperatures are within vmin, vmax and only temperatures in both
         th and ptrm are returned.
         """
 
         # get equal temperature steps for both demagnetization and acquisition measurements
-        equal_steps = list(set(self.demag['level'].values) & set(self.acqu['level'].values))
+        equal_steps = list(set(self.zf_steps['level'].values) & set(self.if_steps['level'].values))
 
         # Filter data for the equal steps and filter steps outside of tmin-tmax range
         # True if step between vmin, vmax
         equal_steps = sorted(i for i in equal_steps if vmin <= i <= vmax)
 
         # filtering for equal variables
-        y = self.demag.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
-        x = self.ptrm.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
+        y = self.zf_steps.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
+        x = self.ifzf_diff_steps.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
 
         return x, y
 
@@ -72,10 +72,8 @@ class Paleointensity(measurement.Measurement):
         data = ftype_data.data[ftype_data.data['specimen'] == sobj_name].reset_index(drop=True)
 
         # rename the columns from magic format -> RockPy internal names
-        print(data)
         data = data.rename(
             columns={'magn_x': 'x', 'magn_y': 'y', 'magn_z': 'z', 'magn_moment': 'm', 'treat_temp': 'ti'})
-        print(data)
 
         # add tj column:
         # tj := temperature prior to ti step e.g. temperature before ck step
@@ -87,7 +85,7 @@ class Paleointensity(measurement.Measurement):
         return data
 
     @property
-    def demag(self):
+    def zf_steps(self):
         """
         Thermal demagnetization steps of the experiments, also giving NRM step
 
@@ -99,14 +97,14 @@ class Paleointensity(measurement.Measurement):
         return d
 
     @property
-    def acqu(self):
+    def if_steps(self):
         """
         Acquisition of partial Thermal remanent magnetization steps of the experiments, also giving NRM step.
 
         Notes
         -----
         This gives the experimental value of the NRM remaining (ti) and pTRM acquisition (ti). The true pTRM gained (ti)
-        can be obtained with measurement.ptrm
+        can be obtained with measurement.ifzf_diff_steps
 
         Returns
         -------
@@ -155,7 +153,7 @@ class Paleointensity(measurement.Measurement):
         return d
 
     @property
-    def ptrm(self):
+    def ifzf_diff_steps(self):
         """
         pTRM acuisition steps of the experiments. Vector substration of the pt[[x,y,z]] and th[[x,y,z]] steps for
         each ti. Also recalculates the moment ['m'] using np.linalg.norm
@@ -165,8 +163,8 @@ class Paleointensity(measurement.Measurement):
             pandas.DataFrame
         """
 
-        d = self.acqu.copy()
-        d.loc[:, ('x', 'y', 'z')] -= self.demag.loc[:, ('x', 'y', 'z')]
+        d = self.if_steps.copy()
+        d.loc[:, ('x', 'y', 'z')] -= self.zf_steps.loc[:, ('x', 'y', 'z')]
         d['LT_code'] = 'PTRM'
         d['m'] = np.sqrt(d.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
         return d
@@ -187,7 +185,7 @@ class Paleointensity(measurement.Measurement):
             :return:
 
             """
-            acqu, demag = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+            acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
             vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
             return vd
 
@@ -208,7 +206,7 @@ class Paleointensity(measurement.Measurement):
                 recalc: bool
                 non_method_parameters: dict
             """
-            acqu, demag = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+            acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
             NRM_var_max = np.linalg.norm(demag.loc[:, ['x', 'y', 'z']])
             NRM_sum = np.sum(np.abs(self.calculate_vd(vmin=0, vmax=700)))
@@ -260,7 +258,7 @@ class Paleointensity(measurement.Measurement):
             :return:
 
             """
-            acqu_data, demag_data = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+            acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
             y_dash = acqu_data[component].values + (demag_data[component].values - self.get_result(
                 'yint')) / self.get_result('slope')
@@ -301,7 +299,7 @@ class Paleointensity(measurement.Measurement):
             :param parameter:
 
             """
-            acqu_data, demag_data = self.mobj.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
+            acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
             slope, sigma, yint, xint = lin_regress(pdd=acqu_data, column_name_x=component,
                                                    ypdd=demag_data, column_name_y=component)
@@ -313,16 +311,19 @@ class Paleointensity(measurement.Measurement):
             self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
     class result_sigma(result_slope):
-        dependencies = ['slope']
-
+        # dependencies = ['slope']
+        pass
     class result_yint(result_slope):
-        dependencies = ['slope']
+        # dependencies = ['slope']
+        pass
 
     class result_xint(result_slope):
-        dependencies = ['slope']
+        # dependencies = ['slope']
+        pass
 
     class result_n(result_slope):
-        dependencies = ['slope']
+        # dependencies = ['slope']
+        pass
 
     class result_banc(Result):
         dependencies = ('slope', 'sigma')
@@ -331,14 +332,26 @@ class Paleointensity(measurement.Measurement):
                            **unused_params):
             """
             calculates the :math:`B_{anc}` value for a given lab field in the specified temperature interval.
-    
-            :param parameter:
-    
+            
+
+            Parameters
+            ----------
+                vmin: float
+                    min variable for best line fit
+                vmax:float
+                    max variable for best line fit
+                component: str
+                    component to be used for best line fit
+                b_lab: lab field
+                unused_params: dict
+                    anything that is passed to another result class
+                            
             Note
             ----
                 This calculation method calls calculate_slope if you call it again afterwards, with different
                 calculation_parameters, it will not influence this result. Therfore you have to be careful when calling
                 this.
+
             """
             slope = self.mobj.sobj.results.loc[self.mobj.mid, 'slope']
             sigma = self.mobj.sobj.results.loc[self.mobj.mid, 'sigma']
@@ -497,6 +510,7 @@ class Paleointensity(measurement.Measurement):
 
     class result_q(result_slope):
         dependencies = ['beta', 'f', 'g']
+
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
             """
             The quality factor (:math:`q`) is a measure of the overall quality of the paleointensity estimate and combines
