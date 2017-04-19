@@ -7,6 +7,14 @@ class Ftype(object):
     imported_files = []
     _clsdata = pd.DataFrame(columns=('dfile',))
 
+    def has_specimen(self, specimen):
+        if specimen not in self.data['specimen'].values:
+            Ftype.log().error('CANNOT IMPORT -- sobj_name not in ftype_data specimen list.')
+            Ftype.log().error('wrong sample name?')
+            Ftype.log().error('These samples exist: %s'%set(self.data['specimens']))
+            return False
+        else:
+            return True
 
     @classmethod
     def log(cls):
