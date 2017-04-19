@@ -1,14 +1,15 @@
 import RockPy
-from RockPy.core.ftype import Ftype
+import RockPy.core.ftype
 import pandas as pd
 import numpy as np
 
 import os
-class jr6(Ftype):
 
+
+class Jr6(RockPy.core.ftype.Ftype):
     pint_treatment_codes = ('LT-NO', 'LT-T-Z', 'LT-T-I', 'LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z')
 
-    table = {'tdt':['NRM', '0', '1', '2', '3', '4']}
+    table = {'tdt': ['NRM', '0', '1', '2', '3', '4']}
 
     def __init__(self, dfile, snames=None, dialect=None, volume=10 ** -5):
         super().__init__(dfile, snames=snames, dialect=dialect)
@@ -25,10 +26,11 @@ class jr6(Ftype):
                                   ], usecols=[0, 1, 2, 3, 4, 5], comment='#')
 
         if snames:
-            snames = RockPy._to_tuple(snames)
+            snames = RockPy.to_tuple(snames)
             data = data[np.in1d(data['specimen'], snames)]
             data = data.reset_index(drop=True)
 
+        assert isinstance(data, pd.DataFrame)
         data[xyz] = [v * 10 ** data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
         data[xyz] *= volume
         data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
@@ -43,8 +45,8 @@ class jr6(Ftype):
         pass
 
     def lookup_lab_treatment_code(self, item):
-        '''
-        looks up the treeatment code for an item. This is done to be compatible with MagIC
+        """
+        looks up the treatment code for an item. This is done to be compatible with MagIC
 
         Notes
         -----
@@ -58,19 +60,21 @@ class jr6(Ftype):
         Returns
         -------
 
-        '''
+        """
+        out = None
+
         if self.dialect == 'tdt':
             if item.lower() == 'nrm':
                 split = [0, item.upper()]
             else:
                 split = item.split('.')
 
-            idx = jr6.table[self.dialect].index(split[1])
-            out = jr6.pint_treatment_codes[idx]
+            idx = Jr6.table[self.dialect].index(split[1])
+            out = Jr6.pint_treatment_codes[idx]
 
         return out
 
 
 if __name__ == '__main__':
-    j6 = jr6(os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'), dialect='tdt')
+    j6 = Jr6(os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'), dialect='tdt')
     print(j6.data)
