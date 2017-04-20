@@ -1,6 +1,6 @@
 import RockPy
 from RockPy.core.ftype import Ftype
-from RockPy.core.utils import DIL2XYZ
+from RockPy.core import pandas_tools as pdt
 import pandas as pd
 import numpy as np
 
@@ -23,24 +23,42 @@ class tdt(Ftype):
                        names=['specimen', 'step', 'magn_moment', 'dec', 'inc',], comment='#', skiprows=2,
                            dtype={'specimen':str, 'step':float, 'magn_moment':float, 'dec':float, 'inc':float})
 
-        print(data[['dec','inc','magn_moment']])
-
         if snames:
             snames = RockPy.to_tuple(snames)
             data = data[np.in1d(data['specimen'], snames)]
             data = data.reset_index(drop=True)
 
-        # data[xyz] = [v * 10 ** data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
-        # data[xyz] *= volume
-        # data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
-        # data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in data['step']]
-        # data['treat_temp'] = data['level'] + 273
         data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in data['step']]
 
-        print(DIL2XYZ(data[['dec','inc','magn_moment']].values))
-        # data = data.drop('step', 1)
+        data = pdt.DIM2XYZ(data,
+                           colI='inc', colD='dec', colM='magn_moment',
+                           colX='magn_x', colY='magn_y', colZ='magn_z')
+        data['level'] = np.round(data['step'])
+        data['step'] = data['level']
+        self.add_tj_column(data)
         self.data = data
 
+    @staticmethod
+    def add_tj_column(data):
+        """
+        calculates the tj values
+        Parameters
+        ----------
+        data
+
+        Returns
+        -------
+
+        """
+        for i, code in data['LT_code'].iteritems():
+            if code in ('LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z'):
+                tj = data[data['level'].index<i]['level'].max()
+            else:
+                tj = data[data['level'].index<=i]['level'].max()
+            if np.isnan(tj):
+                tj = 20
+
+            data.loc[i,'tj'] = tj
 
     def lookup_lab_treatment_code(self, item):
         '''
@@ -68,10 +86,16 @@ class tdt(Ftype):
         return out
 
 if __name__ == '__main__':
+    RockPy.log.setLevel('DEBUG')
     f = os.path.join(RockPy.test_data_path, 'TT format', '187A.tdt')
     test = tdt(dfile=f)
+    # print(test.data)
+    s = RockPy.Sample(name='ET2_187A')
+    m = s.add_measurement(mtype='paleointensity', ftype='tdt', fpath=f)
+    # print(m.banc(vmin=150, vmax=300, blab=50))
+    # print(m.sigma_banc(vmin=150, vmax=300, blab=50))
+    print(m.fvds(vmin=150, vmax=300, blab=50))
+    # print(m.results)
 
-    # s = RockPy.Sample(name='ET2_187A')
-    # s.add_measurement(mtype='paleointensity', ftype='tdt', fpath=f)
 
 

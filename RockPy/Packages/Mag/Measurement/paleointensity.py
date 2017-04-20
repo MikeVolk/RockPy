@@ -39,7 +39,7 @@ class Paleointensity(measurement.Measurement):
 
         # filtering for equal variables
         y = self.zf_steps.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
-        x = self.ifzf_diff_steps.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
+        x = self.ifzf_diff.set_index('level').loc[equal_steps]  # filtered data for vmin vmax
 
         return x, y
 
@@ -101,18 +101,15 @@ class Paleointensity(measurement.Measurement):
         # read ftype
         data = ftype_data.data[ftype_data.data['specimen'] == sobj_name].reset_index(drop=True)
 
-        # # rename the columns from magic format -> RockPy internal names
-        # data = data.rename(
-        #     columns={'magn_x': 'x', 'magn_y': 'y', 'magn_z': 'z', 'magn_moment': 'm', 'treat_temp': 'ti'})
-        #
-        # # add tj column:
-        # # tj := temperature prior to ti step e.g. temperature before ck step
-        # data['tj'] = np.nan
-        # data.loc[1:, ('tj')] = data['ti'].values[:-1]
-        #
+        # rename the columns from magic format -> RockPy internal names
+        data = data.rename(
+            columns={'magn_x': 'x', 'magn_y': 'y', 'magn_z': 'z', 'magn_moment': 'm', 'step': 'ti'})
+
         # # delete specimens column
-        # del data['specimen']
-        # return data
+        del data['specimen']
+        del data['dec']
+        del data['inc']
+        return data
 
     @property
     def zf_steps(self):
@@ -134,7 +131,7 @@ class Paleointensity(measurement.Measurement):
         Notes
         -----
         This gives the experimental value of the NRM remaining (ti) and pTRM acquisition (ti). The true pTRM gained (ti)
-        can be obtained with measurement.ifzf_diff_steps
+        can be obtained with measurement.ifzf_diff
 
         Returns
         -------
@@ -183,7 +180,7 @@ class Paleointensity(measurement.Measurement):
         return d
 
     @property
-    def ifzf_diff_steps(self):
+    def ifzf_diff(self):
         """
         pTRM acuisition steps of the experiments. Vector substration of the pt[[x,y,z]] and th[[x,y,z]] steps for
         each ti. Also recalculates the moment ['m'] using np.linalg.norm
@@ -205,10 +202,10 @@ class Paleointensity(measurement.Measurement):
     """ RESULTS CALCULATED USING CALCULATE_SLOPE  METHODS """
 
     class slope(Result):
-        __calculates__ = ['sigma', 'yint', 'xint', 'n']
+        # __calculates__ = ['sigma', 'yint', 'xint', 'n']
 
-        def calculate_vd(self, vmin, vmax,
-                         **unused_params):
+        def vd(self, vmin, vmax,
+               **unused_params):
             """
             Vector differences
 
@@ -220,7 +217,7 @@ class Paleointensity(measurement.Measurement):
             vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
             return vd
 
-        def calculate_vds(self, vmin, vmax, **unused_params):
+        def vds(self, vmin, vmax, **unused_params):
             """
             The vector difference sum of the entire NRM vector :math:`\\mathbf{NRM}`.
 
@@ -238,9 +235,8 @@ class Paleointensity(measurement.Measurement):
                 non_method_parameters: dict
             """
             acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
-
-            NRM_var_max = np.linalg.norm(demag.loc[:, ['x', 'y', 'z']])
-            NRM_sum = np.sum(np.abs(self.calculate_vd(vmin=0, vmax=700)))
+            NRM_var_max = np.linalg.norm(demag.loc[:, ['x', 'y', 'z']].iloc[-1])
+            NRM_sum = np.sum(np.linalg.norm(self.vd(vmin=0, vmax=700), axis=1))
             return abs(NRM_var_max) + NRM_sum
 
         def x_dash(self, vmin, vmax, component,
@@ -282,19 +278,21 @@ class Paleointensity(measurement.Measurement):
 
             ..math:
 
-               y_i' = \\frac{1}{2} \\left( x_i + \\frac{y_i - Y_{int}}{b}
+               y_i' = \\frac{1}{2} \\left( y_i + bx + Y_{int} \\right)
 
 
-            :param parameter:
-            :return:
+            Notes
+            -----
+                needs slope and yint. Classes that use this directly or indirectly need 
+                dependencies = ('slope', 'yint')
 
             """
             acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
-            y_dash = acqu_data[component].values + (demag_data[component].values - self.get_result(
-                'yint')) / self.get_result('slope')
-            y_dash = y_dash / 2
-            return y_dash
+            y_dash = acqu_data[component] + (self.get_result('slope') * demag_data[component])\
+                            + self.get_result('yint')
+
+            return 0.5 * y_dash.values
 
         def delta_x_dash(self, vmin, vmax, component,
                          **unused_params):
@@ -327,7 +325,12 @@ class Paleointensity(measurement.Measurement):
             """
             calculates the least squares slope for the specified temperature interval
 
-            :param parameter:
+            Parameters
+            ----------
+            vmin
+            vmax
+            component
+            unused_params
 
             """
             acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
@@ -341,18 +344,17 @@ class Paleointensity(measurement.Measurement):
             self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
             self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
-    # class sigma(slope): pass
-    #
-    # class yint(slope): pass
-    #
-    # class xint(slope): pass
-    #
-    # class n(slope): pass
+    class sigma(slope): pass
+
+    class yint(slope): pass
+
+    class xint(slope): pass
+
+    class n(slope): pass
 
     class banc(Result):
         dependencies = ('slope', 'sigma')
-
-        def recipe_default(self, vmin=20, vmax=700, component='m', b_lab=35.0,
+        def recipe_default(self, vmin=20, vmax=700, component='m', blab=35.0,
                            **unused_params):
             """
             calculates the :math:`B_{anc}` value for a given lab field in the specified temperature interval.
@@ -366,7 +368,7 @@ class Paleointensity(measurement.Measurement):
                     max variable for best line fit
                 component: str
                     component to be used for best line fit
-                b_lab: lab field
+                blab: lab field
                 unused_params: dict
                     anything that is passed to another result class
                             
@@ -380,8 +382,8 @@ class Paleointensity(measurement.Measurement):
             slope = self.mobj.sobj.results.loc[self.mobj.mid, 'slope']
             sigma = self.mobj.sobj.results.loc[self.mobj.mid, 'sigma']
 
-            self.mobj.sobj.results.loc[self.mobj.mid, 'banc'] = abs(b_lab * slope)
-            self.mobj.sobj.results.loc[self.mobj.mid, 'sigma_banc'] = abs(b_lab * sigma)
+            self.mobj.sobj.results.loc[self.mobj.mid, 'banc'] = abs(blab * slope)
+            self.mobj.sobj.results.loc[self.mobj.mid, 'sigma_banc'] = abs(blab * sigma)
 
     class sigma_banc(banc):
         dependencies = ('slope', 'banc')
@@ -414,7 +416,7 @@ class Paleointensity(measurement.Measurement):
     # """ F_VDS """
     # 
     class fvds(slope):
-
+        dependencies = ('slope', )
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
             """
@@ -425,12 +427,18 @@ class Paleointensity(measurement.Measurement):
     
                f_{VDS}=\\frac{\Delta{y'}}{VDS}
     
-            :param parameter:
-            :return:
+            Parameters
+            ----------
+            vmin
+            vmax
+            component
+            unused_params
     
             """
+
             delta_y = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
-            VDS = self.calculate_vds(vmin, vmax)
+            VDS = self.vds(vmin, vmax)
+            print(delta_y, VDS)
             self.set_result(result=delta_y / VDS, result_name='fvds')
 
     ####################################################################################################################
@@ -452,8 +460,8 @@ class Paleointensity(measurement.Measurement):
     
             """
 
-            NRM_sum = np.sum(np.abs(self.calculate_vd(vmin=vmin, vmax=vmax, **unused_params)))
-            VDS = self.calculate_vds(vmin, vmax)
+            NRM_sum = np.sum(np.abs(self.vd(vmin=vmin, vmax=vmax, **unused_params)))
+            VDS = self.vds(vmin, vmax)
             self.set_result(result=NRM_sum / VDS, result_name='frac')
 
     ####################################################################################################################
@@ -522,7 +530,7 @@ class Paleointensity(measurement.Measurement):
             :return:
     
             """
-            vd = self.calculate_vd(vmin=vmin, vmax=vmax)
+            vd = self.vd(vmin=vmin, vmax=vmax)
             max_vd = np.max(vd)
             sum_vd = np.sum(vd)
             result =  max_vd / sum_vd
@@ -601,7 +609,4 @@ if __name__ == '__main__':
     m.calc_all(vmin=200)
     # m.ftype_data.plot_arai()
     m.banc(vmin=200)
-    print(m.results)
-    m.banc(vmin=100)
-    print(m.results)
     plt.show()
