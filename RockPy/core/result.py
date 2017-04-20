@@ -25,7 +25,18 @@ class Result():
         self.mobj.sobj.results.loc[self.mobj.mid, result_name] = result
 
     def get_result(self, result_name=None):
+        """
+        Helper function for easy retrieval of results from a measurement
+        
+        Parameters
+        ----------
+        result_name
 
+        Returns
+        -------
+            Fasle if the mID is not in the result, yet
+            Otherwise it returns the result
+        """
         if result_name is None:
             result_name = self.name
 
@@ -67,65 +78,70 @@ class Result():
         # if this is the first run use the default_recipe
         if recipe is None:
             recipe = self.default_recipe
-
         # initialize signature
         signature = None
 
-        # calculation stack with all dependents and subjects of the result, that need to be calculated
-        stack = self.get_stack()
+        if self._needs_to_be_calculated(self, recipe, **parameters):
+            # calculation stack with all dependents and subjects of the result, that need to be calculated
+            stack = self.get_stack()
 
-        # cycle throught the stack
-        for result in stack:
+            # cycle throught the stack
+            for result in stack:
 
-            #assume we dont haveto calculate
-            calculate = False
+                # set default_recipe parameters
+                signature = inspect.signature(result._recipes()[recipe]).parameters
+                for p in signature:
+                    if p == 'check':
+                        continue
+                    if p == 'self':
+                        continue
+                    if p in parameters:
+                        continue
+                    if p == 'unused_params':
+                        continue
+                    else:
+                        parameters[p] = signature[p].default
 
-            # set default_recipe parameters
-            signature = inspect.signature(result._recipes()[recipe]).parameters
-            for p in signature:
-                if p == 'check':
-                    continue
-                if p == 'self':
-                    continue
-                if p in parameters:
-                    continue
-                if p == 'unused_params':
-                    continue
-                else:
-                    parameters[p] = signature[p].default
+                result.log().info('called: %s' % result)
+                result.log().debug('with parameters:')
 
-            result.log().info('called: %s' % result)
-            result.log().debug('with parameters:')
+                for k, v in parameters.items():
+                    # remove unused parameters
+                    if signature and k not in signature:
+                        result.log().debug('\tunused %s: %s' % (k, v))
+                    else:
+                        result.log().debug('\t%s: %s' % (k, v))
 
-            for k, v in parameters.items():
-                # remove unused parameters
-                if signature and k not in signature:
-                    result.log().debug('\tunused %s: %s' % (k, v))
-                else:
-                    result.log().debug('\t%s: %s' % (k, v))
+                if self._needs_to_be_calculated(result, recipe, **parameters):
+                    # update parameters with new parameters
+                    result.params.update(**parameters)
 
-            if not result._is_calculated:
-                calculate = True
-            if result._parameters_changed(**parameters):
-                calculate = True
-            if result._recipe_changed(recipe):
-                calculate = True
+                    if recipe not in result._recipes():
+                        result.log().error('result %s recipe has no recipe << %s >>:' % (result.name, recipe))
+                        for r in result._recipes():
+                            result.log().error('%s' % r)
+                    else:
+                        result.log().debug('calling result %s recipe %s' % (result.name, recipe))
+                        result.log().debug('\t%s' % result._recipes()[recipe])
+                        result._recipes()[recipe](result, **parameters)
 
-
-            if calculate:
-                # update parameters with new parameters
-                result.params.update(**parameters)
-
-                if recipe not in result._recipes():
-                    result.log().error('result %s recipe has no recipe << %s >>:' % (result.name, recipe))
-                    for r in result._recipes():
-                        result.log().error('%s' % r)
-                else:
-                    result.log().debug('calling result %s recipe %s' % (result.name, recipe))
-                    result.log().debug('\t%s' % result._recipes()[recipe])
-                    result._recipes()[recipe](result, **parameters)
-
+                    # set the calculation recipe
+                    result.recipe = recipe
         return self.get_result()
+
+    @staticmethod
+    def _needs_to_be_calculated(result, recipe, **parameters):
+        if result.mobj.mid not in result.mobj.sobj.results:
+            return True
+
+        if not result._is_calculated:
+            return True
+        if result._parameters_changed(**parameters):
+            return True
+        if result._recipe_changed(recipe):
+            return True
+        else:
+            return False
 
     @property
     def _is_calculated(self):
@@ -135,8 +151,6 @@ class Result():
         -------
 
         """
-        self.log().debug('checking if %s calculated' % self.name)
-
         if self.mobj.results is not None:
             if self.name in self.mobj.results:
                 if not np.isnan(self.get_result()):
@@ -192,14 +206,14 @@ class Result():
         self.recipe = None
         self.params = {}
         self.set_default_recipe()
-
-        # create the classes for each of the indirect results from cls.__calculates__
-        self.__calculates__ = kwargs.pop('calculates', self.__class__.__calculates__)
-        for method in self.__calculates__:
-            if not method in dir(self.mobj):
-                self.log().debug('METACLASS creation << %s >> for result << %s >>' %(method, self))
-                SubClass = type(method, (self.__class__, ), {'mobj': None})
-                setattr(self.mobj, method, SubClass(mobj, calculates=[]))
+        #
+        # # create the classes for each of the indirect results from cls.__calculates__
+        # self.__calculates__ = kwargs.pop('calculates', self.__class__.__calculates__)
+        # for method in self.__calculates__:
+        #     if not method in dir(self.mobj):
+        #         self.log().debug('METACLASS creation << %s >> for result << %s >>' %(method, self))
+        #         SubClass = type(method, (self.__class__, ), {'mobj': None})
+        #         setattr(self.mobj, method, SubClass(mobj, calculates=[]))
 
     def set_default_recipe(self):
         """
@@ -221,12 +235,11 @@ class Result():
         '''
 
         if not self.__deps:
-            self.log().debug('Checking dependencies for << %s >>' % self.name)
             if self.dependencies is not None:
-                self.log().debug('  dependent on: %s' % ', '.join(self.dependencies))
+                self.log().debug('YES dependencies: %s' % ', '.join(self.dependencies))
                 dependencies = [instance for res, instance in self.mobj._results.items() if res in self.dependencies]
             else:
-                self.log().debug('  no dependencies')
+                self.log().debug('NO dependencies')
                 dependencies = []
             self.__deps = dependencies
         return self.__deps
@@ -235,16 +248,15 @@ class Result():
     def _subjects(self):
         if not self.__subj:
             subjects = []
-            self.log().debug('Checking subjects for << %s >>' % self.name)
             for res, instance in self.mobj._results.items():
                 if instance.dependencies is None:
                     continue
                 if self.name in instance.dependencies:  # and not instance.indirect:
                     subjects.append(instance)
             if subjects:
-                self.log().debug('  subjects: %s' % ', '.join([s.name for s in subjects]))
+                self.log().debug('YES subjects: %s' % ', '.join([s.name for s in subjects]))
             else:
-                self.log().debug('  no subjects')
+                self.log().debug('NO subjects')
 
             self.__subj = subjects
         return self.__subj

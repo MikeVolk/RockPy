@@ -356,7 +356,6 @@ class Measurement(object):
         ''' initialize results '''
         self._result_classes()
         self.__init_results()
-
         self.__class__.n_created += 1
 
     def _result_classes(self):
@@ -381,6 +380,7 @@ class Measurement(object):
                     self._results[res] = instance
                     self.log().debug('replacing class %s with instance %s' % (cls.__name__, instance))
                     setattr(self, cls.__name__, instance)
+
         return self._results
 
     @property
@@ -837,6 +837,7 @@ class Measurement(object):
         for resname, res in self._results.items():
             self.log().debug("calculating %s" % resname)
             r = res(**parameters)
+        return self.results
 
 
     ##################################################################################################################
