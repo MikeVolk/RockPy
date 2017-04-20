@@ -6,9 +6,9 @@ import inspect
 
 class Result():
     dependencies = None
-    default = None
-    indirect = False
+    default_recipe = None
 
+    __calculates__ = []
     __subj = []
     __deps = []
 
@@ -64,6 +64,10 @@ class Result():
         if recipe is None:
             recipe = self.recipe
 
+        # if this is the first run use the default_recipe
+        if recipe is None:
+            recipe = self.default_recipe
+
         # initialize signature
         signature = None
 
@@ -76,7 +80,7 @@ class Result():
             #assume we dont haveto calculate
             calculate = False
 
-            # set default parameters
+            # set default_recipe parameters
             signature = inspect.signature(result._recipes()[recipe]).parameters
             for p in signature:
                 if p == 'check':
@@ -143,18 +147,17 @@ class Result():
         return False
 
     def _parameters_changed(self, **params):
-        self.log().debug('checking if parameters changed')
 
         # force recalculation for checking results and or forced recalculation with 'recalc'
         if 'check' in params or 'reclac' in params:
-            self.log().debug('  FORCED RECALCULATION')
+            self.log().debug('FORCED RECALCULATION')
             return True
 
         if all(params[p] == self.params[p] for p in params if p in self.params):
-            self.log().debug('  NO parameters changed')
+            self.log().debug('NO parameters changed')
             return False
         else:
-            self.log().debug('parameters changed')
+            self.log().debug('YES parameters changed')
             for p in params:
                 if p in self.params and not params[p] == self.params[p]:
                     try:
@@ -166,12 +169,11 @@ class Result():
             return True
 
     def _recipe_changed(self, recipe):
-        self.log().debug('checking recipe:')
         if self.recipe == recipe:
-            self.log().debug('recipe NOT changed')
+            self.log().debug('NO recipe changed')
             return False
         else:
-            self.log().debug('recipe changed %s -> %s' % (self.recipe, recipe))
+            self.log().debug('YES recipe changed %s -> %s' % (self.recipe, recipe))
             return True
 
     @property
@@ -185,10 +187,32 @@ class Result():
                 if i.startswith('recipe') if not i.endswith('recipes')}
 
     def __init__(self, mobj, **kwargs):
-        self.log().debug('initializing instance %s' % self.name)
         self.mobj = mobj
+        self.log().debug('initializing instance %s' % self.name)
         self.recipe = None
         self.params = {}
+        self.set_default_recipe()
+
+        # create the classes for each of the indirect results from cls.__calculates__
+        self.__calculates__ = kwargs.pop('calculates', self.__class__.__calculates__)
+        for method in self.__calculates__:
+            if not method in dir(self.mobj):
+                self.log().debug('METACLASS creation << %s >> for result << %s >>' %(method, self))
+                SubClass = type(method, (self.__class__, ), {'mobj': None})
+                setattr(self.mobj, method, SubClass(mobj, calculates=[]))
+
+    def set_default_recipe(self):
+        """
+        Sets the default_recipe recipe if only one recipe exists.
+        """
+        if self.default_recipe is None:
+            if not len(self._recipes()) == 1:
+                self.log().error('Result << %s >> has more than one recipe, but no default_recipe recipe ' % (self.name))
+                raise KeyError
+            self.default_recipe = list(self._recipes().keys())[0]
+            self.log().debug('default_recipe recipe for %s not specified setting to only available << %s >>' % (
+                self.name, self.default_recipe))
+            self.log().debug('setting default_recipe recipe << %s >> for %s' % (self.default_recipe, self.name))
 
     @property
     def _dependencies(self):

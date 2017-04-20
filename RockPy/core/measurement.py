@@ -8,7 +8,9 @@ import RockPy
 import RockPy.core
 import numpy as np
 import pandas as pd
-
+import RockPy.core.utils
+import RockPy.core.result
+import inspect
 
 class Measurement(object):
     """
@@ -36,7 +38,7 @@ class Measurement(object):
 
 
     _results = None
-
+    _result_classes_list = []
 
     _clsdata = []  # raw data do not manipulate
     _sids = []
@@ -323,8 +325,6 @@ class Measurement(object):
         self.base_measurements = options.get('base_measurements',
                                              False)  # list with all measurements used to generate the mean
 
-        ''' initialize results '''
-        self.__init_results()
 
         self.ftype = ftype
         self.fpath = fpath
@@ -353,40 +353,35 @@ class Measurement(object):
 
         self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
 
+        ''' initialize results '''
+        self._result_classes()
+        self.__init_results()
+
         self.__class__.n_created += 1
 
-    def __init_results(self, **parameters):
-        """ creates a list of results for that measurement """
+    def _result_classes(self):
+        if not Measurement._result_classes_list:
+            out = []
+            for name, cls in inspect.getmembers(self.__class__):
+                if not inspect.isclass(cls):
+                    continue
+                if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
+                    out.append(cls)
+        return out
 
+
+    def __init_results(self, **parameters): #todo is _results needed?
+        """ creates a list of results for that measurement """
         if self._results is None:
             self._results = {}
-            for i in dir(self):
-                if i.startswith('result') and not isinstance(i, pd.DataFrame) and not i.endswith('results'):
-                    res = i.replace('result_', '')
-                    method = getattr(self, i)
-                    instance = method(mobj=self, **parameters)
+            for cls in self._result_classes():
+                    res = cls.__name__.replace('result_', '')
+                    instance = cls(mobj=self, **parameters)
                     # replace the method with the instance
                     self._results[res] = instance
-                    self.log().debug('setting method %s with instance %s' % (i, instance))
-                    setattr(self, i, instance)
-
-                    if instance.default is None and len(instance._recipes()) == 1:
-                        method.default = list(instance._recipes().keys())[0]
-                        self.log().debug('default recipe for %s not specified setting to only available << %s >>' % (
-                        instance.name, instance.default))
-
-                    self.log().debug('setting default recipe << %s >> for %s' % (instance.default, instance.name))
-                    instance.recipe = method.default
+                    self.log().debug('replacing class %s with instance %s' % (cls.__name__, instance))
+                    setattr(self, cls.__name__, instance)
         return self._results
-
-    def reset_calculation_params(self):
-        """
-        resets the calculation parameters so you can force recalc
-        Returns
-        -------
-
-        """
-        self.calculation_parameter = {result: {} for result in self.result_methods()}
 
     @property
     def _idx(self):
@@ -481,7 +476,7 @@ class Measurement(object):
         self.calculation_parameter[result] = {}
 
         # change the method that is called
-        if recipe == 'default':
+        if recipe == 'default_recipe':
             recipe = ''
 
         self.cmethods[result] = getattr(self, '_'.join(['calculate', self.get_cmethod_name(result)]))
@@ -495,7 +490,7 @@ class Measurement(object):
         :param res:
         :return:
         """
-        recipes = ['default'] + [r.split('_')[-1].lower() for r in self.calc_signature() if
+        recipes = ['default_recipe'] + [r.split('_')[-1].lower() for r in self.calc_signature() if
                                  res in r and r.split('_')[-1].isupper()]
         return set(recipes)
 
@@ -526,10 +521,10 @@ class Measurement(object):
 
         # get the recipe
         recipe = self.selected_recipe[res]
-        # add the suffix for non-default methods
+        # add the suffix for non-default_recipe methods
         if recipe != 'DEFAULT':
             method_name = '_'.join([res, recipe.upper()])
-        # default recipes do not need a suffix
+        # default_recipe recipes do not need a suffix
         else:
             method_name = res
         return method_name
@@ -674,6 +669,10 @@ class Measurement(object):
 
         '''
 
+        if mdata is None:
+            self.log().error('NO mdata in instance cant assign sid, mid')
+            return
+
         # add column with measurement ids (mID) and sample ids (sID)
         mdata['mid'] = self.mid
         mdata['sid'] = self.sid
@@ -705,14 +704,14 @@ class Measurement(object):
 
     @property
     def stype_sval_tuples(self):
-        if self.get_series():
-            return [(s.stype, s.value) for s in self.series]
-        else:
-            return []
+        # if self.get_series():
+        #     return [(s.stype, s.value) for s in self.series]
+        # else:
+        return []
 
     @property
     def m_idx(self):
-        return self.sobj.measurements.index(self)  # todo change could be problematic if changing the sobj
+        return np.where(self.sobj.measurements == self)[0]  # todo change could be problematic if changing the sobj
 
     @property
     def fname(self):
@@ -723,7 +722,7 @@ class Measurement(object):
         -------
            str: filename from full path
         """
-        return os.path.basename(self.fpath)
+        return os.path.basename(self.fpath) if self.fpath is not None else None
 
     @property
     def has_initial_state(self):
@@ -737,14 +736,14 @@ class Measurement(object):
         """
         list of all stypes
         """
-        return [s.stype for s in self.series]
+        return [s[0] for s in self.series]
 
     @property
     def svals(self):
         """
         set of all svalues
         """
-        return [s.sval for s in self.series]
+        return [s[1] for s in self.series]
 
     @property
     def data(self):
@@ -784,7 +783,7 @@ class Measurement(object):
         A string of the used calculation method has to be appended for any corrections.
         This way we always know what has been corrected and in what order it has been corrected
         """
-        return self.set_get_attr('_correction', value=list())
+        return RockPy.core.utils.set_get_attr(self, '_correction', value=list())
 
     def reset_data(self): #todo rewrite new data pandas
         """
@@ -933,7 +932,7 @@ class Measurement(object):
             ref_dtype: str
                 component of the reference, if applicable. standard - 'mag'
             norm_dtypes: list
-                default: 'all'
+                default_recipe: 'all'
                 dtypes to be normalized, if dtype = 'all' all columns will be normalized
             vval: float
                 variable value, if reference == value then it will search for the point closest to the vval
@@ -941,17 +940,17 @@ class Measurement(object):
                 how the norm_factor is generated, could be min
             normalize_variable: bool
                 if True, variable is also normalized
-                default: False
+                default_recipe: False
             result: str
-                default: None
+                default_recipe: None
                 normalizes the values in norm_dtypes to the result value.
                 e.g. normalize the moment to ms (hysteresis measuremetns)
             dont_normalize: list
                 list of dtypes that will not be normalized
-                default: None
+                default_recipe: None
             norm_initial_state: bool
                 if true, initial state values are normalized in the same manner as normal data
-                default: True
+                default_recipe: True
         """
 
         if self.is_normalized and self.is_normalized['reference'] == reference:
@@ -1101,14 +1100,14 @@ class Measurement(object):
            RockPy3.Measurement
         """
 
-        measurements = self.sobj.get_measurement(mtype=mtype)
-
-        if measurements:
-            out = [i for i in measurements if i._idx <= self._idx]
-            return out[-1]
-
-        else:
-            return None
+        # measurements = self.sobj.get_measurement(mtype=mtype)
+        #
+        # if measurements:
+        #     out = [i for i in measurements if i._idx <= self._idx]
+        #     return out[-1]
+        #
+        # else:
+        return None
 
     def set_calibration_measurement(self,
                                     fpath=None,  # file path
@@ -1135,4 +1134,8 @@ class Measurement(object):
 
 if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
-    m = Measurement(sobj='test')
+    s = RockPy.Sample('test')
+    m = s.add_simulation(mtype='paleointensity')
+    print(m.sigma(), m.slope())
+    # print(m.beta._recipes())
+    # print(m.beta.set_default_recipe())
