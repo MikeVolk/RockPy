@@ -84,6 +84,36 @@ class Paleointensity(measurement.Measurement):
         del data['specimen']
         return data
 
+    @staticmethod
+    def format_tdt(ftype_data, sobj_name=None):
+        """
+
+        Returns
+        -------
+
+        """
+
+        # check if sample name in file
+        if not ftype_data.has_specimen(sobj_name):
+            return
+
+
+        # read ftype
+        data = ftype_data.data[ftype_data.data['specimen'] == sobj_name].reset_index(drop=True)
+
+        # # rename the columns from magic format -> RockPy internal names
+        # data = data.rename(
+        #     columns={'magn_x': 'x', 'magn_y': 'y', 'magn_z': 'z', 'magn_moment': 'm', 'treat_temp': 'ti'})
+        #
+        # # add tj column:
+        # # tj := temperature prior to ti step e.g. temperature before ck step
+        # data['tj'] = np.nan
+        # data.loc[1:, ('tj')] = data['ti'].values[:-1]
+        #
+        # # delete specimens column
+        # del data['specimen']
+        # return data
+
     @property
     def zf_steps(self):
         """
@@ -129,7 +159,7 @@ class Paleointensity(measurement.Measurement):
     @property
     def ac(self):
         """
-        aditivity check steps of the experiments, also giving NRM step
+        additivity check steps of the experiments, also giving NRM step
 
         Returns
         -------
@@ -169,12 +199,13 @@ class Paleointensity(measurement.Measurement):
         d['m'] = np.sqrt(d.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
         return d
 
-        ####################################################################################################################
+    ####################################################################################################################
 
     ####################################################################################################################
     """ RESULTS CALCULATED USING CALCULATE_SLOPE  METHODS """
 
-    class result_slope(Result):
+    class slope(Result):
+        __calculates__ = ['sigma', 'yint', 'xint', 'n']
 
         def calculate_vd(self, vmin, vmax,
                          **unused_params):
@@ -310,22 +341,15 @@ class Paleointensity(measurement.Measurement):
             self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
             self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
-    class result_sigma(result_slope):
-        # dependencies = ['slope']
-        pass
-    class result_yint(result_slope):
-        # dependencies = ['slope']
-        pass
+    # class sigma(slope): pass
+    #
+    # class yint(slope): pass
+    #
+    # class xint(slope): pass
+    #
+    # class n(slope): pass
 
-    class result_xint(result_slope):
-        # dependencies = ['slope']
-        pass
-
-    class result_n(result_slope):
-        # dependencies = ['slope']
-        pass
-
-    class result_banc(Result):
+    class banc(Result):
         dependencies = ('slope', 'sigma')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', b_lab=35.0,
@@ -359,13 +383,12 @@ class Paleointensity(measurement.Measurement):
             self.mobj.sobj.results.loc[self.mobj.mid, 'banc'] = abs(b_lab * slope)
             self.mobj.sobj.results.loc[self.mobj.mid, 'sigma_banc'] = abs(b_lab * sigma)
 
-    class result_sigma_banc(result_banc):
+    class sigma_banc(banc):
         dependencies = ('slope', 'banc')
         indirect = True
 
-    class result_f(result_slope):
+    class f(slope):
         dependencies = ('slope', 'yint')
-
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
             """
     
@@ -390,7 +413,7 @@ class Paleointensity(measurement.Measurement):
     # ####################################################################################################################
     # """ F_VDS """
     # 
-    class result_fvds(result_slope):
+    class fvds(slope):
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
@@ -413,7 +436,7 @@ class Paleointensity(measurement.Measurement):
     ####################################################################################################################
     """ FRAC """
 
-    class result_frac(result_slope):
+    class frac(slope):
         def recipe_default(self, vmin=20, vmax=700, **unused_params):
             """
     
@@ -436,7 +459,7 @@ class Paleointensity(measurement.Measurement):
     ####################################################################################################################
     """ BETA """
 
-    class result_beta(result_slope):
+    class beta(Result):
         dependencies = ('slope','sigma')
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
@@ -464,7 +487,7 @@ class Paleointensity(measurement.Measurement):
     ####################################################################################################################
     """ G """
 
-    class result_g(result_slope):
+    class g(slope):
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
                         **unused_params):
@@ -485,7 +508,7 @@ class Paleointensity(measurement.Measurement):
 
     ####################################################################################################################
     """ GAP MAX """
-    class result_gapmax(result_slope):
+    class gapmax(slope):
         def recipe_default(self, vmin=20, vmax=700, **unused_params):
             """
             The gap factor is a measure of the average Arai plot point spacing and may not represent extremes
@@ -508,7 +531,7 @@ class Paleointensity(measurement.Measurement):
     ####################################################################################################################
     """ Q """
 
-    class result_q(result_slope):
+    class q(Result):
         dependencies = ['beta', 'f', 'g']
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
@@ -532,7 +555,7 @@ class Paleointensity(measurement.Measurement):
     ####################################################################################################################
     """ W """
 
-    class result_w(Result):
+    class w(Result):
         dependencies =  ('q','n')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
@@ -576,9 +599,9 @@ if __name__ == '__main__':
 
     m = s.add_simulation(mtype='pint', preset='Fabian7a', pressure_demag= True, d2=0.2, d3=0.4, dt=0.2)
     m.calc_all(vmin=200)
-    m.ftype_data.plot_arai()
-    # m.result_banc(vmin=200)
-    # f = m.result_f()
-
+    # m.ftype_data.plot_arai()
+    m.banc(vmin=200)
+    print(m.results)
+    m.banc(vmin=100)
     print(m.results)
     plt.show()

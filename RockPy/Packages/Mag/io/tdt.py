@@ -1,6 +1,6 @@
 import RockPy
 from RockPy.core.ftype import Ftype
-
+from RockPy.core.utils import DIL2XYZ
 import pandas as pd
 import numpy as np
 
@@ -20,10 +20,13 @@ class tdt(Ftype):
         xyz = ['magn_x', 'magn_y', 'magn_z']
 
         data = pd.read_csv(dfile, delimiter='\t',
-                           names=['specimen', 'step', 'magn_moment', 'dec', 'inc',], comment='#', skiprows=2)
+                       names=['specimen', 'step', 'magn_moment', 'dec', 'inc',], comment='#', skiprows=2,
+                           dtype={'specimen':str, 'step':float, 'magn_moment':float, 'dec':float, 'inc':float})
+
+        print(data[['dec','inc','magn_moment']])
 
         if snames:
-            snames = RockPy._to_tuple(snames)
+            snames = RockPy.to_tuple(snames)
             data = data[np.in1d(data['specimen'], snames)]
             data = data.reset_index(drop=True)
 
@@ -33,9 +36,10 @@ class tdt(Ftype):
         # data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in data['step']]
         # data['treat_temp'] = data['level'] + 273
         data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in data['step']]
+
+        print(DIL2XYZ(data[['dec','inc','magn_moment']].values))
         # data = data.drop('step', 1)
         self.data = data
-        # print(data)
 
 
     def lookup_lab_treatment_code(self, item):
@@ -67,7 +71,7 @@ if __name__ == '__main__':
     f = os.path.join(RockPy.test_data_path, 'TT format', '187A.tdt')
     test = tdt(dfile=f)
 
-    s = RockPy.Sample(name='187A')
-    s.add_measurement(mtype='paleointensity', ftype='tdt', fpath=f)
+    # s = RockPy.Sample(name='ET2_187A')
+    # s.add_measurement(mtype='paleointensity', ftype='tdt', fpath=f)
 
 
