@@ -31,7 +31,7 @@ def DIM2XYZ( df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
     df[colX] = np.cos(np.radians(df[colI])) * np.cos(np.radians(df[colD])) * M
     df[colY] = np.cos(np.radians(df[colI])) * np.sin(np.radians(df[colD])) * M
     df[colZ] = np.cos(np.radians(df[colI])) * np.tan(np.radians(df[colI])) * M
-
+    return df
 
 def XYZ2DIM( df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
     """
@@ -64,3 +64,4 @@ def XYZ2DIM( df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
     df[colI] = np.degrees(np.arcsin(df[colZ] / M)) # calculate I
     if colM is not None:
         df[colM] = M # set M
+    return df
