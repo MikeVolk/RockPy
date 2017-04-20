@@ -14,7 +14,7 @@ import RockPy.core.file_io
 from RockPy.core.study import Study
 from RockPy.core.sample import Sample
 
-from RockPy.core.utils import _to_tuple
+from RockPy.core.utils import to_tuple
 ''' LOGGING '''
 
 logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))
