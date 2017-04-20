@@ -23,7 +23,7 @@ class Study(object):
         Parameters
         ----------
             name: str
-                default: 'study'
+                default_recipe: 'study'
                 name of the Study
 
         Returns
@@ -163,7 +163,7 @@ class Study(object):
         Parameter
         ---------
             name: str
-            default: None
+            default_recipe: None
             if None, name is 'SampleGroup #samplegroups'
             slist: list
                 list of samples to be added to the sample_group

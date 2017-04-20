@@ -33,7 +33,7 @@ class Ftype(object):
         Constructor of the basic file type instance
         """
         self.fid = id(self)
-        self.snames = RockPy.core.utils._to_tuple(snames) if snames else None
+        self.snames = RockPy.core.utils.to_tuple(snames) if snames else None
         self.dfile = dfile
         self.dialect = dialect
 

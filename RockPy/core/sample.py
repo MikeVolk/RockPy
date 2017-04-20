@@ -206,21 +206,21 @@ class Sample(object):
         ----------
         mtype: str
           the type of measurement
-          default: None
+          default_recipe: None
 
         fpath: str
           the complete path to the measurement file
-          default: None
+          default_recipe: None
 
         ftype: str
           the filetype from which the file is output
-          default: 'generic'
+          default_recipe: 'generic'
 
         dialect: str
           deals with small formatting differences in similar ftype
 
         idx: index of measurement
-          default: None, will be the index of the measurement in sample.measurements
+          default_recipe: None, will be the index of the measurement in sample.measurements
 
         mdata: any kind of data that must fit the required structure of the data of the measurement
             will be used instead of data from file

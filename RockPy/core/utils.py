@@ -88,8 +88,7 @@ def tuple2list_of_tuples(item) -> list:
 
     return item
 
-@jit
-def _to_tuple(oneormoreitems):
+def to_tuple(oneormoreitems):
     """
     convert argument to tuple of elements
 
@@ -132,7 +131,7 @@ def tuple2str(tup):
     if tup is None:
         return ''
 
-    tup = _to_tuple(tup)
+    tup = to_tuple(tup)
 
     if len(tup) == 1:
         return str(tup[0])
@@ -227,3 +226,20 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
         x_intercept = - y_intercept / slope
 
         return slope, sigma, y_intercept, x_intercept
+
+def set_get_attr(obj, attr, value=None):
+    """
+    checks if attribute exists, if not, creates attribute with value None
+
+    Parameters
+    ----------
+        obj: object
+        attr: str
+
+    Returns
+    -------
+        value(obj.attr)
+    """
+    if not hasattr(obj, attr):
+        setattr(obj, attr, value)
+    return getattr(obj, attr)

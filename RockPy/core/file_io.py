@@ -1,5 +1,5 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, _to_tuple, split_num_alph, tuple2str
+from RockPy.core.utils import extract_tuple, to_tuple, split_num_alph, tuple2str
 import os, re
 from copy import deepcopy
 
@@ -82,7 +82,7 @@ class minfo():
         self.samples = extract_tuple(samples)
         self.mtypes = extract_tuple(mtypes)
         self.ftype = ftype
-        self.mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in _to_tuple(self.mtypes))
+        self.mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in to_tuple(self.mtypes))
         self.ftype = RockPy.abbrev_to_classname[ftype.lower()]
 
     def sample_block(self, block):
@@ -179,7 +179,7 @@ class minfo():
             (SG1,SG2)_(S1,S2)_(HYS,DCD)_VSM
         """
         block = deepcopy(self.storage[0])
-        block[2] = [RockPy.classname_to_abbrev[mtype][0].upper() for mtype in _to_tuple(block[2]) if mtype]
+        block[2] = [RockPy.classname_to_abbrev[mtype][0].upper() for mtype in to_tuple(block[2]) if mtype]
         block[3] = RockPy.classname_to_abbrev[block[3]][0].upper()
         if not all(block[1:]):
             raise ImportError('sname, mtype, ftype needed for minfo to be generated')
@@ -219,7 +219,7 @@ class minfo():
             return '_'.join(out)
 
     def get_add_block(self):
-        self.additional = _to_tuple(self.additional)
+        self.additional = to_tuple(self.additional)
         if self.additional:
             out = tuple(''.join(map(str, a)) for a in self.additional)
             return tuple2str(out)
@@ -305,11 +305,11 @@ class minfo():
         blocks = (self.measurement_block, self.sample_block, self.series_block, self.add_block, self.comment_block)
         self.additional = []
 
-        sgroups = _to_tuple(sgroups)
+        sgroups = to_tuple(sgroups)
         sgroups = tuple([sg if sg != 'None' else None for sg in sgroups])
 
         if mtypes:
-            mtypes = tuple(RockPy.abbrev_to_classname[mtype] for mtype in _to_tuple(mtypes))
+            mtypes = tuple(RockPy.abbrev_to_classname[mtype] for mtype in to_tuple(mtypes))
         if ftype:
             ftype = RockPy.abbrev_to_classname[ftype]
 
@@ -427,7 +427,7 @@ class minfo():
                  'series': self.series,
                  'dialect':self.dialect}
 
-        samples = _to_tuple(self.samples)
+        samples = to_tuple(self.samples)
         for i in samples:
             for j in self.mtypes:
                 mtype = RockPy.abbrev_to_classname[j]
@@ -460,7 +460,7 @@ class minfo():
                      height=str(self.height) + self.heightunit if self.height else None,
                      samplegroup=self.sgroups, dialect=self.dialect)
 
-        samples = _to_tuple(self.samples)
+        samples = to_tuple(self.samples)
         for i in samples:
             sdict.update({'name': i})
             yield sdict
