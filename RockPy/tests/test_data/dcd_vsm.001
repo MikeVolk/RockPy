@@ -1,0 +1,120 @@
+MicroMag 2900/3900 Data File (Series 0016.002)
+Remanence curves:  DCD
+
+INSTRUMENT
+Configuration                   VSM
+Temperature control             LHe Cryostat
+Hardware version                0004
+Software version                12/27/2012
+Units of measure                Hybrid SI
+Temperature in                  Kelvin
+
+SAMPLE
+Mass                            N/A
+Volume                          N/A
+Demagnetizing factor            N/A
+
+SETTINGS
+Field range                     N/A
+Field (command)                 N/A
+Moment range                   +20.00000E-06
+Averaging time                 +1.000000E+00
+Temperature (command)          +38.00000E+00
+Tmprtr difference correction    No
+Orientation                    +240.0000E+00
+Vibration amplitude             1.0
+Calibration factor             +5.335851E+00
+Operating frequency            +83.00000E+00
+
+MEASUREMENT
+Description                    "P17591"
+Field (measured)                N/A
+Temperature (measured)         +38.06611E+00
+Averages (completed)            N/A
+Measured on                     01/18/2016  21:12
+Elapsed time                   +157.1647E+00
+
+PROCESSING
+Background subtraction          No
+Delta-m processing              No
+Demagnetizing factor            No
+Normalization                   No
+Normalization factor            N/A
+Offset (field)                  No
+Offset (moment)                 No
+Pole saturation                 No
+Slope correction                No
+
+VIEWPORT
+Left                           -100.0000E-03
+Right                          +100.0000E-03
+Bottom                         -20.00000E-06
+Top                            +20.00000E-06
+Show X-axis?                    Yes
+Show Y-axis?                    Yes
+
+CHARACTERIZATION
+Initial slope                   N/A
+Saturation                      N/A
+Remanence                      +10.56715E-06
+Coercivity (direct)             N/A
+Coercivity (remanent)          +7.730122E-03
+S* (direct)                     N/A
+S* (DCD)                       -670.1664E-03
+
+SCRIPT
+Include IRM?                    No
+Include DCD?                    Yes
+Include direct moment?          No
+Demagnetize before measuring?   No
+Field sequence                  Nonlinear
+Initial (non-zero) field       +15.00000E-06
+Final field                    +100.0000E-03
+Number of points/curve          25
+Pause at applied field         +500.0000E-03
+Slew rate to applied field     +1.000000E+00
+Averaging time                 +1.000000E+00
+Saturating field               +1.500000E+00
+Pause at saturating field      +1.000000E+00
+Saturating field applied        Only once
+Slew rate to saturating field  +999.9999E-03
+Pause at zero field            +1.000000E+00
+Slew rate to zero field        +999.9999E-03
+Number of segments              1
+Number of data                  25
+
+Segment   Averaging      Initial        Field         Final                    Final 
+ Number      Time         Field       Increment       Field         Pause      Index 
+             (s)           (T)           (T)           (T)           (s)     
+0000001,+1.000000E+00, 0.000000E+00,+15.00000E-06,-100.0000E-03,+1.000000E+00,0000025
+
+                           
+    Field       Remanence  
+     (T)          (Am²)    
+-797.5353E-09,+10.56715E-06
+-13.63043E-06,+10.51265E-06
+-34.30775E-06,+10.48771E-06
+-63.69930E-06,+10.38828E-06
+-103.4387E-06,+10.30243E-06
+-159.1320E-06,+10.25263E-06
+-236.9694E-06,+10.13039E-06
+-344.1835E-06,+9.971265E-06
+-492.3422E-06,+9.480127E-06
+-699.2367E-06,+9.258212E-06
+-984.1110E-06,+8.641158E-06
+-1.381667E-03,+7.404188E-06
+-1.931798E-03,+6.500203E-06
+-2.694165E-03,+5.304093E-06
+-3.754144E-03,+4.157467E-06
+-5.221687E-03,+2.296315E-06
+-7.260377E-03,+366.8113E-09
+-10.08726E-03,-1.840622E-06
+-14.00689E-03,-5.110027E-06
+-19.44894E-03,-6.816937E-06
+-26.98296E-03,-8.178955E-06
+-37.44683E-03,-8.903147E-06
+-51.98018E-03,-9.635693E-06
+-72.12758E-03,-10.29940E-06
+-100.0685E-03,-10.70759E-06
+
+MicroMag 2900/3900 Data File ends
