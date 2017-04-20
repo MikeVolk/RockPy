@@ -10,38 +10,6 @@ from numba import jit
 
 convert = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
-def XYZ2DIL(XYZ):
-    """
-    convert XYZ to dec, inc, length
-    :param XYZ:
-    :return:
-    """
-    DIL = []
-    L = np.linalg.norm(XYZ)
-    D = degrees(atan2(XYZ[1], XYZ[0]))  # calculate declination taking care of correct quadrants (atan2)
-    if D < 0: D = D + 360.  # put declination between 0 and 360.
-    if D > 360.: D = D - 360.
-    DIL.append(D)  # append declination to Dir list
-    I = degrees(asin(XYZ[2] / L))  # calculate inclination (converting to degrees)
-    DIL.append(I)  # append inclination to Dir list
-    DIL.append(L)  # append vector length to Dir list
-    return DIL
-
-
-def DIL2XYZ(DIL):
-    """
-    Convert a tuple of D,I,L components to a tuple of x,y,z.
-    :param DIL:
-    :return: (x, y, z)
-    """
-    (D, I, L) = DIL
-    H = L * cos(radians(I))
-    X = H * cos(radians(D))
-    Y = H * sin(radians(D))
-    Z = H * tan(radians(I))
-    return (X, Y, Z)
-
-
 @contextmanager
 def ignored(*exceptions):
     """
