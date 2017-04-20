@@ -4,9 +4,9 @@ import RockPy.core.utils as RPutils
 
 class Test_to_tuple(TestCase):
     def test__to_tuple(self):
-        self.assertEqual((1,), RPutils._to_tuple(1))
-        self.assertEqual(('a',), RPutils._to_tuple('a'))
-        self.assertEqual(('a', 'b'), RPutils._to_tuple(['a', 'b']))
+        self.assertEqual((1,), RPutils.to_tuple(1))
+        self.assertEqual(('a',), RPutils.to_tuple('a'))
+        self.assertEqual(('a', 'b'), RPutils.to_tuple(['a', 'b']))
 
 
 class TestTuple2list_of_tuples(TestCase):
