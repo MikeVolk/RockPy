@@ -107,13 +107,13 @@ class Fabian2001(object):
                 center of the distribution
             
             grid: int
-                default:100
+                default_recipe:100
                 the number of blocking and unblocking temperatures to be calculated
             hpal: float
-                default: 1
+                default_recipe: 1
                 reduced paleofield
             hlab: float
-                default: 1
+                default_recipe: 1
                 reduced labfield
             ms: float
                 saturation magnetization of the simulated sample
@@ -369,7 +369,7 @@ class Fabian2001(object):
         tau_i: float
         hlab : float
         pressure_demag: bool
-            default: False
+            default_recipe: False
             if True a cauchy distributed demagnetization of unblocking temperatures is calculated
         """
         h = self.FieldMatrix(tau_i=tau_i, hlab=hlab, pressure_demag=pressure_demag)

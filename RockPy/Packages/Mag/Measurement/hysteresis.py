@@ -110,7 +110,7 @@ class Hysteresis(Measurement):
         Parameters
         ----------
         window : int
-            default: 1 - no running mean
+            default_recipe: 1 - no running mean
             Size of the moving window. This is the number of observations used for calculating the statistic.
             Each window will be a fixed size. Moving window is used twice: for smoothing data (mean with hamming window)
             and smoothing the sign (median, no special window)
@@ -153,7 +153,7 @@ class Hysteresis(Measurement):
         Parameters
         ----------
         window: int
-            default: 1 - no running mean
+            default_recipe: 1 - no running mean
             Size of the moving window. This is the number of observations used for calculating the statistic.
 
         Returns
@@ -237,7 +237,7 @@ class Hysteresis(Measurement):
     """ BC """
 
     class result_bc(Result):
-        default = 'linear'
+        default_recipe = 'linear'
 
         def recipe_linear(self, npoints=4, check=False, **unused_params):
             """
@@ -246,7 +246,7 @@ class Hysteresis(Measurement):
             Parameters
             ----------
                 field_limit: float
-                    default: 0, 0mT
+                    default_recipe: 0, 0mT
                     the maximum/ minimum fields used for the linear regression
 
             Note
@@ -308,7 +308,7 @@ class Hysteresis(Measurement):
             Parameters
             ----------
                 npoints: int
-                    default: 4
+                    default_recipe: 4
                     number of points used for fit
 
             Note
@@ -464,7 +464,7 @@ class Hysteresis(Measurement):
             Parameters
             ----------
                 saturation_percent: float
-                    default: 75.0
+                    default_recipe: 75.0
                     Defines the field limit in percent of max(field) at which saturation is assumed.
                      e.g. max field : 1T -> saturation asumed at 750mT
                 ommit_last_n: int, pos
@@ -481,7 +481,7 @@ class Hysteresis(Measurement):
             ms_result = []
 
             if saturation_percent >= 100:
-                self.log().warning('SATURATION > 100%! setting to default value (75%)')
+                self.log().warning('SATURATION > 100%! setting to default_recipe value (75%)')
                 saturation_percent = 75.0
 
             df_plus, df_minus, uf_plus, uf_minus= self.get_df_uf_plus_minus(saturation_percent=saturation_percent,
