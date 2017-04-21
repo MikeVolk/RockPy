@@ -12,3 +12,5 @@ RockPy/Packages/__pycache__/
 RockPy/__pycache__/
 RockPy/core/__pycache__/
 RockPy/tests/__pycache__/
+
+RockPy/tests/test_data/~\$SPD_Test_Data_Table\.xlsx
