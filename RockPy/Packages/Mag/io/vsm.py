@@ -36,7 +36,7 @@ class Vsm(Ftype):
         self.header = header
 
         if not 'First-order reversal curves' in mtype:
-            # reading segments data
+            # reading segments_tab data
             segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
                               pd.read_fwf(self.dfile, skiprows=header_end + 1, nrows=segment_start - header_end -2,
                                           widths=widths, header=None).values.T]
@@ -44,21 +44,31 @@ class Vsm(Ftype):
                                    names=segment_header,
                                    )
 
-            self.segments = segments
+            self.segments_tab = segments
 
         # reading data
         data_header = [' '.join([str(n) for n in line]).replace('nan', '').replace('�', '2').strip() for line in
                        pd.read_fwf(self.dfile, skiprows=data_start - 4,
                                    nrows=3, widths=data_widths).values.T]
 
-        data = pd.read_csv(self.dfile, skiprows=data_start, nrows=int(header[0]['Number of data'])+2,
+        data = pd.read_csv(self.dfile, skiprows=data_start,
+                           nrows=int(header[0]['Number of data'])+int(header[0]['Number of segments'])-1,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
         self.data = data#.dropna(axis=0)
 
+    @property
+    def segments(self):
+        """
+        Generator that cycles through the segments
+        Returns
+        -------
+            pandas.DataFrame
+        """
+        indices = [0] + [seg['Final Index']+i for i, seg in self.segments_tab.iterrows()]
+        for i, idx in enumerate(indices[:-1]):
+            yield self.data.loc[indices[i]:indices[i+1]].dropna(axis=0)
 
 if __name__ == '__main__':
     dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
-    print(dcd.segments)
     hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
-    print(hys.segments)
