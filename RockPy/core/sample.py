@@ -56,7 +56,7 @@ class Sample(object):
                  x_len=None, y_len=None, z_len=None,  # for cubic samples
                  sample_shape='cylinder',
                  coord=None,
-                 samplegroup=None,
+                 sgroups=None,
                  study=None,
                  create_parameter=True,
                  **kwargs):
@@ -92,7 +92,7 @@ class Sample(object):
            x_len
            y_len
            z_len
-           samplegroup
+           sgroups
            study
            create_parameter : bool
               if True: parameter measurements are created from (mass, x_len, y_len, z_len, height, diameter)
@@ -134,8 +134,8 @@ class Sample(object):
         # initiate samplegroups
         self._samplegroups = []
 
-        # if samplegroup:#todo samplegroups
-        #     for sg in samplegroup:
+        # if sgroups:#todo samplegroups
+        #     for sg in sgroups:
         #         self.add_to_samplegroup(gname=sg)
 
         # coordinate system

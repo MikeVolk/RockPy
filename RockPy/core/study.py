@@ -2,9 +2,7 @@ import logging
 import time
 
 import RockPy
-from IPython.display import display
-from ipywidgets import HBox, VBox
-from ipywidgets import widgets
+from RockPy.core.file_io import ImportHelper
 
 log = logging.getLogger(__name__)
 
@@ -136,7 +134,7 @@ class Study(object):
             return self._samples[name]
 
         if not sobj:
-            sobj = RockPy.core.sample.Sample(
+            sobj = RockPy.Sample(
                     name=str(name),
                     comment=comment,
                     mass=mass,
@@ -308,7 +306,7 @@ class Study(object):
 
     def import_folder(self,
                       folder,
-                      filter,
+                      filter=None,
                       ):
         """
 
@@ -316,10 +314,18 @@ class Study(object):
             folder:
             filter:
         """
-        raise NotImplementedError
+        iHelper = ImportHelper.from_folder(folder)
+
+        for f in iHelper.sample_infos:
+            self.add_sample(**f)
+        # raise NotImplementedError
 
     def import_file(self):
         raise NotImplementedError
 
     def info(self):
         raise NotImplementedError
+
+if __name__ == '__main__':
+    S = RockPy.Study()
+    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')

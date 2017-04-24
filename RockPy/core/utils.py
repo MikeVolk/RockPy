@@ -71,6 +71,20 @@ def to_tuple(oneormoreitems):
     return tuple(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else (
         oneormoreitems,)
 
+def to_list(oneormoreitems):
+    """
+    convert argument to tuple of elements
+
+    Parameters
+    ----------
+        oneormoreitems: single number or string or list of numbers or strings
+
+    Returns
+    -------
+        tuple of elements
+    """
+    return list(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else [
+        oneormoreitems]
 
 def extract_tuple(s: str) -> tuple:
     """
