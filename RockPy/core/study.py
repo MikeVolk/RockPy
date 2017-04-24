@@ -100,8 +100,8 @@ class Study(object):
     def add_sample(self,
                    name=None,
                    comment='',
-                   mass=None,
-                   height=None, diameter=None,
+                   mass=None, massunit=None,
+                   height=None, diameter=None, lengthunit=None,
                    samplegroup=None,
                    sobj=None,
                    **options
@@ -110,6 +110,8 @@ class Study(object):
 
         Parameters
         ----------
+            massunit
+            lengthunit
             name : str
                 the name of the sample
             comment
@@ -137,8 +139,8 @@ class Study(object):
             sobj = RockPy.Sample(
                     name=str(name),
                     comment=comment,
-                    mass=mass,
-                    height=height, diameter=diameter,
+                    mass=mass, massunit=massunit,
+                    height=height, diameter=diameter, lengthunit=lengthunit,
                     samplegroup=samplegroup,
             )
 

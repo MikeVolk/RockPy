@@ -52,7 +52,8 @@ class Sample(object):
     def __init__(self,
                  name=None,
                  comment='',
-                 mass=None, height=None, diameter=None,
+                 mass=None, massunit=None,
+                 height=None, diameter=None, lengthunit=None, *,
                  x_len=None, y_len=None, z_len=None,  # for cubic samples
                  sample_shape='cylinder',
                  coord=None,
@@ -109,6 +110,7 @@ class Sample(object):
             name = 'S%02i' % Sample.snum
         else:
             name = name  # unique name, only one per study
+
         # set name
         self.name = name
 
@@ -121,14 +123,13 @@ class Sample(object):
                 self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy Masterstudy')
             study = RockPy.Study  # todo create MasterStudy on creation
 
-        self.comment = comment
-
-        # assign the study
         self.study = study
+
+
         # add sample to study
         # self.study.add_sample(sobj=self)
 
-        # create a sample index number
+        # create a sample index number number of samples created at init
         self.idx = self.study.n_samples
 
         # initiate samplegroups
@@ -149,11 +150,13 @@ class Sample(object):
             # for each parameter a measurement is created and then the measurement is added to the sample by calling
             # the add_measurement function
             if mass:
-                self.add_measurement(mass=mass)
+                self.add_measurement(mass=mass, massunit=massunit)
             if diameter:
-                self.add_measurement(diameter=diameter)
+                self.add_measurement(diameter=diameter, lengthunit=lengthunit)
             if height:
-                self.add_measurement(height=height)
+                self.add_measurement(height=height, lengthunit=lengthunit)
+
+        self.comment = comment
 
     def add_simulation(self, mtype, idx=None, **sim_param):
         """
@@ -196,7 +199,6 @@ class Sample(object):
             mobj=None,  # for special import of a measurement instance
             series=None,
             comment=None, additional=None,
-            minfo=None,
             **kwargs):
 
         '''
@@ -238,14 +240,14 @@ class Sample(object):
 
         # create the idx
         if idx is None:
-            idx = len(self.measurements)
+            idx = len(self.measurements) #todo change so it counts the number of subclasses created
 
         ''' MINFO object generation '''
         if self.samplegroups:
             sgroups = self.samplegroups
         else:
             sgroups = None
-
+        print(locals())
         """ DATA import from mass, height, diameter, len ... """
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
         if parameters:
