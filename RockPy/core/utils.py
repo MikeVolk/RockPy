@@ -8,7 +8,11 @@ from contextlib import contextmanager
 from math import degrees, radians, atan2, asin, cos, sin, tan
 from numba import jit
 
-convert = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+
+def convert(value, SIunit, unit):
+    RockPy.log().debug('converting %.3e [%s] -> %.3e [%s]'%(value, unit, value*conversion_table[SIunit][unit], SIunit))
+    return value*conversion_table[SIunit][unit]
 
 @contextmanager
 def ignored(*exceptions):
@@ -58,7 +62,7 @@ def tuple2list_of_tuples(item) -> list:
 
 def to_tuple(oneormoreitems):
     """
-    convert argument to tuple of elements
+    conversion_table argument to tuple of elements
 
     Parameters
     ----------
@@ -73,7 +77,7 @@ def to_tuple(oneormoreitems):
 
 def to_list(oneormoreitems):
     """
-    convert argument to tuple of elements
+    conversion_table argument to tuple of elements
 
     Parameters
     ----------
