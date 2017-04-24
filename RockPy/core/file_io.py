@@ -487,21 +487,21 @@ class ImportHelper(object):
         -------
 
         """
-        sgroups, samples, mtypes, ftype = block.split('_')
+        sgroups, snames, mtypes, ftype = block.split('_')
 
         # names with , need to be replaced
-        if '(' not in samples and ',' in samples:
-            samples = samples.replace(',', '.')
-            RockPy.log().warning('sample name %s contains \',\' will be replaced with \'.\'' % samples)
+        if '(' not in snames and ',' in snames:
+            snames = snames.replace(',', '.')
+            RockPy.log().warning('sample name %s contains \',\' will be replaced with \'.\'' % snames)
 
         sgroups = RockPy.core.utils.extract_tuple(sgroups)
-        samples = RockPy.core.utils.extract_tuple(samples)
+        snames = RockPy.core.utils.extract_tuple(snames)
         mtypes = RockPy.core.utils.extract_tuple(mtypes)
         ftype = RockPy.abbrev_to_classname[ftype.lower()]
 
         mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in RockPy.to_tuple(mtypes))
 
-        return sgroups, samples, mtypes, ftype
+        return sgroups, snames, mtypes, ftype
 
     @staticmethod
     def extract_sample_block(block):
@@ -640,7 +640,7 @@ class ImportHelper(object):
             return
 
         # extract mesurement information
-        sgroups, samples, mtypes, ftype = cls.extract_measurement_block(splits[0])
+        sgroups, snames, mtypes, ftype = cls.extract_measurement_block(splits[0])
 
         # extract sample informations
         if len(splits) > 1:
@@ -669,19 +669,21 @@ class ImportHelper(object):
         else:
             comment = None
 
-        return cls(samples, mtypes, ftype, fpath, sgroups,
+        return cls(snames, mtypes, ftype, fpath, sgroups,
                    dialect,
                    mass, massunit, height, heightunit, diameter, diameterunit,
                    series, '', additional, suffix)
 
     @classmethod
     def from_dict(cls, **kwargs):
-        #         return cls()
-        pass
+        return cls(**{param: kwargs.get(param, None) for param in ('snames', 'mtypes', 'ftype', 'fpath', 'sgroups',
+                      'dialect',
+                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit',
+                      'series', 'comment', 'additional', 'suffix')})
 
     def __add__(self, other):
 
-        for param in ('samples', 'mtypes', 'ftype', 'fpath', 'sgroups',
+        for param in ('snames', 'mtypes', 'ftype', 'fpath', 'sgroups',
                       'dialect',
                       'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit',
                       'series', 'comment', 'additional', 'suffix'):
@@ -690,7 +692,7 @@ class ImportHelper(object):
 
     def __init__(
             self,
-            samples,
+            snames,
             mtypes=None,
             ftype=None, fpath=None,
             sgroups=None,
@@ -705,7 +707,7 @@ class ImportHelper(object):
         """
         constructor
         """
-        self.samples = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(samples))
+        self.snames = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(snames))
         self.sgroups = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(sgroups))
 
         self.mtypes = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(mtypes))
@@ -732,7 +734,7 @@ class ImportHelper(object):
         """
         Method that joins the parts in the measurement block.
 
-            (Samplegroups)_(Samples)_(MTYPES)_ftype
+            (Samplegroups)_(snames)_(MTYPES)_ftype
 
         Returns
         -------
@@ -825,7 +827,7 @@ class ImportHelper(object):
     @property
     def new_filenames(self):
         for f in range(self.nfiles):
-            mblock = self.get_measurement_block(self.sgroups[f], self.samples[f], sorted(self.mtypes[f]), self.ftype[f])
+            mblock = self.get_measurement_block(self.sgroups[f], self.snames[f], sorted(self.mtypes[f]), self.ftype[f])
             sblock = self.get_sample_block(self.mass[f], self.massunit[f],
                                            self.diameter[f], self.diameterunit[f],
                                            self.height[f], self.heightunit[f])
@@ -848,12 +850,12 @@ class ImportHelper(object):
 
     @property
     def nfiles(self):
-        return len(self.samples)
+        return len(self.snames)
 
     @property
     def file_infos(self):
         for f in range(self.nfiles):
-            for sname in self.samples[f]:
+            for sname in self.snames[f]:
                 for mtype in self.mtypes[f]:
                     yield dict(name=sname, mtype=mtype, sgroups=self.sgroups[f],
                                mass=self.mass[f], diameter=self.diameter[f], height=self.height[f],
@@ -866,9 +868,10 @@ class ImportHelper(object):
     @property
     def sample_infos(self):
         for f in range(self.nfiles):
-            for s in self.samples[f]:
+            for s in self.snames[f]:
                 yield dict(name=s, sgroups=self.sgroups[f],
-                           mass=self.mass[f], diameter=self.diameter[f], height=self.height[f])
+                           mass=self.mass[f], massunit=self.massunit[f],
+                           diameter=self.diameter[f], height=self.height[f])
 if __name__ == '__main__':
     a = minfo('testpath', sgroup='a', samples=('S1', 'S2'), mtypes=('hys', 'dcd'), ftype='vsm', mass='30mg',
               diameter=(30, 'mm'), series=('test', 2, 'A'), comment='post heating',
