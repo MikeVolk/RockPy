@@ -6,12 +6,12 @@ from RockPy.core.measurement import Measurement
 
 
 class Parameter(Measurement):
+    SIunit = None
     def __init__(self,
                  sobj,
                  fpath=None, ftype='generic',
                  series=None,
                  value=None,
-                 Siunit=None,
                  column=None,
                  **options):
 
@@ -20,10 +20,9 @@ class Parameter(Measurement):
                                         series=series,
                                         **options)
 
-        unit = Siunit
 
         if column is None:
-            column = self.mtype()+'[%s]'%unit
+            column = self.mtype()+'[%s]'%self.SIunit
 
         if isinstance(value, str):
             value, unit = RockPy.core.utils.split_num_alph(value)
@@ -36,29 +35,17 @@ class Parameter(Measurement):
                         '%s can not be converted into readable format: try (value, unit)' % value)
 
         try:
-            unit_conversion = RockPy.core.utils.convert[unit][Siunit]
+            self.value = RockPy.core.utils.convert(value, unit, self.SIunit)
         except KeyError:
             self.log().error('Unit unknown')
             return
-
-        if np.isnan(unit_conversion):
-            self.log().warning(
-                    'unit << %s >> most likely not %s-compatible' % (unit, self.__class__.get_subclass_name()))
-            self.log().error('CAN NOT create Measurement')
-            return
-
-        # unit conversion into 'kg'
-        self.value = value * unit_conversion
-        self.unit = Siunit
-        self.passed_unit = unit
 
         data = pd.DataFrame(columns=[column], data=[[self.value]])
         self.append_to_clsdata(data)
 
         self.log().info(
                 'creating %s: %.2f [%s] -> %.2e [%s]' % (self.__class__.get_subclass_name(),
-                                                         self.value / unit_conversion,
-                                                         self.passed_unit, self.value, self.unit))
+                                                         value, unit, self.value, self.SIunit))
 
     def format_generic(self):
         pass
@@ -68,7 +55,7 @@ class Mass(Parameter):
     """
     simple 1d measurement for mass
     """
-
+    SIunit = 'kg'
     def __init__(self, sobj,
                  fpath=None, ftype='generic',
                  value=None,
@@ -78,7 +65,7 @@ class Mass(Parameter):
                                    fpath=fpath, ftype=ftype,
                                    series=series,
                                    value=value,
-                                   Siunit='kg',
+                                   unit='kg',
                                    **options)
 
 
@@ -86,7 +73,7 @@ class Length(Parameter):
     """
     simple 1d measurement for Length
     """
-
+    SIunit = 'm'
     def __init__(self, sobj,
                  fpath=None, ftype='generic',
                  value=None,
@@ -96,7 +83,7 @@ class Length(Parameter):
                                      fpath=fpath, ftype=ftype,
                                      series=series,
                                      value=value,
-                                     Siunit='m',
+                                     unit='m',
                                      **options)
 
 
