@@ -146,16 +146,10 @@ class Sample(object):
 
         # adding parameter measurements
         if create_parameter:
+            # for each parameter a measurement is created and then the measurement is added to the sample by calling
+            # the add_measurement function
             self.add_parameter_measurements(mass=mass, massunit=massunit,
                                             height=height, diameter=diameter, lengthunit=lengthunit)
-            # # for each parameter a measurement is created and then the measurement is added to the sample by calling
-            # # the add_measurement function
-            # if mass:
-            #     self.add_measurement(mass=mass, massunit=massunit)
-            # if diameter:
-            #     self.add_measurement(diameter=diameter, lengthunit=lengthunit)
-            # if height:
-            #     self.add_measurement(height=height, lengthunit=lengthunit)
 
         self.comment = comment
 
@@ -214,7 +208,6 @@ class Sample(object):
             mobj=None,  # for special import of a measurement instance
             series=None,
             comment=None, additional=None,
-            importinfos=None,
             create_parameters=True,
             **kwargs):
 
@@ -280,32 +273,33 @@ class Sample(object):
         if create_parameters:
             self.add_parameter_measurements(**kwargs)
 
-        # create the file infos
-        if importinfos is None:
-            if fpath and not mtype and not ftype:
-                importinfos = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
-            else:
-                importinfos = RockPy.core.file_io.ImportHelper.from_dict(fpath=fpath,
-                                                                         sgroups=sgroups,
-                                                                         samples=self.name,
-                                                                         mtypes=mtype, ftype=ftype,
-                                                                         series=series,
-                                                                         suffix=idx,
-                                                                         comment=comment,  # unused for now
-                                                                         dialect=dialect,
-                                                                         )
+        # create the import helper
+        if fpath and not any((mtype, ftype)):
+            import_helper = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
+        else:
+            import_helper = RockPy.core.file_io.ImportHelper.from_dict(fpath=fpath,
+                                                                     sgroups=sgroups,
+                                                                     snames=self.name,
+                                                                     mtypes=mtype, ftype=ftype,
+                                                                     series=series,
+                                                                     suffix=idx,
+                                                                     comment=comment,  # unused for now
+                                                                     dialect=dialect,
+                                                                     )
 
         """ DATA import from FILE """
         # if no mdata or measurement object are passed, create measurement file from the minfo object
-        if not mdata and not mobj:
+        if all(i is None for i in (mdata, mobj)):
             # cycle through all measurements
-            for import_info in importinfos.measurement_infos:
+            for import_info in import_helper.gen_measurement_dict:
+                print(import_info)
                 mtype = import_info['mtype']
                 # check if mtype is implemented
                 if not RockPy.core.utils.mtype_implemented(mtype):
                     self.log().error('{} not implemented'.format(mtype))
                     continue
                 # create measurement object
+                print(RockPy.implemented_measurements[mtype], mtype)
                 mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self, **import_info)
 
         """ DATA import from MDATA """

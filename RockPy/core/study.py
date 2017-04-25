@@ -132,7 +132,6 @@ class Study(object):
             sobj
             options
         """
-        print(kwargs)
         if name in self.samplenames:
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
                         'Returning sample' % name)
@@ -321,11 +320,10 @@ class Study(object):
         iHelper = ImportHelper.from_folder(folder)
 
         # create all samples
-        for f in iHelper.to_sample_dict:
+        for f in iHelper.gen_sample_dict:
             if any(f[v] in filter for v in ('name',)):
                 self.log().debug('filtering out file: %s'%f['fpath'])
                 continue
-            print(f)
             self.add_sample(**f)
 
             for ih in iHelper.getImportHelper(snames=f['name']):
@@ -335,12 +333,10 @@ class Study(object):
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
 
-        for sample in iHelper.to_sample_dict:
-            print(sample)
+        for sample in iHelper.gen_sample_dict:
             s = self.add_sample(**sample)
-            # for importinfos in iHelper.measurement_infos:
-            #     print(importinfos)
-            #     s.add_measurement(create_parameters=False, **importinfos)
+            for importinfos in iHelper.gen_measurement_dict:
+                s.add_measurement(create_parameters=False, **importinfos)
 
     def info(self):
         raise NotImplementedError
@@ -349,5 +345,6 @@ if __name__ == '__main__':
     S = RockPy.Study()
     # S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
 
-    S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_(IRM,DCD)_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
+    S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
+
     print(S.samples)

@@ -892,9 +892,8 @@ class ImportHelper(object):
         snames = RockPy.to_tuple(snames)
         mtypes = RockPy.to_tuple(mtypes)
 
-        for ih in self._all_infos:
+        for ih in self._gen_dicts:
             if all(i for i in snames) and ih['snames'] not in snames:
-                # print('getIMPORTHELPER:', mtypes, self.mtypes)
                 continue
             if all(i for i in mtypes) and ih['mtypes'] not in mtypes:
                 continue
@@ -907,9 +906,10 @@ class ImportHelper(object):
         return len(self.snames)
 
     @property
-    def _all_infos(self):
+    def _gen_dicts(self):
         """
-        generator that returns a dictionary for all samples and mtypoes of the instance
+        generator that returns a dictionary for all samples of the instance
+        
         Returns
         -------
             generator: dict
@@ -933,15 +933,14 @@ class ImportHelper(object):
                                comment=self.comment[f], )
 
     @property
-    def measurement_infos(self):
-        for ih in self._all_infos:
-            print(ih)
+    def gen_measurement_dict(self):
+        for ih in self._gen_dicts:
             ih['name'] = ih.pop('snames')
             ih['mtype'] = ih.pop('mtypes')
             yield ih
 
     @property
-    def sample_infos(self):
+    def gen_sample_dict(self):
         """
         generator returns dictionary with all sample infos for each sample in the instance
         
@@ -949,11 +948,13 @@ class ImportHelper(object):
         -------
             generator: dict
         """
-
-        for ih in self. _all_infos:
+        generated = []
+        for ih in self. _gen_dicts:
+            if ih['snames'] in generated:
+                continue
             ih['name'] = ih.pop('snames')
-            ih['snames'] = ih.pop('mtypes')
-
+            ih['mtype'] = ih.pop('mtypes')
+            generated.append(ih['name'])
             yield {k:v for k,v in ih.items() if k in ('name',
                                                       'mass', 'massunit',
                                                       'height', 'diameter', 'lengthunit',
@@ -962,7 +963,7 @@ if __name__ == '__main__':
 
     a = ImportHelper.from_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
 
-    for sample in a.sample_infos:
+    for sample in a.gen_sample_dict:
         for info in a.getImportHelper(snames=sample['name']):
-            for minfo in info.measurement_infos:
+            for minfo in info.gen_measurement_dict:
                 print(minfo)

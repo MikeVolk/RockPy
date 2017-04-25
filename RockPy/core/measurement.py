@@ -349,7 +349,9 @@ class Measurement(object):
 
         # add series if provided
         if series:
-            self.add_series(*series)
+            series = RockPy.core.utils.tuple2list_of_tuples(series)
+            for s in series:
+                self.add_series(*s)
 
         self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
 
@@ -881,9 +883,7 @@ class Measurement(object):
         ----
             If the measurement previously had no series, the (none, 0 , none) standard series will be removed first
         """
-
-        if all(i for i in [stype, sval, sunit]):
-            series = (stype, sval, sunit)
+        series = (stype, sval, sunit)
         self._series.append(series)
 
     def remove_series(self, stype):
