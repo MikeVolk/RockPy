@@ -47,6 +47,20 @@ def ignored(*exceptions):
     except exceptions:
         pass
 
+def mtype_implemented(mtype):
+    """
+    Function to check if mtype is implemented
+    
+    Parameters
+    ----------
+    mtype: str
+        mtype to check
+
+    Returns
+    -------
+        bool
+    """
+    return True if mtype in RockPy.implemented_measurements else False
 
 def tuple2list_of_tuples(item) -> list:
     """
