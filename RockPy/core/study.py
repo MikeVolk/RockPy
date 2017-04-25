@@ -333,7 +333,7 @@ class Study(object):
             self.add_sample(**f)
 
             for ih in iHelper.getImportHelper(snames=f['name']):
-                print(ih)
+                pass
         # raise NotImplementedError
 
     def import_file(self, fpath):
