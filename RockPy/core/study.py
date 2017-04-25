@@ -105,11 +105,9 @@ class Study(object):
     def add_sample(self,
                    name=None,
                    comment='',
-                   mass=None, massunit=None,
-                   height=None, diameter=None, lengthunit=None,
                    sgroups=None,
                    sobj=None,
-                   **options
+                   **kwargs
                    ):
         """
 
@@ -134,20 +132,17 @@ class Study(object):
             sobj
             options
         """
-
+        print(kwargs)
         if name in self.samplenames:
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
                         'Returning sample' % name)
             return self._samples[name]
 
-        if not sobj:
+        if sobj is None:
             sobj = RockPy.Sample(
                     name=str(name),
                     comment=comment,
-                    mass=mass, massunit=massunit,
-                    height=height, diameter=diameter, lengthunit=lengthunit,
-                    sgroups=sgroups,
-            )
+                    sgroups=sgroups, **kwargs)
 
         self._samples.setdefault(sobj.name, sobj)
         return sobj
@@ -326,10 +321,11 @@ class Study(object):
         iHelper = ImportHelper.from_folder(folder)
 
         # create all samples
-        for f in iHelper.sample_infos:
+        for f in iHelper.to_sample_dict:
             if any(f[v] in filter for v in ('name',)):
                 self.log().debug('filtering out file: %s'%f['fpath'])
                 continue
+            print(f)
             self.add_sample(**f)
 
             for ih in iHelper.getImportHelper(snames=f['name']):
@@ -339,13 +335,12 @@ class Study(object):
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
 
-        imported_samples = []
-        for sample in iHelper.sample_infos:
-            if sample['name'] not in self._samples:
-                imported_samples.append(self.add_sample(**sample))
-        for sample in imported_samples:
-            for importinfos in iHelper.getImportHelper(snames=sample.name):
-                sample.add_measurement(importinfos=importinfos, create_parameters=False)
+        for sample in iHelper.to_sample_dict:
+            print(sample)
+            s = self.add_sample(**sample)
+            # for importinfos in iHelper.measurement_infos:
+            #     print(importinfos)
+            #     s.add_measurement(create_parameters=False, **importinfos)
 
     def info(self):
         raise NotImplementedError

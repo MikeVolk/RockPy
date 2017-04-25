@@ -120,12 +120,13 @@ class Sample(object):
         else:
             if not isinstance(study, RockPy.core.study.Study):
                 self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy Masterstudy')
-            study = RockPy.Study  # todo create MasterStudy on creation
+            study = RockPy.MasterStudy
 
         self.study = study
 
         # add sample to study
-        self.study.add_sample(sobj=self)
+        # print(self.study.add_sample())
+        # self.study.add_sample(sobj=self) #todo why does this not work
 
         # create a sample index number number of samples created at init
         self.idx = self.study.n_samples
@@ -145,14 +146,16 @@ class Sample(object):
 
         # adding parameter measurements
         if create_parameter:
-            # for each parameter a measurement is created and then the measurement is added to the sample by calling
-            # the add_measurement function
-            if mass:
-                self.add_measurement(mass=mass, massunit=massunit)
-            if diameter:
-                self.add_measurement(diameter=diameter, lengthunit=lengthunit)
-            if height:
-                self.add_measurement(height=height, lengthunit=lengthunit)
+            self.add_parameter_measurements(mass=mass, massunit=massunit,
+                                            height=height, diameter=diameter, lengthunit=lengthunit)
+            # # for each parameter a measurement is created and then the measurement is added to the sample by calling
+            # # the add_measurement function
+            # if mass:
+            #     self.add_measurement(mass=mass, massunit=massunit)
+            # if diameter:
+            #     self.add_measurement(diameter=diameter, lengthunit=lengthunit)
+            # if height:
+            #     self.add_measurement(height=height, lengthunit=lengthunit)
 
         self.comment = comment
 
@@ -190,7 +193,7 @@ class Sample(object):
 
     def add_parameter_measurements(self, **kwargs):
 
-        parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs]
+        parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs if kwargs[i]]
 
         for mtype in parameters:
             if mtype == 'mass':
