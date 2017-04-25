@@ -10,9 +10,26 @@ from numba import jit
 
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
-def convert(value, SIunit, unit):
-    RockPy.log().debug('converting %.3e [%s] -> %.3e [%s]'%(value, unit, value*conversion_table[SIunit][unit], SIunit))
-    return value*conversion_table[SIunit][unit]
+def convert(value, unit, SIunit):
+    """
+    converts a value from a ``unit`` to a SIunit``
+    
+    Parameters
+    ----------
+    value
+    unit
+    SIunit
+
+    Returns
+    -------
+        float
+        
+    Notes
+    -----
+        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
+    """
+    RockPy.log.debug('converting %.3e [%s] -> %.3e [%s]'%(value, unit, value*conversion_table[unit][SIunit], SIunit))
+    return value*conversion_table[unit][SIunit]
 
 @contextmanager
 def ignored(*exceptions):

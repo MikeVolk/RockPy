@@ -302,7 +302,7 @@ class Measurement(object):
                 path to the file including filename
             ftype: str
                 file type. e.g. vsm
-            mdata: dict
+            mdata: pd.DataFrame
                 when mdata is set, this will be directly used as measurement data without formatting from file
 
         Note
@@ -402,10 +402,10 @@ class Measurement(object):
         # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
         # # height = self.get_mtype_prior_to(mtype='height')
         #
-        # # convert the mass to the smallest possible exponent
+        # # conversion_table the mass to the smallest possible exponent
         # mass, mass_unit = None, None
         # if self.mass:
-        #     mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
+        #     mass, mass_unit = RockPy3.utils.conversion_table.get_unit_prefix(self.mass, 'kg')
         #
         # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
         #                                                sgroups=self.sobj.samplegroups,

@@ -625,7 +625,7 @@ class ImportHelper(object):
 
     @classmethod
     def from_file(cls, fpath):
-
+        cls.log().info('reading file infos: %s'%fpath)
         # get the directory
         folder = os.path.dirname(fpath)
         # get the file name and the suffix
@@ -669,23 +669,36 @@ class ImportHelper(object):
         else:
             comment = None
 
-        return cls(snames, mtypes, ftype, fpath, sgroups,
-                   dialect,
-                   mass, massunit, height, heightunit, diameter, diameterunit,
-                   series, '', additional, suffix)
+        return cls(snames=snames, mtypes=mtypes, ftype=ftype, fpath=fpath, sgroups=sgroups,
+                   dialect=dialect,
+                   mass=mass, massunit=massunit,
+                   height=height, heightunit=heightunit,
+                   diameter=diameter, diameterunit=diameterunit,
+                   series=series, comment=comment, additional=additional, suffix=suffix)
 
     @classmethod
     def from_dict(cls, **kwargs):
         return cls(**{param: kwargs.get(param, None) for param in ('snames', 'mtypes', 'ftype', 'fpath', 'sgroups',
                       'dialect',
-                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit',
+                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit', 'lengthunit',
                       'series', 'comment', 'additional', 'suffix')})
 
     def __add__(self, other):
+        """
+        adds the importinfos of one class to the other.
+        
+        Parameters
+        ----------
+        other: ImportHelper istance
+
+        Returns
+        -------
+
+        """
 
         for param in ('snames', 'mtypes', 'ftype', 'fpath', 'sgroups',
                       'dialect',
-                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit',
+                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit', 'lengthunit',
                       'series', 'comment', 'additional', 'suffix'):
             getattr(self, param).extend(getattr(other, param))
         return self
@@ -700,6 +713,7 @@ class ImportHelper(object):
             mass=None, massunit=None,
             height=None, heightunit=None,
             diameter=None, diameterunit=None,
+            lengthunit=None,
             series=None,
             comment=None,
             additional=None,
@@ -723,6 +737,15 @@ class ImportHelper(object):
         self.heightunit = RockPy.core.utils.to_list(heightunit)
         self.diameter = RockPy.core.utils.to_list(diameter)
         self.diameterunit = RockPy.core.utils.to_list(diameterunit)
+
+        if self.heightunit != self.diameterunit:
+            self.height *= RockPy.core.utils.convert(self.height, self.heightunit, self.diameterunit)
+            self.heightunit = self.diameterunit
+
+        if lengthunit is None:
+            self.lengthunit = RockPy.core.utils.to_list(self.diameterunit)
+        else:
+            self.lengthunit = RockPy.core.utils.to_list(lengthunit)
 
         self.series = RockPy.core.utils.to_list([series])
         self.comment = RockPy.core.utils.to_list(comment)
@@ -848,17 +871,61 @@ class ImportHelper(object):
             fname = fname.replace('None', '')
             yield fname
 
+    def getImportHelper(self, snames=None, mtypes=None):
+        """
+        Generates ImportInfo instances for each sample, mtype.
+        
+        Parameters
+        ----------
+        snames: str 
+            filters the generator to only create the passed snames
+        mtypes: str
+            filters the generator to only create matching mtypes
+
+
+        Returns
+        -------
+            yields
+
+        """
+
+        snames = RockPy.to_tuple(snames)
+        mtypes = RockPy.to_tuple(mtypes)
+
+        for ih in self._all_infos:
+            if all(i for i in snames) and ih['snames'] not in snames:
+                # print('getIMPORTHELPER:', mtypes, self.mtypes)
+                continue
+            if all(i for i in mtypes) and ih['mtypes'] not in mtypes:
+                continue
+            a = self.__class__.from_dict(**ih)
+            yield a
+
+
     @property
     def nfiles(self):
         return len(self.snames)
 
     @property
-    def file_infos(self):
+    def _all_infos(self):
+        """
+        generator that returns a dictionary for all samples and mtypoes of the instance
+        Returns
+        -------
+            generator: dict
+        """
         for f in range(self.nfiles):
             for sname in self.snames[f]:
+                if sname is None:
+                    continue
                 for mtype in self.mtypes[f]:
-                    yield dict(name=sname, mtype=mtype, sgroups=self.sgroups[f],
-                               mass=self.mass[f], diameter=self.diameter[f], height=self.height[f],
+                    if mtype is None:
+                        continue
+                    yield dict(snames=sname, mtypes=mtype, sgroups=self.sgroups[f],
+                               mass=self.mass[f], massunit=self.massunit[f],
+                               diameter=self.diameter[f], height=self.height[f],
+                               diameterunit=self.diameterunit[f], heightunit=self.heightunit[f],
+                               lengthunit=self.lengthunit[f],
                                # file path and file type
                                fpath=self.fpath[f], ftype=self.ftype[f], dialect=self.dialect[f],
                                idx=self.suffix[f],
@@ -866,20 +933,36 @@ class ImportHelper(object):
                                comment=self.comment[f], )
 
     @property
+    def measurement_infos(self):
+        for ih in self._all_infos:
+            print(ih)
+            ih['name'] = ih.pop('snames')
+            ih['mtype'] = ih.pop('mtypes')
+            yield ih
+
+    @property
     def sample_infos(self):
-        for f in range(self.nfiles):
-            for s in self.snames[f]:
-                yield dict(name=s, sgroups=self.sgroups[f],
-                           mass=self.mass[f], massunit=self.massunit[f],
-                           diameter=self.diameter[f], height=self.height[f])
+        """
+        generator returns dictionary with all sample infos for each sample in the instance
+        
+        Returns
+        -------
+            generator: dict
+        """
+
+        for ih in self. _all_infos:
+            ih['name'] = ih.pop('snames')
+            ih['snames'] = ih.pop('mtypes')
+
+            yield {k:v for k,v in ih.items() if k in ('name',
+                                                      'mass', 'massunit',
+                                                      'height', 'diameter', 'lengthunit',
+                                                      'sgroups')}
 if __name__ == '__main__':
-    a = minfo('testpath', sgroup='a', samples=('S1', 'S2'), mtypes=('hys', 'dcd'), ftype='vsm', mass='30mg',
-              diameter=(30, 'mm'), series=('test', 2, 'A'), comment='post heating',
-              std=13, mad=666, d='tdt')
-    print(a.get_sample_block())
-    print(list(a.sample_infos)[0])
-    # for i in a.sample_infos:
-    #     print(i)
-    # b = minfo('FeNi20H_FeNi20-Ha36e060-G01_COE_VSM#11,925[mg]_[]_[]##STD:13,mad:666')
-    # print(b.fname)
-    # print(list(a.sample_infos)[0])
+
+    a = ImportHelper.from_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+
+    for sample in a.sample_infos:
+        for info in a.getImportHelper(snames=sample['name']):
+            for minfo in info.measurement_infos:
+                print(minfo)

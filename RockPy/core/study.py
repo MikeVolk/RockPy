@@ -13,6 +13,11 @@ class Study(object):
     i.e. container for samplegroups
     """
 
+    @classmethod
+    def log(cls):
+        # create and return a logger with the pattern RockPy.MTYPE
+        return logging.getLogger('RockPy.Study')
+
     def __init__(self, name=None, folder=None):
         # type: (str, str) -> RockPy.Study
         """
@@ -102,7 +107,7 @@ class Study(object):
                    comment='',
                    mass=None, massunit=None,
                    height=None, diameter=None, lengthunit=None,
-                   samplegroup=None,
+                   sgroups=None,
                    sobj=None,
                    **options
                    ):
@@ -125,7 +130,7 @@ class Study(object):
             length_unit
             sample_shape
             coord
-            samplegroup
+            sgroups
             sobj
             options
         """
@@ -141,7 +146,7 @@ class Study(object):
                     comment=comment,
                     mass=mass, massunit=massunit,
                     height=height, diameter=diameter, lengthunit=lengthunit,
-                    samplegroup=samplegroup,
+                    sgroups=sgroups,
             )
 
         self._samples.setdefault(sobj.name, sobj)
@@ -316,18 +321,38 @@ class Study(object):
             folder:
             filter:
         """
+        filter = RockPy.to_tuple(filter)
+
         iHelper = ImportHelper.from_folder(folder)
 
+        # create all samples
         for f in iHelper.sample_infos:
+            if any(f[v] in filter for v in ('name',)):
+                self.log().debug('filtering out file: %s'%f['fpath'])
+                continue
             self.add_sample(**f)
+
+            for ih in iHelper.getImportHelper(snames=f['name']):
+                print(ih)
         # raise NotImplementedError
 
-    def import_file(self):
-        raise NotImplementedError
+    def import_file(self, fpath):
+        iHelper = ImportHelper.from_file(fpath)
+
+        imported_samples = []
+        for sample in iHelper.sample_infos:
+            if sample['name'] not in self._samples:
+                imported_samples.append(self.add_sample(**sample))
+        for sample in imported_samples:
+            for importinfos in iHelper.getImportHelper(snames=sample.name):
+                sample.add_measurement(importinfos=importinfos, create_parameters=False)
 
     def info(self):
         raise NotImplementedError
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+    # S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+
+    S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_(IRM,DCD)_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
+    print(S.samples)

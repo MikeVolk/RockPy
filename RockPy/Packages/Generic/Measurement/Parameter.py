@@ -15,11 +15,6 @@ class Parameter(Measurement):
                  column=None,
                  **options):
 
-        super(Parameter, self).__init__(sobj=sobj,
-                                        fpath=fpath, ftype=ftype,
-                                        series=series,
-                                        **options)
-
 
         if column is None:
             column = self.mtype()+'[%s]'%self.SIunit
@@ -40,12 +35,16 @@ class Parameter(Measurement):
             self.log().error('Unit unknown')
             return
 
-        data = pd.DataFrame(columns=[column], data=[[self.value]])
-        self.append_to_clsdata(data)
+        mdata = pd.DataFrame(columns=[column], data=[[self.value]])
 
-        self.log().info(
-                'creating %s: %.2f [%s] -> %.2e [%s]' % (self.__class__.get_subclass_name(),
-                                                         value, unit, self.value, self.SIunit))
+        super(Parameter, self).__init__(sobj=sobj,
+                                        fpath=fpath, ftype=ftype,
+                                        series=series, mdata=mdata,
+                                        **options)
+
+        # self.log().info(
+        #         'creating %s: %.2f [%s] -> %.2e [%s]' % (self.__class__.get_subclass_name(),
+        #                                                  value, unit, self.value, self.SIunit))
 
     def format_generic(self):
         pass
