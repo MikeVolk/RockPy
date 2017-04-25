@@ -236,7 +236,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ BC """
 
-    class result_bc(Result):
+    class bc(Result):
         default_recipe = 'linear'
 
         def recipe_linear(self, npoints=4, check=False, **unused_params):
@@ -368,7 +368,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ MRS """
 
-    class result_mrs(Result):
+    class mrs(Result):
         def recipe_default(self, npoints=4, check=False, **unused_params):
 
             # set measurement instance
@@ -417,7 +417,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ MS """
 
-    class result_ms(Result):
+    class ms(Result):
         def get_df_uf_plus_minus(self, saturation_percent, ommit_last_n):
             """
             Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters the last :code:`ommit_last_n` and splits into pos and negative components
@@ -517,7 +517,7 @@ class Hysteresis(Measurement):
             self.mobj.sobj.results.loc[self.mobj.mid, 'hf_sus'] = np.nanmean(np.abs(hf_sus_result))
             self.mobj.sobj.results.loc[self.mobj.mid, 'ms'] = np.nanmean(np.abs(ms_result))
 
-    class result_hf_sus(Result):
+    class hf_sus(ms):
         dependencies = ['ms']
 
 

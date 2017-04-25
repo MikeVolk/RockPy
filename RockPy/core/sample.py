@@ -201,8 +201,8 @@ class Sample(object):
 
     def add_measurement(
             self,
-            mtype=None,  # measurement type
             fpath=None, ftype=None, dialect=None,  # file path and file type
+            mtype=None,  # measurement type
             idx=None,
             mdata=None,
             mobj=None,  # for special import of a measurement instance
@@ -289,17 +289,15 @@ class Sample(object):
 
         """ DATA import from FILE """
         # if no mdata or measurement object are passed, create measurement file from the minfo object
-        if all(i is None for i in (mdata, mobj)):
+        if mdata is None and mobj is None:
             # cycle through all measurements
             for import_info in import_helper.gen_measurement_dict:
-                print(import_info)
                 mtype = import_info['mtype']
                 # check if mtype is implemented
                 if not RockPy.core.utils.mtype_implemented(mtype):
                     self.log().error('{} not implemented'.format(mtype))
                     continue
                 # create measurement object
-                print(RockPy.implemented_measurements[mtype], mtype)
                 mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self, **import_info)
 
         """ DATA import from MDATA """
