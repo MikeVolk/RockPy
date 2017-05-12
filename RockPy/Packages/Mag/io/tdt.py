@@ -78,6 +78,9 @@ class tdt(Ftype):
 
         '''
 
+        # call the 20 C step NRM
+        if item == 20:
+            return 'LT-NO'
         if self.dialect == 'tdt':
             split = str(item).split('.')
             idx = self.table[self.dialect].index(split[1])

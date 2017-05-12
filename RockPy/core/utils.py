@@ -8,7 +8,28 @@ from contextlib import contextmanager
 from math import degrees, radians, atan2, asin, cos, sin, tan
 from numba import jit
 
-convert = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+
+def convert(value, unit, SIunit):
+    """
+    converts a value from a ``unit`` to a SIunit``
+    
+    Parameters
+    ----------
+    value
+    unit
+    SIunit
+
+    Returns
+    -------
+        float
+        
+    Notes
+    -----
+        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
+    """
+    RockPy.log.debug('converting %.3e [%s] -> %.3e [%s]'%(value, unit, value*conversion_table[unit][SIunit], SIunit))
+    return value*conversion_table[unit][SIunit]
 
 @contextmanager
 def ignored(*exceptions):
@@ -26,6 +47,20 @@ def ignored(*exceptions):
     except exceptions:
         pass
 
+def mtype_implemented(mtype):
+    """
+    Function to check if mtype is implemented
+    
+    Parameters
+    ----------
+    mtype: str
+        mtype to check
+
+    Returns
+    -------
+        bool
+    """
+    return True if mtype in RockPy.implemented_measurements else False
 
 def tuple2list_of_tuples(item) -> list:
     """
@@ -58,7 +93,7 @@ def tuple2list_of_tuples(item) -> list:
 
 def to_tuple(oneormoreitems):
     """
-    convert argument to tuple of elements
+    conversion_table argument to tuple of elements
 
     Parameters
     ----------
@@ -71,6 +106,20 @@ def to_tuple(oneormoreitems):
     return tuple(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else (
         oneormoreitems,)
 
+def to_list(oneormoreitems):
+    """
+    conversion_table argument to tuple of elements
+
+    Parameters
+    ----------
+        oneormoreitems: single number or string or list of numbers or strings
+
+    Returns
+    -------
+        tuple of elements
+    """
+    return list(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else [
+        oneormoreitems]
 
 def extract_tuple(s: str) -> tuple:
     """

@@ -47,3 +47,6 @@ print('-------------------------------------------------------------------------
 print('\n'.join(['\t{:<26}: \t{}'.format(m, ', '.join(obj.ftype_formatters().keys()))
                  for m, obj in sorted(RockPy.implemented_measurements.items())]))
 print()
+
+log.info('creating Masterstudy. Can be used with ``RockPy.MasterStudy``')
+RockPy.MasterStudy = RockPy.Study('MasterStudy')

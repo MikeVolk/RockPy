@@ -2,9 +2,7 @@ import logging
 import time
 
 import RockPy
-from IPython.display import display
-from ipywidgets import HBox, VBox
-from ipywidgets import widgets
+from RockPy.core.file_io import ImportHelper
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +12,11 @@ class Study(object):
     comprises data of a whole study
     i.e. container for samplegroups
     """
+
+    @classmethod
+    def log(cls):
+        # create and return a logger with the pattern RockPy.MTYPE
+        return logging.getLogger('RockPy.Study')
 
     def __init__(self, name=None, folder=None):
         # type: (str, str) -> RockPy.Study
@@ -102,16 +105,16 @@ class Study(object):
     def add_sample(self,
                    name=None,
                    comment='',
-                   mass=None,
-                   height=None, diameter=None,
-                   samplegroup=None,
+                   sgroups=None,
                    sobj=None,
-                   **options
+                   **kwargs
                    ):
         """
 
         Parameters
         ----------
+            massunit
+            lengthunit
             name : str
                 the name of the sample
             comment
@@ -125,24 +128,20 @@ class Study(object):
             length_unit
             sample_shape
             coord
-            samplegroup
+            sgroups
             sobj
             options
         """
-
         if name in self.samplenames:
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
                         'Returning sample' % name)
             return self._samples[name]
 
-        if not sobj:
-            sobj = RockPy.core.sample.Sample(
+        if sobj is None:
+            sobj = RockPy.Sample(
                     name=str(name),
                     comment=comment,
-                    mass=mass,
-                    height=height, diameter=diameter,
-                    samplegroup=samplegroup,
-            )
+                    sgroups=sgroups, **kwargs)
 
         self._samples.setdefault(sobj.name, sobj)
         return sobj
@@ -308,7 +307,7 @@ class Study(object):
 
     def import_folder(self,
                       folder,
-                      filter,
+                      filter=None,
                       ):
         """
 
@@ -316,10 +315,36 @@ class Study(object):
             folder:
             filter:
         """
-        raise NotImplementedError
+        filter = RockPy.to_tuple(filter)
 
-    def import_file(self):
-        raise NotImplementedError
+        iHelper = ImportHelper.from_folder(folder)
+
+        # create all samples
+        for f in iHelper.gen_sample_dict:
+            if any(f[v] in filter for v in ('name',)):
+                self.log().debug('filtering out file: %s'%f['fpath'])
+                continue
+            self.add_sample(**f)
+
+            for ih in iHelper.getImportHelper(snames=f['name']):
+                pass
+        # raise NotImplementedError
+
+    def import_file(self, fpath):
+        iHelper = ImportHelper.from_file(fpath)
+
+        for sample in iHelper.gen_sample_dict:
+            s = self.add_sample(**sample)
+            for importinfos in iHelper.gen_measurement_dict:
+                s.add_measurement(create_parameters=False, **importinfos)
 
     def info(self):
         raise NotImplementedError
+
+if __name__ == '__main__':
+    S = RockPy.Study()
+    # S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+
+    S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
+
+    print(S.samples)

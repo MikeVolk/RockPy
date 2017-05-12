@@ -302,7 +302,7 @@ class Measurement(object):
                 path to the file including filename
             ftype: str
                 file type. e.g. vsm
-            mdata: dict
+            mdata: pd.DataFrame
                 when mdata is set, this will be directly used as measurement data without formatting from file
 
         Note
@@ -349,7 +349,9 @@ class Measurement(object):
 
         # add series if provided
         if series:
-            self.add_series(*series)
+            series = RockPy.core.utils.tuple2list_of_tuples(series)
+            for s in series:
+                self.add_series(*s)
 
         self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
 
@@ -402,10 +404,10 @@ class Measurement(object):
         # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
         # # height = self.get_mtype_prior_to(mtype='height')
         #
-        # # convert the mass to the smallest possible exponent
+        # # conversion_table the mass to the smallest possible exponent
         # mass, mass_unit = None, None
         # if self.mass:
-        #     mass, mass_unit = RockPy3.utils.convert.get_unit_prefix(self.mass, 'kg')
+        #     mass, mass_unit = RockPy3.utils.conversion_table.get_unit_prefix(self.mass, 'kg')
         #
         # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
         #                                                sgroups=self.sobj.samplegroups,
@@ -881,9 +883,7 @@ class Measurement(object):
         ----
             If the measurement previously had no series, the (none, 0 , none) standard series will be removed first
         """
-
-        if all(i for i in [stype, sval, sunit]):
-            series = (stype, sval, sunit)
+        series = (stype, sval, sunit)
         self._series.append(series)
 
     def remove_series(self, stype):
