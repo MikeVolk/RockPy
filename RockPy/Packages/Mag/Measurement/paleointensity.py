@@ -217,7 +217,7 @@ class Paleointensity(measurement.Measurement):
             vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
             return vd
 
-        def vds(self, vmin, vmax, **unused_params):
+        def vds(self, vmin, vmax, **unused_params): #todo move somwhere else
             """
             The vector difference sum of the entire NRM vector :math:`\\mathbf{NRM}`.
 
@@ -235,7 +235,7 @@ class Paleointensity(measurement.Measurement):
                 non_method_parameters: dict
             """
             acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
-            NRM_var_max = np.linalg.norm(demag.loc[:, ['x', 'y', 'z']].iloc[-1])
+            NRM_var_max = np.linalg.norm(self.mobj.zf_steps[['x', 'y', 'z']].iloc[-1])
             NRM_sum = np.sum(np.linalg.norm(self.vd(vmin=0, vmax=700), axis=1))
             return abs(NRM_var_max) + NRM_sum
 
@@ -412,9 +412,8 @@ class Paleointensity(measurement.Measurement):
 
             self.set_result(result=delta_y_dash / abs(y_int), result_name='f')
 
-    # ####################################################################################################################
-    # """ F_VDS """
-    # 
+    ####################################################################################################################
+    """ F_VDS """
     class fvds(slope):
         dependencies = ('slope', )
         def recipe_default(self, vmin=20, vmax=700, component='m',
@@ -438,7 +437,6 @@ class Paleointensity(measurement.Measurement):
 
             delta_y = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
             VDS = self.vds(vmin, vmax)
-            print(delta_y, VDS)
             self.set_result(result=delta_y / VDS, result_name='fvds')
 
     ####################################################################################################################
@@ -459,9 +457,8 @@ class Paleointensity(measurement.Measurement):
             :return:
     
             """
-
-            NRM_sum = np.sum(np.abs(self.vd(vmin=vmin, vmax=vmax, **unused_params)))
-            VDS = self.vds(vmin, vmax)
+            NRM_sum = np.sum(np.linalg.norm(self.vd(vmin=vmin, vmax=vmax, **unused_params), axis=1))
+            VDS = self.vds(vmin, vmax=vmax)
             self.set_result(result=NRM_sum / VDS, result_name='frac')
 
     ####################################################################################################################
@@ -496,7 +493,7 @@ class Paleointensity(measurement.Measurement):
     """ G """
 
     class g(slope):
-
+        dependencies = ['slope']
         def recipe_default(self, vmin=20, vmax=700, component='m',
                         **unused_params):
             """
@@ -511,7 +508,7 @@ class Paleointensity(measurement.Measurement):
             y_sum_dash_diff_sq = np.sum(y_dash_diff, axis=0)
 
             result = 1 - y_sum_dash_diff_sq / delta_y_dash ** 2
-            self.set_result(result)
+            self.set_result(result, 'g')
 
 
     ####################################################################################################################
@@ -531,6 +528,7 @@ class Paleointensity(measurement.Measurement):
     
             """
             vd = self.vd(vmin=vmin, vmax=vmax)
+            vd = np.linalg.norm(vd, axis=1)
             max_vd = np.max(vd)
             sum_vd = np.sum(vd)
             result =  max_vd / sum_vd
@@ -539,7 +537,7 @@ class Paleointensity(measurement.Measurement):
     ####################################################################################################################
     """ Q """
 
-    class q(Result):
+    class q(slope):
         dependencies = ['beta', 'f', 'g']
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
