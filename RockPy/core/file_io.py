@@ -12,7 +12,7 @@ def read_abbreviations():
     Returns
     -------
         get_mtype_ftype: dict (abbrev:mtype/ftype)
-            a dictionary used to get to the true mtype/ftype name from an abbreviation
+            a dictionary used to get to the true mtype/ftype sname from an abbreviation
         get_abbreviations: dict(list) (mtype/ftype:[abbreviation])
             a dictionary with a list of all possible abbreviations.txt
     """
@@ -36,7 +36,7 @@ class minfo():
     """
     Class for creating and reading RockPy filenames.
 
-    Sample name considerations
+    Sample sname considerations
     --------------------------
 
         Sample names have to be unique
@@ -76,7 +76,7 @@ class minfo():
         # names with , need to be replaced
         if not '(' in samples and ',' in samples:
             samples = samples.replace(',', '.')
-            RockPy.log.warning('sample name %s contains \',\' will be replaced with \'.\'' % samples)
+            RockPy.log.warning('sample sname %s contains \',\' will be replaced with \'.\'' % samples)
 
         self.sgroups = extract_tuple(sgroups)
         self.samples = extract_tuple(samples)
@@ -324,7 +324,7 @@ class minfo():
         if read_fpath and fpath:  # todo add check for if path is readable
             # get the directory
             self.folder = os.path.dirname(fpath)
-            # get the file name and the suffix
+            # get the file sname and the suffix
             f, self.suffix = os.path.splitext(os.path.basename(fpath))
             # remove . from suffix
             self.suffix = self.suffix.strip('.')
@@ -462,7 +462,7 @@ class minfo():
 
         samples = to_tuple(self.samples)
         for i in samples:
-            sdict.update({'name': i})
+            sdict.update({'sname': i})
             yield sdict
 
 
@@ -492,7 +492,7 @@ class ImportHelper(object):
         # names with , need to be replaced
         if '(' not in snames and ',' in snames:
             snames = snames.replace(',', '.')
-            RockPy.log().warning('sample name %s contains \',\' will be replaced with \'.\'' % snames)
+            RockPy.log().warning('sample sname %s contains \',\' will be replaced with \'.\'' % snames)
 
         sgroups = RockPy.core.utils.extract_tuple(sgroups)
         snames = RockPy.core.utils.extract_tuple(snames)
@@ -606,10 +606,26 @@ class ImportHelper(object):
 
     @classmethod
     def from_folder(cls, folder, filter=dict()):
+        '''
+        Creates a minfo (measurement info) instance for all files in a given directory. 
+        
+        Parameters
+        ----------
+        folder: str 
+            location of files
+        filter:
+            unused
+
+        Returns
+        -------
+            RockPy.minfo
+        '''
+
         dfiles = [os.path.join(folder, i) for i in os.listdir(folder) if not i.startswith('#')]
 
         minfo = None
         for f in dfiles:
+            # create minfo instance
             a = cls.from_file(f)
 
             if a is None:
@@ -619,6 +635,7 @@ class ImportHelper(object):
             if minfo is None:
                 minfo = a
             else:
+                # add subsequent minfos
                 minfo = minfo + a
 
         return minfo
@@ -628,7 +645,7 @@ class ImportHelper(object):
         cls.log().info('reading file infos: %s'%fpath)
         # get the directory
         folder = os.path.dirname(fpath)
-        # get the file name and the suffix
+        # get the file sname and the suffix
         filename, suffix = os.path.splitext(os.path.basename(fpath))
         # remove . from suffix
         suffix = suffix.strip('.')
@@ -935,7 +952,7 @@ class ImportHelper(object):
     @property
     def gen_measurement_dict(self):
         for ih in self._gen_dicts:
-            ih['name'] = ih.pop('snames')
+            ih['sname'] = ih.pop('snames')
             ih['mtype'] = ih.pop('mtypes')
             yield ih
 
@@ -952,10 +969,10 @@ class ImportHelper(object):
         for ih in self. _gen_dicts:
             if ih['snames'] in generated:
                 continue
-            ih['name'] = ih.pop('snames')
+            ih['sname'] = ih.pop('snames')
             ih['mtype'] = ih.pop('mtypes')
-            generated.append(ih['name'])
-            yield {k:v for k,v in ih.items() if k in ('name',
+            generated.append(ih['sname'])
+            yield {k:v for k,v in ih.items() if k in ('sname',
                                                       'mass', 'massunit',
                                                       'height', 'diameter', 'lengthunit',
                                                       'sgroups')}
@@ -964,6 +981,6 @@ if __name__ == '__main__':
     a = ImportHelper.from_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
 
     for sample in a.gen_sample_dict:
-        for info in a.getImportHelper(snames=sample['name']):
+        for info in a.getImportHelper(snames=sample['sname']):
             for minfo in info.gen_measurement_dict:
                 print(minfo)

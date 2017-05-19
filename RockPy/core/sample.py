@@ -45,8 +45,14 @@ class Sample(object):
         return self.name < other.name
 
     def __iter__(self) -> object:
-
-        return iter(self.measurements)
+        """
+        Iterator that yields each measurement
+        Returns
+        -------
+            RockPy.measurement
+        """
+        for m in self.measurements:
+            yield m
 
     def __init__(self,
                  name=None,

@@ -66,25 +66,28 @@ class Study(object):
     @property
     def samples(self):
         """
-        Returns a list of all samples
+        Iterator that returns each sample in Study
 
         Returns
         -------
-            list of all samples
+            RockPy.sample
         """
 
-        return sorted([v for k, v in self._samples.items()])
+        for s in sorted(self._samples.values()):
+            yield s
 
     @property
     def samplenames(self):
         """
-        Returns a list of all samplenames
+        Iterator yields all samplenames in Study
 
         Returns
         -------
-            list of all samplenames
+            str: RockPy.Sample.name
         """
-        return sorted([k for k, v in self._samples.items()])
+
+        for sname in sorted(self._samples.keys()):
+            yield sname
 
     ''' SAMPLE GROUPS '''
 
@@ -102,8 +105,36 @@ class Study(object):
 
     ''' ADD functions '''
 
+    def sample_exists(self, sname=None, sobj=None):
+        '''
+        Method checks if a sample is in the _samples dictionary
+         
+        Parameters
+        ----------
+        sname: str (optional)
+        sobj: RockPy.Sample (optional)
+
+        Returns
+        -------
+            False if sample does not exist
+            RockPy.Sample if sample exists
+        
+        Notes
+        -----
+            either 
+            
+        '''
+        if sname is None and sobj is None:
+            raise TypeError('sample_exists() missing 1 required positional argument: ''sname'' or ''sobj''')
+
+        if sname is not None and sname in list(self.samplenames):
+            return self._samples[sname]
+
+        if sobj is not None and sobj in list(self.samples):
+            return sobj
+
     def add_sample(self,
-                   name=None,
+                   sname=None,
                    comment='',
                    sgroups=None,
                    sobj=None,
@@ -113,33 +144,27 @@ class Study(object):
 
         Parameters
         ----------
-            massunit
-            lengthunit
-            name : str
-                the name of the sample
-            comment
-            mass
-            mass_unit
-            height
-            diameter
-            x_len
-            y_len
-            z_len
-            length_unit
-            sample_shape
-            coord
-            sgroups
-            sobj
-            options
+        sname: str
+            sname of sample
+        comment: str
+            comment - no use yet
+        sgroups: str, iterable(str)
+            samplegroup or groups the sample should belong to
+        sobj: RockPy.Sample (optional)
+            RockPy.Sample instace, no sample is created instance is just added to Study
+            
+        kwargs are passed on to RockPy.Sample
+
         """
-        if name in self.samplenames:
+
+        if self.sample_exists(sname, sobj):
+
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
-                        'Returning sample' % name)
-            return self._samples[name]
+                        'Returning sample' % (sname if sname is not None else sobj.name))
 
         if sobj is None:
             sobj = RockPy.Sample(
-                    name=str(name),
+                    name=str(sname),
                     comment=comment,
                     sgroups=sgroups, **kwargs)
 
@@ -310,25 +335,32 @@ class Study(object):
                       filter=None,
                       ):
         """
-
-        Args:
-            folder:
-            filter:
+        Method takes folder as input, cycles through all files and imports them. Does not import subfolders.
+        Can be filtered to only import certain files.
+        
+        Parameters
+        ----------
+        folder: str
+        filter: str
+         
+        Notes
+        -----
+            for now only samplenames can be filtered
         """
         filter = RockPy.to_tuple(filter)
 
         iHelper = ImportHelper.from_folder(folder)
 
         # create all samples
-        for f in iHelper.gen_sample_dict:
-            if any(f[v] in filter for v in ('name',)):
-                self.log().debug('filtering out file: %s'%f['fpath'])
+        for file_info_dict in iHelper.gen_sample_dict:
+            if any(file_info_dict[v] in filter for v in ('sname',)):
+                self.log().debug('filtering out file: %s'%file_info_dict['fpath'])
                 continue
-            self.add_sample(**f)
 
-            for ih in iHelper.getImportHelper(snames=f['name']):
+            self.add_sample(**file_info_dict)
+
+            for ih in iHelper.getImportHelper(snames=file_info_dict['name']):
                 pass
-        # raise NotImplementedError
 
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
@@ -343,8 +375,8 @@ class Study(object):
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    # S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+    print(list(S.samples))
+    # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
 
-    S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
-
-    print(S.samples)
+    # print(S.samples)
