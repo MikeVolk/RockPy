@@ -57,6 +57,11 @@ class Study(object):
         #     return '<< RockPy3.MasterStudy >>'.format(self.name)
         return '<< RockPy.Study.{} -- {} >>'.format(self.name, self.studID)
 
+    def __iter__(self):
+        for s in sorted(self._samples.values()):
+            yield s
+
+
     ''' SAMPLES '''
 
     @property
