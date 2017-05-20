@@ -34,7 +34,7 @@ class Result():
 
         Returns
         -------
-            Fasle if the mID is not in the result, yet
+            False if the mID is not in the result, yet
             Otherwise it returns the result
         """
         if result_name is None:
@@ -43,7 +43,26 @@ class Result():
         return self.mobj.sobj.results.loc[self.mobj.mid, result_name]
 
     def get_stack(self, stack=None):
+        """
+        Method retrieves the all results that have to be calculated in order to maintain consistency 
+        
+        i.e. if parameters are changed and resultB is calculated using resultA, both have to be recalculated.
+           
+        Returns a list of result instances
+        
+        1. results dependent on result
+        1b results dependent on dependency
+        2. Result (self)
+        3. subjects to self
+        
+        Parameters
+        ----------
+        stack: passed to next result, so that results are not calculated multiple times
 
+        Returns
+        -------
+            list
+        """
         if stack is None:
             stack = []
 
@@ -131,7 +150,8 @@ class Result():
 
     @staticmethod
     def _needs_to_be_calculated(result, recipe, **parameters):
-        if result.mobj.mid not in result.mobj.sobj.results:
+
+        if result.mobj.mid not in result.mobj.sobj.results.index:
             return True
 
         if not result._is_calculated:
