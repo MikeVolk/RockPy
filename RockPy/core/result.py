@@ -81,6 +81,37 @@ class Result():
 
         return stack
 
+    def get_recipe(self, recipe):
+        """
+        Sets the given recipe for the result. If recipe is None it uses the previously used recipe. If the result was
+        not calculated, yet, self.recipe is also None and it falls back to the default_recipe 
+        
+        Parameters
+        ----------
+        recipe: str
+            name of the recipe with or without 'recipe_'
+        
+        Returns
+        -------
+            str
+        
+        Raises
+        ------
+            KeyError if recipe is not in self._recipes().keys()
+        """
+
+        if recipe is not None and recipe.replace('recipe_', '') not in self._recipes().keys():
+            raise KeyError('%s is not a valud recipe for the measurement %s: try one of these << %s >>'%(recipe, self.mobj.mtype, self._recipes().keys()))
+
+        # if no recipe is specified use the last one calculated
+        if recipe is None:
+            recipe = self.recipe
+
+        # if this is the first -> recipe is still None -> run use the default_recipe
+        if recipe is None:
+            recipe = self.default_recipe
+        return recipe
+
     def __call__(self, recipe=None, **parameters):
         """
         calling method for the result. iterates over the current worker of the mobj.
@@ -90,13 +121,9 @@ class Result():
             Pandas.Series
                 the result that is actually calculated by the recipe. can be more than just the value, not sure if that is good
         """
-        # if no recipe is specified use the last one calculated
-        if recipe is None:
-            recipe = self.recipe
 
-        # if this is the first run use the default_recipe
-        if recipe is None:
-            recipe = self.default_recipe
+        recipe = self.get_recipe(recipe=recipe)
+
         # initialize signature
         signature = None
 
