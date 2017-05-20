@@ -11,6 +11,7 @@ import pandas as pd
 import RockPy.core.utils
 import RockPy.core.result
 import inspect
+from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 
 class Measurement(object):
     """
@@ -311,11 +312,12 @@ class Measurement(object):
         """
 
         self.mid = id(self)
+        self.__idx = self.n_created
 
         self.sobj = sobj
         self.sid = self.sobj.sid
 
-        self.log().debug('Creating measurement: id:{} idx:{}'.format(self.mid, self._idx))
+        self.log().debug('Creating measurement: id:{} idx:{}'.format(self.mid, self.__idx))
 
         # add the data to the clsdata
         self.append_to_clsdata(mdata)
@@ -353,14 +355,22 @@ class Measurement(object):
             for s in series:
                 self.add_series(*s)
 
-        self.idx = idx if idx else self._idx  # external index e.g. 3rd hys measurement of sample 1
+        self.idx = idx if idx else self.__idx  # external index e.g. 3rd hys measurement of sample 1
 
         ''' initialize results '''
         self._result_classes()
         self.__init_results()
         self.__class__.n_created += 1
 
-    def _result_classes(self):
+    def _result_classes(self): #todo make iterator
+        """
+        Mothod that gets all result classes of the measurement
+         
+        Returns
+        -------
+            list: <class 'RockPy.Result'>
+            
+        """
         if not Measurement._result_classes_list:
             out = []
             for name, cls in inspect.getmembers(self.__class__):
@@ -372,7 +382,10 @@ class Measurement(object):
 
 
     def __init_results(self, **parameters): #todo is _results needed?
-        """ creates a list of results for that measurement """
+        """ 
+        creates a list of results for that measurement 
+        
+        """
         if self._results is None:
             self._results = {}
             for cls in self._result_classes():
@@ -386,105 +399,9 @@ class Measurement(object):
         return self._results
 
     @property
-    def _idx(self):
-        return 0
-
-    @property
     def mass(self):
         mass = self.get_mtype_prior_to(mtype='mass')
         return mass.data['data']['mass'].v[0] if mass else None
-
-    def get_RockPy_compatible_filename(self, add_series=True):
-
-        # if add_series:
-        #     series = sorted([s.get_tuple() for s in self.series if not s.get_tuple() == ('none', np.nan, '')])
-        # else:
-        #     series = None
-        #
-        # # diameter = self.get_mtype_prior_to(mtype='diameter') #todo implement
-        # # height = self.get_mtype_prior_to(mtype='height')
-        #
-        # # conversion_table the mass to the smallest possible exponent
-        # mass, mass_unit = None, None
-        # if self.mass:
-        #     mass, mass_unit = RockPy3.utils.conversion_table.get_unit_prefix(self.mass, 'kg')
-        #
-        # minfo_obj = RockPy3.core.file_operations.minfo(fpath=self.fpath,
-        #                                                sgroups=self.sobj.samplegroups,
-        #                                                samples=self.sobj.name,
-        #                                                mtypes=self.mtype, ftype=self.ftype,
-        #                                                mass=mass, massunit=mass_unit,
-        #                                                series=series,
-        #                                                suffix=self.idx,
-        #                                                read_fpath=False)
-        # return minfo_obj.fname
-        raise NotImplementedError
-
-    def _rename_to_RockPy_compatible_filename(self, add_series=True, create_backup=True):
-        if self.fpath:
-            path = os.path.dirname(self.fpath)
-            backup_name = '#' + os.path.basename(self.fpath)
-            fname = self.get_RockPy_compatible_filename(add_series=add_series)
-            if create_backup:
-                shutil.copy(self.fpath, os.path.join(path, backup_name))
-            os.rename(self.fpath, os.path.join(path, fname))
-
-    def set_recipe(self, result, recipe):
-        """
-        changes the recipe for a result to a new value. Changes the standard parameter dictionary to the new values
-
-        Parameter
-        ---------
-            result:
-            recipe:
-
-        Note:
-            if the result is indirect (e.g. hf_sus is calculated through ms) the result will overwrite the method for
-            both
-
-        """
-        # break if the result does not exist
-        if not result in self.result_recipe():
-            self.log.error('Measurement << %s >> has no result << %s >>' % (self.mtype, result))
-            return
-
-        # for dependent results, the recipe has to be set for the method the result is dependent on
-        if self.res_signature()[result].get('indirect', False):
-            result = self.res_signature()[result]['signature']['dependent'][0]
-
-        # break if the recipe is already set
-        if self.selected_recipe[result].upper() == recipe.upper():
-            self.log.info('RECIPE << %s, %s >> already set' % (result, recipe))
-            return
-
-        # break if recipe not implemented
-        if not recipe in self.get_recipes(result):
-            self.log.error('Recipe %s not found in %s, these are implemented: %s' % (
-                recipe, result, self.get_recipes(result)))
-            return
-
-        # setting the recipe
-        old_recipe = self.result_recipe()[result]
-        self.selected_recipe[result] = recipe.upper()
-
-        # if result is the base for other results, their methods have to be changed, too.
-        if self.res_signature()[result]['subjects']:
-            for dep_res in self.res_signature()[result]['subjects']:
-                self.set_recipe(dep_res, recipe=recipe)
-                # self.selected_recipe[dep_res] = recipe.upper()
-
-        self.log.warning('Calculation parameter changed from:')
-        self.log.warning('{}: {}'.format(old_recipe, self.calculation_parameter[result]))
-        self.calculation_parameter[result] = {}
-
-        # change the method that is called
-        if recipe == 'default_recipe':
-            recipe = ''
-
-        self.cmethods[result] = getattr(self, '_'.join(['calculate', self.get_cmethod_name(result)]))
-
-        self.calculate_result(result=result)
-        self.log.warning('{}: {}'.format(self.result_recipe()[result], self.calculation_parameter[result]))
 
     def get_recipes(self, res):
         """
@@ -492,80 +409,54 @@ class Measurement(object):
         :param res:
         :return:
         """
-        recipes = ['default_recipe'] + [r.split('_')[-1].lower() for r in self.calc_signature() if
-                                 res in r and r.split('_')[-1].isupper()]
+        result = self._results[res]
+        recipes = [r for r in result._recipes()]
         return set(recipes)
 
-    def get_cmethod_name(self, res):
+    def has_result(self, result):
         """
-        Takes a result, looks up the defined method and returns the calculation_method_name
-
-        Parameter
-        ---------
-            result: str
-                The result name
+        Checks if the measurement has the specified result
+        
+        Parameters
+        ----------
+        result: str
 
         Returns
         -------
-            returns the calculate_method name.
-            For direct methods without a recipe this will be: resultname
-            For direct methods with recipe this will be: resultname_RECIPE
-            For indirect methods this will be: calculationmethod
-            For indirect methods with a recipe this will be: calculationmethod
-
+            bool
         """
-        # check for indirect methods
-        if self.res_signature()[res]['dependent']:
-            # the result is truly indirect if there is no calculate method with its name in it
-            # it needs to be specified what method is used to calculate (dependent)
-            if not res in self.calculate_methods():
-                res = self.res_signature()[res]['signature']['dependent'][0]
 
-        # get the recipe
-        recipe = self.selected_recipe[res]
-        # add the suffix for non-default_recipe methods
-        if recipe != 'DEFAULT':
-            method_name = '_'.join([res, recipe.upper()])
-        # default_recipe recipes do not need a suffix
-        else:
-            method_name = res
-        return method_name
+        return True if result in self._results.keys() else False
 
-    def get_cmethod(self, res):
-        cmethod_name = self.get_cmethod_name(res)
-        return self.calculate_methods()[cmethod_name]
-
-    def get_dependent_results(self, result):
-        """
-        gets all result names that are equally independent and the independent result they are based on
-
-        Example
+    def has_series(self, series=None, method='all'):
+        '''
+        Method tests for given series. 
+        
+            
+        Parameters
+        ----------
+        series: list of tuples 
+            each element is (stype, sval, sunit) tuple
+        method: str:
+            'all': returns True if measurement posesses ALL series
+            'any': returns True if measurement posesses ONE or more series
+            'None': returns True if measurement posesses NONE of the provided series
+            
+        Returns
         -------
-            hf_sus(hysteresis) is always dependent on the calculation of ms.
-                -> returns [ms, hf_sus]
-            mrs_ms(hysteresis) is always dependent on ms & mrs and dependent on each of these
-                -> returns [ms, mrs, mrs_ms, hf_sus]
-        :param result:
-        :return:
-        """
-
-        # if not self.res_signature()[result]['indirect'] and not self.res_signature()[result]['dependent']:
-        #     return [result]
-
-        if 'calculation_method' in self.res_signature()[result]['signature']:
-            cm = self.res_signature()[result]['signature']['calculation_method']
+            bool
+            returns true if Nothing is passes
+        '''
+        if series is not None:
+            series = tuple2list_of_tuples(series)
+            if method == 'all':
+                return True if all(i in self.stype_sval_tuples for i in series) else False
+            if method == 'any':
+                return True if any(i in self.stype_sval_tuples for i in series) else False
+            if method == 'none':
+                return True if not any(i in self.svals for i in series) else False
         else:
-            cm = result
-
-        indirect_methods = [res for res in self.res_signature() if self.res_signature()[res]['dependent']]
-        dependent_on_cm = [res for res in indirect_methods if
-                           self.res_signature()[res]['signature']['dependent'][0] == cm]
-
-        if self.res_signature()[result]['dependent']:
-            for res in self.res_signature()[result]['signature']['dependent']:
-                dependent_on_cm.extend(self.get_dependent_results(res))
-
-        return sorted(set([cm] + dependent_on_cm))
+            return True if not self.svals else False
 
     def __lt__(self, other):
         """
@@ -580,7 +471,7 @@ class Measurement(object):
             pass
         # fall back, internal idx
         try:
-            return int(self._idx) < int(other._idx)
+            return int(self.__idx) < int(other._idx)
         except ValueError:
             pass
 
@@ -837,7 +728,6 @@ class Measurement(object):
 
     def calc_all(self, **parameters):
         for resname, res in self._results.items():
-            self.log().debug("calculating %s" % resname)
             r = res(**parameters)
         return self.results
 
@@ -1104,7 +994,7 @@ class Measurement(object):
         # measurements = self.sobj.get_measurement(mtype=mtype)
         #
         # if measurements:
-        #     out = [i for i in measurements if i._idx <= self._idx]
+        #     out = [i for i in measurements if i.__idx <= self.__idx]
         #     return out[-1]
         #
         # else:
@@ -1137,6 +1027,5 @@ if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
     s = RockPy.Sample('test')
     m = s.add_simulation(mtype='paleointensity')
-    print(m.sigma(), m.slope())
-    # print(m.beta._recipes())
-    # print(m.beta.set_default_recipe())
+
+    m.calc_all()
