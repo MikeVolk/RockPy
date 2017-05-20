@@ -3,6 +3,7 @@ import time
 
 import RockPy
 from RockPy.core.file_io import ImportHelper
+import pandas as pd
 
 log = logging.getLogger(__name__)
 
@@ -364,7 +365,7 @@ class Study(object):
 
             self.add_sample(**file_info_dict)
 
-            for ih in iHelper.getImportHelper(snames=file_info_dict['name']):
+            for ih in iHelper.getImportHelper(snames=file_info_dict['sname']):
                 pass
 
     def import_file(self, fpath):
@@ -376,12 +377,15 @@ class Study(object):
                 s.add_measurement(create_parameters=False, **importinfos)
 
     def info(self):
-        raise NotImplementedError
+        info = pd.DataFrame(columns=['mass', 'sample groups', 'mtypes', 'stypes', 'svals'])
+
+        for s in self.samples:
+            info.loc[s.name, 'mass'] = s.get_measurement('mass')[0].data
 
 if __name__ == '__main__':
     S = RockPy.Study()
     S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
-    print(list(S.samples))
+    print(S.info())
     # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
 
     # print(S.samples)
