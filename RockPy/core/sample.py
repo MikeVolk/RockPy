@@ -5,6 +5,7 @@ import RockPy
 import RockPy.core.study
 import RockPy.core.file_io
 import RockPy.core.utils
+from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 
 import pandas as pd
 
@@ -456,12 +457,150 @@ class Sample(object):
         else:
             return np.array(out)
 
+    ### get functions
+
+    def get_measurement(self,
+                        mtype=None,
+                        series=None,
+                        stype=None, sval=None, sval_range=None,
+                        mean=False,
+                        invert=False,
+                        id=None,
+                        result=None
+                        ):
+        """
+        Returns a list of measurements of type = mtypes
+
+        Parameters
+        ----------
+           mtypes: list, str
+              mtypes to be returned
+           series: list(tuple)
+              list of tuples, to search for several sepcific series. e.g. [('mtime',4),('gc',2)] will only return
+              mesurements that fulfill both criteria.
+           stypes: list, str
+              series type
+           sval_range: list, str
+              series range e.g. sval_range = [0,2] will give all from 0 to 2 including 0,2
+              also '<2', '<=2', '>2', and '>=2' are allowed.
+           svals: float
+              series value to be searched for.
+              caution:
+                 will be overwritten when sval_range is given
+           invert:
+              if invert true it returns only measurements that do not meet criteria
+           sval_range:
+              can be used to look up measurements within a certain range. if only one value is given,
+                     it is assumed to be an upper limit and the range is set to [0, sval_range]
+           mean: bool
+           id: list(int)
+            search for given measurement id
+
+        Returns
+        -------
+            if no arguments are passed all sample.measurements
+            list of RockPy.Measurements that meet search criteria or if invert is True, do not meet criteria.
+            [] if none are found
+
+        Note
+        ----
+            there is no connection between stype and sval. This may cause problems. I you have measurements with
+               M1: [pressure, 0.0, GPa], [temperature, 100.0, C]
+               M2: [pressure, 1.0, GPa], [temperature, 100.0, C]
+            and you search for stypes=['pressure','temperature'], svals=[0,100]. It will return both M1 and M2 because
+            both M1 and M2 have [temperature, 100.0, C].
+
+        """
+
+        if mean:
+            mlist = self.mean_measurements
+        else:
+            mlist = self.measurements
+
+        if id is not None:
+            id = to_tuple(id)
+            mlist = filter(lambda x: x.id in id, mlist)
+            return list(mlist)
+
+        if mtype:
+            mtype = to_tuple(mtype)
+            mtype = tuple(RockPy.abbrev_to_classname(mt) for mt in mtype)
+            mlist = filter(lambda x: x.mtype in mtype, mlist)
+
+        if stype:
+            mlist = filter(lambda x: x.has_stype(stype=stype, method='any'), mlist)
+
+        if sval_range is not None:
+            sval_range = self._convert_sval_range(sval_range=sval_range, mean=mean)
+
+            if not sval:
+                sval = sval_range
+            else:
+                sval = to_tuple()
+                sval += to_tuple(sval_range)
+
+        if sval is not None:
+            mlist = filter(lambda x: x.has_sval(sval=sval, method='any'), mlist)
+
+        if series:
+            series = RockPy.core.utils.tuple2list_of_tuples(series)
+            mlist = (x for x in mlist if x.has_series(series=series, method='all'))
+
+        if result:
+            mlist = filter(lambda x: x.has_result(result=result), mlist)
+
+        if invert:
+            if mean:
+                mlist = filter(lambda x: x not in mlist, self.mean_measurements)
+            else:
+                mlist = filter(lambda x: x not in mlist, self.measurements)
+
+        return list(mlist)
+
+    def _convert_sval_range(self, sval_range, mean):
+        """
+        converts a string of svals into a list
+
+        Parameters
+        ----------
+            sval_range: tuple, str
+                series range e.g. sval_range = [0,2] will give all from 0 to 2 including 0,2
+                also '<2', '<=2', '>2', and '>=2' are allowed.
+
+        """
+        out = []
+
+        if mean:
+            svals = set(s for m in self.mean_measurements for s in m.svals)
+        else:
+            svals = self.svals
+
+        if isinstance(sval_range, tuple):
+            out = [i for i in svals if sval_range[0] <= i <= sval_range[1]]
+
+        if isinstance(sval_range, str):
+            sval_range = sval_range.strip()  # remove whitespaces in case '> 4' is provided
+            if '-' in sval_range:
+                tup = [float(i) for i in sval_range.split('-')]
+                out = [i for i in svals if min(tup) <= i <= max(tup)]
+
+            if '<' in sval_range:
+                if '=' in sval_range:
+                    out = [i for i in svals if i <= float(sval_range.replace('<=', ''))]
+                else:
+                    out = [i for i in svals if i < float(sval_range.replace('<', ''))]
+            if '>' in sval_range:
+                if '=' in sval_range:
+                    out = [i for i in svals if i >= float(sval_range.replace('>=', ''))]
+                else:
+                    out = [i for i in svals if i > float(sval_range.replace('>', ''))]
+
+        return sorted(out)
+
     def __repr__(self):
         return '<< RockPy3.Sample.{} >>'.format(self.name)
 
 
 if __name__ == '__main__':
-    import RockPy
-
-    a = Sample('Sample_test', mass=(30.9, 'mg'))
-    print(a.measurements[0].data)
+    S = RockPy.Study()
+    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
