@@ -833,7 +833,8 @@ class Measurement(object):
         Parameters
         ----------
         other
-        ignore_stypes
+        ignore_stypes: str, list
+            list of stypes to be ignored
 
         Returns
         -------
