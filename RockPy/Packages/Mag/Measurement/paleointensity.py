@@ -215,7 +215,7 @@ class Paleointensity(measurement.Measurement):
             """
             acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
             vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
-            return vd
+            return vd.astype(float)
 
         def vds(self, vmin, vmax, **unused_params): #todo move somwhere else
             """
