@@ -428,35 +428,7 @@ class Measurement(object):
 
         return True if result in self._results.keys() else False
 
-    def has_series(self, series=None, method='all'):
-        '''
-        Method tests for given series. 
-        
-            
-        Parameters
-        ----------
-        series: list of tuples 
-            each element is (stype, sval, sunit) tuple
-        method: str:
-            'all': returns True if measurement posesses ALL series
-            'any': returns True if measurement posesses ONE or more series
-            'None': returns True if measurement posesses NONE of the provided series
-            
-        Returns
-        -------
-            bool
-            returns true if Nothing is passes
-        '''
-        if series is not None:
-            series = tuple2list_of_tuples(series)
-            if method == 'all':
-                return True if all(i in self.stype_sval_tuples for i in series) else False
-            if method == 'any':
-                return True if any(i in self.stype_sval_tuples for i in series) else False
-            if method == 'none':
-                return True if not any(i in self.svals for i in series) else False
-        else:
-            return True if not self.svals else False
+
 
     def __lt__(self, other):
         """
@@ -594,13 +566,6 @@ class Measurement(object):
 
         for lst in [cls._clsdata, cls.clsdata, cls._mids, cls._sids]:
             del lst[midx]
-
-    @property
-    def stype_sval_tuples(self):
-        # if self.get_series():
-        #     return [(s.stype, s.value) for s in self.series]
-        # else:
-        return []
 
     @property
     def m_idx(self):
@@ -752,6 +717,36 @@ class Measurement(object):
             series = (None, np.nan, None)  # no series
             return [series]
 
+    def has_series(self, series=None, method='all'):
+        '''
+        Method tests for given series. 
+
+
+        Parameters
+        ----------
+        series: list of tuples 
+            each element is (stype, sval, sunit) tuple
+        method: str:
+            'all': returns True if measurement posesses ALL series
+            'any': returns True if measurement posesses ONE or more series
+            'None': returns True if measurement posesses NONE of the provided series
+
+        Returns
+        -------
+            bool
+            returns true if Nothing is passes
+        '''
+        if series is not None:
+            series = tuple2list_of_tuples(series)
+            if method == 'all':
+                return True if all(i in self.series for i in series) else False
+            if method == 'any':
+                return True if any(i in self.series for i in series) else False
+            if method == 'none':
+                return True if not any(i in self.svals for i in series) else False
+        else:
+            return True if self._series else False
+
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
         """
         adds a series to measurement.series
@@ -769,9 +764,6 @@ class Measurement(object):
         -------
            [RockPy3.Series] list of RockPy series objects
 
-        Note
-        ----
-            If the measurement previously had no series, the (none, 0 , none) standard series will be removed first
         """
         series = (stype, sval, sunit)
         self._series.append(series)
@@ -787,20 +779,78 @@ class Measurement(object):
 
         """
         # get the series
-        sobj = self.get_series(stype=stype)[0]
+        stup = self.get_series(stype=stype)[0]
         # remove series from _series list
-        self._series.remove(sobj)
+        self._series.remove(stup)
+
+    def get_series(self, stype=None, sval=None, series=None):
+        """
+        searches for given stypes and svals in self.series and returns them
+
+        Parameters
+        ----------
+            series: list(tuple)
+                list of tuples to avoid problems with separate series and same sval
+            stypes: list, str
+                stype or stypes to be looked up
+            svals: float
+                sval or svals to be looked up
+
+        Returns
+        -------
+            list
+                list of series that fit the parameters
+                if no parameters - > all series
+                empty if none fit
+
+        Note
+        ----
+            m = measurement with [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
+            m.get_series(stype = 'pressure', sval = 0) -> [<RockPy3.series> pressure, 0.00, [GPa]]
+            m.get_series(sval = 0) -> [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
+            m.get_series(series=('temperature', 0)) -> [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
+        """
+        if not self._series:
+            return None
+
+        slist = self.series
+
+        if stype is not None:
+            stype = to_tuple(stype)
+            slist = filter(lambda x: x[0] in stype, slist)
+        if sval is not None:
+            sval = to_tuple(sval)
+            slist = filter(lambda x: x[1] in sval, slist)
+        if series:
+            series = tuple2list_of_tuples(series)
+            slist = filter(lambda x: (x[0], x[1]) in series, slist)
+        return list(slist)
 
     def equal_series(self, other, ignore_stypes=()):
-        ignore_stypes = RockPy3._to_tuple(ignore_stypes)
+        '''
+        Checks if two measurement objects have the same series. 
+        
+        Parameters
+        ----------
+        other
+        ignore_stypes
+
+        Returns
+        -------
+
+        '''
+
+        if not self.series and not other.series:
+            return True
+
+        ignore_stypes = to_tuple(ignore_stypes)
         ignore_stypes = [st.lower() for st in ignore_stypes if type(st) == str]
-        selfseries = [s for s in self.series if not s.stype in ignore_stypes]
-        otherseries = [s for s in other.series if not s.stype in ignore_stypes]
+        selfseries = [s for s in self.series if not s[0] in ignore_stypes]
+        otherseries = [s for s in other.series if not s[0] in ignore_stypes]
 
         if all(i in otherseries for i in selfseries):
             return True
-        if not self.series and not other.series:
-            return True
+
         else:
             return False
 
