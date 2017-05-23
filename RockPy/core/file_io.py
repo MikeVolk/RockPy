@@ -642,6 +642,16 @@ class ImportHelper(object):
 
     @classmethod
     def from_file(cls, fpath):
+        """
+        Reads a path into RockPy readable minfo structure
+        Parameters
+        ----------
+        fpath
+
+        Returns
+        -------
+
+        """
         cls.log().info('reading file infos: %s'%fpath)
         # get the directory
         folder = os.path.dirname(fpath)
@@ -919,8 +929,12 @@ class ImportHelper(object):
 
 
     @property
+    def nsnames(self):
+        return len(self.snames)\
+
+    @property
     def nfiles(self):
-        return len(self.snames)
+        return len(self.fpath)
 
     @property
     def _gen_dicts(self):

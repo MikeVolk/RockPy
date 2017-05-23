@@ -7,6 +7,8 @@ from RockPy.core.file_io import ImportHelper
 from RockPy.core.utils import to_tuple
 
 import pandas as pd
+import numpy as np
+
 log = logging.getLogger(__name__)
 
 
@@ -378,20 +380,36 @@ class Study(object):
         iHelper = ImportHelper.from_folder(folder)
 
         mlist = []
+        slist = []
         # create all samples
-        for file_info_dict in iHelper.gen_sample_dict:
-            if any(file_info_dict[v] in filter for v in ('sname',)):
-                self.log().debug('filtering out file: %s'%file_info_dict['fpath'])
+        for sample_info_dict in iHelper.gen_sample_dict:
+            if any(sample_info_dict[v] in filter for v in ('sname',)):
+                self.log().debug('filtering out file: %s'%sample_info_dict['fpath'])
                 continue
+            print('='*90)
+            s  = self.add_sample(**sample_info_dict)
+            slist.append(s)
 
-            s = self.add_sample(**file_info_dict)
+        # #create all measurements
+        # for s in slist:
+        #     for measurement_info_dict in iHelper.gen_measurement_dict:
+        #         if not s.name == sample_info_dict['sname']:
+        #             continue
+        #         if any(sample_info_dict[v] in filter for v in ('sname',)):
+        #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
+        #             continue
+        #         else:
+        #             s.add_measurement()
 
-            for ih in iHelper.getImportHelper(snames=file_info_dict['sname']):
-                for measurement_dict in ih.gen_measurement_dict:
-                    m = s.add_measurement(**measurement_dict)
-                    self.log().debug('*'*90)
-                    if m is not None:
-                        mlist.append(m)
+            # for ih in iHelper.getImportHelper(snames=sample_info_dict['sname']):
+            for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
+                if s.name != measurement_dict['sname']:
+                    continue
+                m = s.add_measurement(create_parameters=False, **measurement_dict)
+                #     self.log().debug('*'*90)
+                #     if m is not None:
+                #         mlist.append(m)
+            print('='*90)
 
         self.log().info(
             '%i / %i files imported in %.2f seconds'%(
@@ -408,16 +426,25 @@ class Study(object):
                 s.add_measurement(create_parameters=False, **importinfos)
 
     def info(self):
-        info = pd.DataFrame(columns=['mass', 'sample groups', 'mtypes', 'stypes', 'svals'])
+        info = pd.DataFrame(columns=['mass[kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
         for s in self.samples:
-            info.loc[s.name, 'mass'] = s.get_measurement('mass')[0].data
+            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement('mass') else np.nan
+            info.loc[s.name, 'sample groups'] = s._samplegroups
+            info.loc[s.name, 'mtypes'] = ['%s(%i)'%(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
+            info.loc[s.name, 'stypes'] = s.stypes
+            info.loc[s.name, 'svals'] = s.svals
 
+
+        return info
 if __name__ == '__main__':
     S = RockPy.Study()
     S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
 
-    print(list(S.measurements))
+    for m in S.measurements:
+        print(m.series)
+    # print(list(S.measurements))
+    print(S.info())
     # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
 
     # print(S.samples)

@@ -107,7 +107,6 @@ class Sample(object):
         """
         # assign a sample id
         self.sid = id(self)
-
         # added sample -> Sample counter +1
         Sample.snum += 1
 
@@ -193,7 +192,6 @@ class Sample(object):
             self.log().error(' << %s >> not implemented, yet' % mtype)
 
     def add_parameter_measurements(self, **kwargs):
-
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs if kwargs[i]]
 
         for mtype in parameters:
@@ -205,6 +203,7 @@ class Sample(object):
             # catch cant create error case where no data is written
             if mobj.data is None:
                 return
+            self.add_measurement(mtype=mtype, mobj=mobj)
 
     def add_measurement(
             self,
@@ -355,7 +354,7 @@ class Sample(object):
         -------
         set: set of all series in the sample
         """
-        return set(s.data for m in self.measurements for s in m.series)
+        return set(s for m in self.measurements for s in m.series)
 
     @property
     def samplegroups(self):
@@ -372,7 +371,7 @@ class Sample(object):
         -------
             set: stypes
         """
-        return set(s[0].lower() for s in self.series)
+        return set(s for m in self.measurements for s in m.stypes if s)
 
     @property
     def svals(self):
