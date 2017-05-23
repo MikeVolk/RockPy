@@ -44,7 +44,7 @@ class Paleointensity(measurement.Measurement):
         return x, y
 
     @classmethod
-    def from_simulation(cls, sobj, idx=0, **simparams):
+    def from_simulation(cls, sobj, idx=0, series=None, **simparams):
 
         pressure_demag = simparams.pop('pressure_demag', False)
         method = simparams.pop('method', 'fabian')

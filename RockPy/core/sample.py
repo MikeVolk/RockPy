@@ -160,7 +160,7 @@ class Sample(object):
 
         self.comment = comment
 
-    def add_simulation(self, mtype, idx=None, **sim_param):
+    def add_simulation(self, mtype, idx=None, series= None, **sim_param):
         """
         add simulated measurements
 
@@ -180,7 +180,7 @@ class Sample(object):
 
         if mtype in RockPy.implemented_measurements:
 
-            mobj = RockPy.implemented_measurements[mtype].from_simulation(sobj=self, idx=idx, **sim_param)
+            mobj = RockPy.implemented_measurements[mtype].from_simulation(sobj=self, idx=idx, series=series, **sim_param)
 
             if mobj:
                 self.add_measurement(mtype=mtype, ftype='simulation', mobj=mobj, series=sim_param.get('series', None),
