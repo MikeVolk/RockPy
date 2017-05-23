@@ -2,9 +2,11 @@ import logging
 import time
 
 import RockPy
+from RockPy.Packages.Generic.Measurement.Parameter import Parameter
 from RockPy.core.file_io import ImportHelper
-import pandas as pd
+from RockPy.core.utils import to_tuple
 
+import pandas as pd
 log = logging.getLogger(__name__)
 
 
@@ -81,6 +83,12 @@ class Study(object):
 
         for s in sorted(self._samples.values()):
             yield s
+
+    @property
+    def measurements(self):
+        for s in self.samples:
+            for m in s.measurements:
+                yield m
 
     @property
     def samplenames(self):
@@ -260,62 +268,9 @@ class Study(object):
         raise NotImplementedError
 
     ''' GET functions '''
-
-    def get_measurement(self,
-                        gname=None,
-                        sname=None,
-                        mtype=None,
-                        series=None,
-                        stype=None, sval=None, sval_range=None,
-                        mean=False, groupmean=False,
-                        invert=False,
-                        mid=None,
-                        ):
-        """
-
-        Args:
-            gname:
-            sname:
-            mtype:
-            series:
-            stype:
-            sval:
-            sval_range:
-            mean:
-            groupmean:
-            invert:
-            mid:
-        """
-        raise NotImplementedError
-
-    def get_sample(self,
-                   gname=None,
-                   sname=None,
-                   mtype=None,
-                   series=None,
-                   stype=None, sval=None, sval_range=None,
-                   mean=False,
-                   invert=False,
-                   ):
-        # type: (str, str, str, str, str, float, str, bool, bool) -> list
-
-        """
-        Parameters
-        ----------
-        gname
-        sname
-        mtype
-        series
-        stype
-        sval
-        sval_range
-        mean
-        invert
-        """
-        raise NotImplementedError
+    ####################################################################################################################
 
     def get_samplegroup(self, gname=None):
-        # type: (str) -> list
         """
         wrapper for simply getting all samples of one samplegroup
 
@@ -333,6 +288,70 @@ class Study(object):
 
         """
         return self.get_sample(gname=gname)
+
+    def get_sample(self,
+                   sid=None,
+                   gname=None,
+                   sname=None,
+                   mtype=None,
+                   series=None,
+                   stype=None, sval=None, sval_range=None,
+                   mean=False,
+                   invert=False,
+                   ):
+
+        slist = list(self.samples)
+
+        if not any(i for i in [gname, sname, mtype, series, stype, sval, sval_range, mean, invert]):
+            return slist
+
+        # samplegroup filtering
+        if gname:
+            gname = to_tuple(gname)
+            slist = [s for s in slist if any(sg in gname for sg in s._samplegroups)]
+
+        # sample filtering
+        if sname:
+            sname = to_tuple(sname)
+            slist = [s for s in slist if s.name in sname]
+
+        if any(i for i in [mtype, series, stype, sval, sval_range, mean, invert]):
+            slist = [s for s in slist if s.get_measurement(mtype=mtype,
+                                                           stype=stype, sval=sval, sval_range=sval_range,
+                                                           series=series,
+                                                           mean=mean,
+                                                           invert=invert)]
+        return slist
+
+
+    def get_measurement(self,
+                        gname=None,
+                        sname=None,
+                        mtype=None,
+                        series=None,
+                        stype=None, sval=None, sval_range=None,
+                        invert=False,
+                        mid=None,
+                        sid=None,
+                        ):
+
+        if mid:
+            return [m for s in self.samples for m in s.get_measurement(mid=mid, invert=invert)]
+
+        else:
+            samples = self.get_sample(gname=gname, sname=sname, mtype=mtype, series=series,
+                                      stype=stype, sval=sval, sval_range=sval_range, invert=invert,
+                                      sid=sid)
+            print(samples)
+            for s in samples:
+                print(s, s.get_measurement(), s.measurements)
+            print(samples)
+            mlist = (m for s in samples for m in s.get_measurement(mtype=mtype, series=series,
+                                                                   stype=stype, sval=sval, sval_range=sval_range,
+                                                                   invert=invert))
+        return list(mlist)
+
+
 
     ''' IMPORT functions '''
 
@@ -353,20 +372,32 @@ class Study(object):
         -----
             for now only samplenames can be filtered
         """
+        start = time.clock()
         filter = RockPy.to_tuple(filter)
 
         iHelper = ImportHelper.from_folder(folder)
 
+        mlist = []
         # create all samples
         for file_info_dict in iHelper.gen_sample_dict:
             if any(file_info_dict[v] in filter for v in ('sname',)):
                 self.log().debug('filtering out file: %s'%file_info_dict['fpath'])
                 continue
 
-            self.add_sample(**file_info_dict)
+            s = self.add_sample(**file_info_dict)
 
             for ih in iHelper.getImportHelper(snames=file_info_dict['sname']):
-                pass
+                for measurement_dict in ih.gen_measurement_dict:
+                    m = s.add_measurement(**measurement_dict)
+                    self.log().debug('*'*90)
+                    if m is not None:
+                        mlist.append(m)
+
+        self.log().info(
+            '%i / %i files imported in %.2f seconds'%(
+                len(mlist),
+                iHelper.nfiles,
+                time.clock()-start))
 
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
@@ -385,7 +416,8 @@ class Study(object):
 if __name__ == '__main__':
     S = RockPy.Study()
     S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
-    print(S.info())
+
+    print(list(S.measurements))
     # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
 
     # print(S.samples)
