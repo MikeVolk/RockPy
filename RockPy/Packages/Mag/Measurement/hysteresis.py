@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 class Hysteresis(Measurement):
 
+
     @property
     def data(self):
         out = super().data

@@ -60,10 +60,10 @@ class Measurement(object):
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
-        return logging.getLogger('RockPy.%s' % cls.mtype())
+        return logging.getLogger('RockPy.%s' % cls.mtype)
 
-    @classmethod
-    def mtype(cls):
+    @property
+    def mtype(self):
         """
         Returns the measurement type of the measurement
 
@@ -73,7 +73,7 @@ class Measurement(object):
 
 
         """
-        return cls.__name__.lower()
+        return self.__class__.__name__.lower()
 
     @classmethod
     def subclasses(cls):
@@ -452,7 +452,7 @@ class Measurement(object):
             add = 'mean_'
         else:
             add = ''
-        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype(), '',
+        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype, '',
                                                     # self.stype_sval_tuples, #todo fix
                                                     hex(self.mid))
 
@@ -717,6 +717,40 @@ class Measurement(object):
             series = (None, np.nan, None)  # no series
             return [series]
 
+    def has_stype(self, stype=None, method='all'):
+        """
+        Checks if a measurement has all of the specified series
+
+        Parameters
+        ----------
+            stype: str, list, tuple
+                stypes to test for
+            method: 'all' or 'any' or 'none'
+                defines the check method:
+                    all: all series need to exist
+                    any: any series needs to exist
+                    none: no series can exist
+
+        Returns
+        -------
+            bool
+            True if all stypes exist, False if not
+            If stype = None : returns True if no series else True
+        """
+        if not self._series:
+            return False
+
+        if stype is not None:
+            stype = to_tuple(stype)
+            if method == 'all':
+                return True if all(i in self.stypes for i in stype) else False
+            if method == 'any':
+                return True if any(i in self.stypes for i in stype) else False
+            if method == 'none':
+                return True if not any(i in self.stypes for i in stype) else False
+        else:
+            return True if not self.stypes else False
+
     def has_series(self, series=None, method='all'):
         '''
         Method tests for given series. 
@@ -736,6 +770,7 @@ class Measurement(object):
             bool
             returns true if Nothing is passes
         '''
+
         if series is not None:
             series = tuple2list_of_tuples(series)
             if method == 'all':

@@ -323,7 +323,7 @@ class Sample(object):
             #                                                                    mobj=mobj,
             #                                                                    **import_info)
 
-            self.log().info('ADDING\t << %s, %s >>' % (mobj.ftype, mobj.mtype()))
+            self.log().info('ADDING\t << %s, %s >>' % (mobj.ftype, mobj.mtype))
             self._add_mobj(mobj)
 
             return mobj
@@ -465,7 +465,7 @@ class Sample(object):
                         stype=None, sval=None, sval_range=None,
                         mean=False,
                         invert=False,
-                        id=None,
+                        mid=None,
                         result=None
                         ):
         """
@@ -493,7 +493,7 @@ class Sample(object):
               can be used to look up measurements within a certain range. if only one value is given,
                      it is assumed to be an upper limit and the range is set to [0, sval_range]
            mean: bool
-           id: list(int)
+           mid: list(int)
             search for given measurement id
 
         Returns
@@ -512,23 +512,20 @@ class Sample(object):
 
         """
 
-        if mean:
-            mlist = self.mean_measurements
-        else:
-            mlist = self.measurements
+        mlist = self.measurements
 
-        if id is not None:
-            id = to_tuple(id)
-            mlist = filter(lambda x: x.id in id, mlist)
+        if mid is not None:
+            mid = to_tuple(mid)
+            mlist = (x for x in mlist if x.id in mid)
             return list(mlist)
 
         if mtype:
             mtype = to_tuple(mtype)
-            mtype = tuple(RockPy.abbrev_to_classname(mt) for mt in mtype)
-            mlist = filter(lambda x: x.mtype in mtype, mlist)
+            mtype = tuple(RockPy.abbrev_to_classname[mt] for mt in mtype)
+            mlist = (m for m in mlist if m.mtype in mtype)
 
         if stype:
-            mlist = filter(lambda x: x.has_stype(stype=stype, method='any'), mlist)
+            mlist = (x for x in mlist if x.has_stype(stype=stype, method='any'))
 
         if sval_range is not None:
             sval_range = self._convert_sval_range(sval_range=sval_range, mean=mean)
@@ -540,21 +537,20 @@ class Sample(object):
                 sval += to_tuple(sval_range)
 
         if sval is not None:
-            mlist = filter(lambda x: x.has_sval(sval=sval, method='any'), mlist)
+            mlist = (m for m in mlist if m.has_sval(sval=sval, method='any'))
 
         if series:
             series = RockPy.core.utils.tuple2list_of_tuples(series)
-            mlist = (x for x in mlist if x.has_series(series=series, method='all'))
+            mlist = (m for m in mlist if m.has_series(series=series, method='all'))
 
         if result:
-            mlist = filter(lambda x: x.has_result(result=result), mlist)
+            mlist = (m for m in mlist if m.has_result(result=result))
 
         if invert:
-            if mean:
-                mlist = filter(lambda x: x not in mlist, self.mean_measurements)
-            else:
-                mlist = filter(lambda x: x not in mlist, self.measurements)
+             return [m for m in self.measurements if m not in mlist]
 
+        mlist = list(mlist)
+        print(list(mlist))
         return list(mlist)
 
     def _convert_sval_range(self, sval_range, mean):

@@ -51,7 +51,9 @@ class Paleointensity(measurement.Measurement):
 
         if method == 'fabian':
             simobj = paleointensity.Fabian2001(**simparams)
-        return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag), ftype_data=simobj, ftype='simulation')
+        return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag),
+                   series = series,
+                   ftype_data=simobj, ftype='simulation')
 
     @staticmethod
     def format_jr6(ftype_data, sobj_name=None):

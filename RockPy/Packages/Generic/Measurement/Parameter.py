@@ -17,7 +17,7 @@ class Parameter(Measurement):
 
 
         if column is None:
-            column = self.mtype()+'[%s]'%self.SIunit
+            column = self.mtype+'[%s]'%self.SIunit
 
         if isinstance(value, str):
             value, unit = RockPy.core.utils.split_num_alph(value)
