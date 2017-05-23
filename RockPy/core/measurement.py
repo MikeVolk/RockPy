@@ -748,6 +748,7 @@ class Measurement(object):
             return True if self._series else False
 
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
+        #todo change to set_series with styoe, sval, suit, series
         """
         adds a series to measurement.series
 
@@ -766,6 +767,10 @@ class Measurement(object):
 
         """
         series = (stype, sval, sunit)
+
+        # if stype in self.stypes:
+        #     self.
+
         self._series.append(series)
 
     def remove_series(self, stype):
@@ -838,7 +843,7 @@ class Measurement(object):
 
         Returns
         -------
-
+            bool
         '''
 
         if not self.series and not other.series:
@@ -846,8 +851,8 @@ class Measurement(object):
 
         ignore_stypes = to_tuple(ignore_stypes)
         ignore_stypes = [st.lower() for st in ignore_stypes if type(st) == str]
-        selfseries = [s for s in self.series if not s[0] in ignore_stypes]
-        otherseries = [s for s in other.series if not s[0] in ignore_stypes]
+        selfseries = (s for s in self.series if not s[0] in ignore_stypes)
+        otherseries = (s for s in other.series if not s[0] in ignore_stypes)
 
         if all(i in otherseries for i in selfseries):
             return True
@@ -855,6 +860,7 @@ class Measurement(object):
         else:
             return False
 
+    # todo test normalize functions
     ####################################################################################################################
     ''' Normalize functions '''
 

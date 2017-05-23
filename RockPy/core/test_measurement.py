@@ -3,20 +3,18 @@ from RockPy.core.measurement import Measurement
 from RockPy.core.sample import Sample
 import numpy as np
 
-class TestMeasurement(TestCase):
 
+class TestMeasurement(TestCase):
     def setUp(self):
         self.s = Sample('test')
         self.m = Measurement(sobj=self.s)
 
-
     def test_add_series(self):
-
         series = ('test', 1, 'something')
         self.m.add_series(stype=series[0], sval=series[1], sunit=series[2])
         self.assertEqual(series, self.m.series[0])
 
-        #if no unit is given None is added
+        # if no unit is given None is added
         series = ('test', 1)
         self.m.add_series(stype=series[0], sval=series[1])
         self.assertEqual((series[0], series[1], None), self.m.series[1])
@@ -43,3 +41,12 @@ class TestMeasurement(TestCase):
         self.assertFalse(m0.has_series([('s1', 1, 'A'), ('s2', 2, 'b')], method='all'))
         self.assertTrue(m0.has_series([('s6', 3, 'C'), ('s4', 2, 'G')], method='none'))
         self.assertTrue(m0.has_series())
+
+    def test_equal_series(self):
+        m0 = Measurement(self.s, series=[('s1', 1, 'A'), ('s2', 1, 'b')])
+        m1 = Measurement(self.s, series=[('s1', 1, 'A'), ('s2', 1, 'b')])
+        m2 = Measurement(self.s, series=[('s1', 2, 'A'), ('s2', 1, 'b')])
+
+        self.assertTrue(m0.equal_series(m1))
+        self.assertFalse(m0.equal_series(m2))
+        self.assertTrue(m0.equal_series(m2, ignore_stypes='s1'))
