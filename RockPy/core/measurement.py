@@ -37,7 +37,6 @@ class Measurement(object):
 
     """
 
-
     _results = None
     _result_classes_list = []
 
@@ -60,10 +59,10 @@ class Measurement(object):
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
-        return logging.getLogger('RockPy.%s' % cls.mtype)
+        return logging.getLogger('RockPy.%s' % cls.cls_mtype())
 
-    @property
-    def mtype(self):
+    @classmethod
+    def cls_mtype(cls):
         """
         Returns the measurement type of the measurement
 
@@ -73,7 +72,7 @@ class Measurement(object):
 
 
         """
-        return self.__class__.__name__.lower()
+        return cls.__name__.lower()
 
     @classmethod
     def subclasses(cls):
@@ -311,6 +310,7 @@ class Measurement(object):
             when creating a new measurement it automatically calculates all results using the standard prameter set
         """
 
+        self.mtype = self.cls_mtype()
         self.mid = id(self)
         self.__idx = self.n_created
 
