@@ -341,6 +341,18 @@ class Sample(object):
         if mobj not in self.measurements:
             self.measurements = np.append(self.measurements, mobj)
 
+    def calc_results(self, **kwargs):
+        '''
+        Method calls calc_all for each measurement
+        
+        Returns
+        -------
+            self.results
+        '''
+        for m in self.measurements:
+            m.calc_all(**kwargs)
+        return self.results
+
     def remove_measurement(self):  # todo write
         # needs to remove the measurement from measurement list and data from cls data
         raise NotImplementedError
