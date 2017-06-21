@@ -54,8 +54,9 @@ class Sample(object):
     def __init__(self,
                  name=None,
                  comment='',
-                 mass=None, massunit=None,
-                 height=None, diameter=None, lengthunit=None, *,
+                 mass=None, massunit='kg',
+                 height=None, diameter=None, lengthunit='m', *,
+
                  x_len=None, y_len=None, z_len=None,  # for cubic samples #todo implement volume
                  sample_shape='cylinder', #todo implement sample shape
                  coord=None,
@@ -194,6 +195,13 @@ class Sample(object):
             self.log().error(' << %s >> not implemented, yet' % mtype)
 
     def add_parameter_measurements(self, **kwargs):
+        '''
+        Method adds parameter measurements (mass, height, diameter...) to the sample. The parameters are passed as kwargs
+        
+        Parameters
+        ----------
+        kwargs
+        '''
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs if kwargs[i]]
 
         for mtype in parameters:
