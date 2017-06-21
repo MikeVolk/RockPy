@@ -3,6 +3,7 @@ import scipy as sp
 import pandas as pd
 import logging
 import inspect
+import RockPy
 
 class Result():
     dependencies = None
@@ -22,7 +23,9 @@ class Result():
         if result_name is None:
             result_name = self.name
 
-        self.mobj.sobj.results.loc[self.mobj.mid, result_name] = result
+        self.mobj.sobj._results.loc[self.mobj.mid, result_name] = result
+        self.mobj.sobj._results.loc[self.mobj.mid, 'sid'] = self.mobj.sobj.sid
+
 
     def get_result(self, result_name=None):
         """
@@ -40,7 +43,7 @@ class Result():
         if result_name is None:
             result_name = self.name
 
-        return self.mobj.sobj.results.loc[self.mobj.mid, result_name]
+        return self.mobj.sobj._results.loc[self.mobj.mid, result_name]
 
     def get_stack(self, stack=None):
         """
