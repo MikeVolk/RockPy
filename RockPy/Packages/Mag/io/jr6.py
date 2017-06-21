@@ -31,8 +31,14 @@ class Jr6(RockPy.core.ftype.Ftype):
             data = data.reset_index(drop=True)
 
         assert isinstance(data, pd.DataFrame)
-        data[xyz] = [v * 10 ** data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
+
+        # divide by exponent
+        data[xyz] = [v / 10 ** -data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
+
+        # unnormalize the volume
         data[xyz] *= volume
+
+        # calculate Magnetic moment
         data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
         data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in data['step']]
         data['treat_temp'] = data['level'] + 273
