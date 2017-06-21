@@ -66,6 +66,13 @@ class Study(object):
         for s in sorted(self._samples.values()):
             yield s
 
+    def __getitem__(self, item):
+        item = str(item)
+        if item in self._samples:
+            return self._samples[item]
+        else:
+            self.log().error('Sample not in Study')
+
 
     ''' SAMPLES '''
 
