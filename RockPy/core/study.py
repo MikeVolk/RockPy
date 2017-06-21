@@ -431,12 +431,12 @@ class Study(object):
         for s in self.samples:
             info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement('mass') else np.nan
             info.loc[s.name, 'sample groups'] = s._samplegroups
-            info.loc[s.name, 'mtypes'] = ['%s(%i)'%(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
+            info.loc[s.name, 'mtypes'] = ','.join(['%s(%i)'%(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes])
             info.loc[s.name, 'stypes'] = s.stypes
             info.loc[s.name, 'svals'] = s.svals
 
-
         return info
+
 if __name__ == '__main__':
     S = RockPy.Study()
     S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')

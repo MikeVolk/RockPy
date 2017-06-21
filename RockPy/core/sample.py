@@ -588,7 +588,6 @@ class Sample(object):
              return [m for m in self.measurements if m not in mlist]
 
         mlist = list(mlist)
-        print(list(mlist))
         return list(mlist)
 
     def _convert_sval_range(self, sval_range, mean):
