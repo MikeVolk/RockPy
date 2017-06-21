@@ -202,6 +202,8 @@ class Fabian2001(object):
 
     @classmethod
     def cauchy(cls, x, s):
+        if s == 0:
+            s = 1e-16
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
@@ -467,7 +469,7 @@ class Fabian2001(object):
         if title:
             ax.set_title(title)
 
-    def plot_contour(self, ax=None, colorbar=True, **kwargs):
+    def plot_contour(self, ax=None, colorbar=False, **kwargs):
         if ax is None:
             ax = plt.gca()
 
@@ -563,6 +565,10 @@ class Fabian2001(object):
                 ls=ls,
                 marker=marker,
                 color=kwargs.pop('color','r'),**kwargs)
+
+        ax.legend(['pTRM acquisition', 'Thermal demag.', 'sum'])
+        ax.set_xlabel('T [C]')
+        ax.set_ylabel('M [arb. units]')
 
 if __name__ == '__main__':
     # RockPy.log.setLevel('INFO')
