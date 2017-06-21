@@ -340,11 +340,16 @@ class Paleointensity(measurement.Measurement):
             slope, sigma, yint, xint = lin_regress(pdd=acqu_data, column_name_x=component,
                                                    ypdd=demag_data, column_name_y=component)
 
-            self.mobj.sobj.results.loc[self.mobj.mid, 'slope'] = slope
-            self.mobj.sobj.results.loc[self.mobj.mid, 'sigma'] = sigma
-            self.mobj.sobj.results.loc[self.mobj.mid, 'yint'] = yint
-            self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
-            self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
+            self.set_result(slope, 'slope')
+            self.set_result(sigma, 'sigma')
+            self.set_result(yint, 'yint')
+            self.set_result(xint, 'xint')
+            self.set_result(len(acqu_data), 'n')
+            # self.mobj.sobj.results.loc[self.mobj.mid, 'slope'] = slope
+            # self.mobj.sobj.results.loc[self.mobj.mid, 'sigma'] = sigma
+            # self.mobj.sobj.results.loc[self.mobj.mid, 'yint'] = yint
+            # self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
+            # self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
     class sigma(slope): pass
 
