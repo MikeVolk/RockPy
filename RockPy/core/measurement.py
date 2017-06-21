@@ -101,6 +101,9 @@ class Measurement(object):
         return subclasses
 
     ''' implemented dicts '''
+    @property
+    def midx(self):
+        return self.__class__._mids.index(self.mid)
 
     @classmethod
     def implemented_ftypes(cls):  # todo move into RockPy core.core has nothing to do with measurement
@@ -607,7 +610,7 @@ class Measurement(object):
     def data(self):
         # get the index of the sample / measurement
         try:
-            midx = self._mids.index(self.mid)
+            midx = self.__class__._mids.index(self.mid)
 
             # assertion should be put, but sid may be more than one item
             # sidx = self._sids.index(self.sid)
@@ -803,8 +806,8 @@ class Measurement(object):
         """
         series = (stype, sval, sunit)
 
-        # if stype in self.stypes:
-        #     self.
+        # set stype as column in results
+        self.sobj._results.loc[self.mid, stype+'*'] = sval
 
         self._series.append(series)
 
@@ -822,6 +825,9 @@ class Measurement(object):
         stup = self.get_series(stype=stype)[0]
         # remove series from _series list
         self._series.remove(stup)
+
+        #remove the series from the results
+        self.sobj.results.loc[self.mid, stype] = np.nan
 
     def get_series(self, stype=None, sval=None, series=None):
         """
@@ -1121,3 +1127,4 @@ if __name__ == '__main__':
     m = s.add_simulation(mtype='paleointensity')
 
     m.calc_all()
+    print(m.results)
