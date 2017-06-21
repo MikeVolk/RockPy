@@ -36,3 +36,16 @@ class TestSample(TestCase):
         self.assertEqual([self.mlist[1]], self.s.get_measurement(series=('#', 0, '')))
         self.assertEqual([], self.s.get_measurement(series=('test', 0, '')))
 
+    def test__del_mobj(self):
+        mobj = self.mlist[1]
+
+        # calculate the results
+        self.s.calc_results()
+
+        self.s._del_mobj(mobj)
+
+        self.assertNotIn(mobj, self.s.measurements)
+        self.assertNotIn(mobj.mid, self.s._results.index)
+        self.assertNotIn(mobj.mid, self.s.results.index)
+        self.assertNotIn(mobj.mid, mobj.__class__._clsdata[mobj.midx]['mid'])
+        self.assertNotIn(mobj.mid, mobj.__class__._mids)
