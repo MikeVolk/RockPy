@@ -1120,6 +1120,27 @@ class Measurement(object):
     ##################################################################################################################
     ''' REPORT '''
 
+    ''' HELPER '''
+
+    @staticmethod
+    def get_values_in_both(a, b, key='level'):  # todo TEST
+        '''
+        Looks through pd.DataFrame(a)[key] and pd.DataFrame(b)[key] to find values in both
+
+        Parameters
+        ----------
+        a: pd.DataFrame
+        b: pd.DataFrame
+        key: str
+
+        Returns
+        -------
+            sorted(list) of items
+        '''
+
+        # get equal temperature steps for both demagnetization and acquisition measurements
+        equal_vals = list(set(a[key].values) & set(b[key].values))
+        return equal_vals
 
 if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
