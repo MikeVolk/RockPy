@@ -24,6 +24,7 @@ from RockPy.core import measurement
 
 
 class Paleointensity(measurement.Measurement):
+
     def equal_acqu_demag_steps(self, vmin=20, vmax=700):
         """
         Filters the th and ptrm data so that the temperatures are within vmin, vmax and only temperatures in both
@@ -31,7 +32,7 @@ class Paleointensity(measurement.Measurement):
         """
 
         # get equal temperature steps for both demagnetization and acquisition measurements
-        equal_steps = list(set(self.zf_steps['level'].values) & set(self.if_steps['level'].values))
+        equal_steps = self.get_values_in_both(self.zf_steps, self.if_steps, 'level')
 
         # Filter data for the equal steps and filter steps outside of tmin-tmax range
         # True if step between vmin, vmax
@@ -192,11 +193,18 @@ class Paleointensity(measurement.Measurement):
             pandas.DataFrame
         """
 
-        d = self.if_steps.copy()
-        d.loc[:, ('x', 'y', 'z')] -= self.zf_steps.loc[:, ('x', 'y', 'z')]
-        d['LT_code'] = 'PTRM'
-        d['m'] = np.sqrt(d.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
-        return d
+        equal_vals = self.get_values_in_both(self.if_steps, self.zf_steps, 'level')
+
+
+        if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
+        zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
+
+        # print(if_steps)
+        # print(zf_steps)
+        if_steps.loc[:, ('x', 'y', 'z')] -= zf_steps.loc[:, ('x', 'y', 'z')]
+        if_steps['LT_code'] = 'PTRM'
+        if_steps['m'] = np.sqrt(if_steps.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
+        return if_steps
 
     ####################################################################################################################
 

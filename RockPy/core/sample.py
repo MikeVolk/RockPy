@@ -51,6 +51,20 @@ class Sample(object):
         for m in self.measurements:
             yield m
 
+
+    def __getitem__(self, item):
+
+        if isinstance(item, int):
+            return self.measurements[item]
+
+        try:
+            return self.get_measurement(mtype=item)
+        except KeyError:
+            pass
+
+        raise KeyError('<< %s >> not valid item in sample object'%item)
+
+
     def __init__(self,
                  name=None,
                  comment='',
