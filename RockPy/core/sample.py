@@ -15,11 +15,7 @@ log = logging.getLogger(__name__)
 class Sample(object):
     snum = 0
 
-    # create the results DataFrame
-    mcolumns = ['sID', 'mID']
 
-    _results = pd.DataFrame(columns=mcolumns)
-    _results = _results.set_index('mID', drop=True)
 
     @property
     def results(self):
@@ -109,6 +105,12 @@ class Sample(object):
         self.sid = id(self)
         # added sample -> Sample counter +1
         Sample.snum += 1
+
+        # create the results DataFrame
+        mcolumns = ['sID', 'mID']
+
+        _results = pd.DataFrame(columns=mcolumns)
+        self._results = _results.set_index('mID', drop=True)
 
         # assign name to sample if no name is specified
         if not name:
@@ -329,6 +331,23 @@ class Sample(object):
         else:
             self.log().error('COULD not create measurement << %s >>' % mtype)
 
+    def _del_mobj(self, mobj):
+        """
+        removes the measurement object from the Measurements ndarray and removes the results from sample._results
+
+        Parameters
+        ----------
+        mobj: RockPy.Measurement object
+        """
+
+        if mobj in self.measurements:
+            idx = np.where(self.measurements == mobj)
+            self.measurements = np.delete(self.measurements, idx)
+
+        if mobj.mid in self._results.index:
+            self._results = self._results.drop(mobj.mid)
+            assert mobj.mid not in self.results.index
+
     def _add_mobj(self, mobj):
         """
         Adds a measurement object to the Measurements ndarray
@@ -351,7 +370,7 @@ class Sample(object):
         '''
         for m in self.measurements:
             m.calc_all(**kwargs)
-        return self.results
+        return self.results.copy()
 
     def remove_measurement(self):  # todo write
         # needs to remove the measurement from measurement list and data from cls data
