@@ -7,6 +7,8 @@ from copy import deepcopy
 
 
 class Vsm(Ftype):
+    standard_calibration_exponent = 0
+
     def __init__(self, dfile, snames=None, dialect=None):
         super().__init__(dfile, snames=snames, dialect=dialect)
 
@@ -55,7 +57,28 @@ class Vsm(Ftype):
                            nrows=int(header[0]['Number of data'])+int(header[0]['Number of segments'])-1,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
+
         self.data = data#.dropna(axis=0)
+
+        # check the calibration factor
+        self.calibration_factor = float(self.header.T['Calibration factor'])
+
+        if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
+            self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
+            RockPy.log.warning(
+                'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
+                    self.standard_calibration_exponent,
+                    int(np.floor(np.log10(self.calibration_factor)))))
+        else:
+            self.correct_exp = None
+
+        if self.correct_exp:
+            for c in self.data:
+                if any(t in c for t in ('(Am2)', )):
+                    self.data[c] *= self.correct_exp
+
+
+
 
     @property
     def segments(self):
