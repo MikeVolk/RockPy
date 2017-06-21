@@ -1140,7 +1140,7 @@ class Measurement(object):
 
         # get equal temperature steps for both demagnetization and acquisition measurements
         equal_vals = list(set(a[key].values) & set(b[key].values))
-        return equal_vals
+        return sorted(equal_vals)
 
 if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
