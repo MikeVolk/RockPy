@@ -127,6 +127,11 @@ class Paleointensity(measurement.Measurement):
         return d
 
     @property
+    def nrm(self):
+        d = self.data[self.data['LT_code'] == 'LT-NO'].set_index('ti')
+        return d
+
+    @property
     def if_steps(self):
         """
         Acquisition of partial Thermal remanent magnetization steps of the experiments, also giving NRM step.
