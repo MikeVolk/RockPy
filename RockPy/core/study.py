@@ -444,6 +444,9 @@ class Study(object):
 
         return info
 
+    @property
+    def results(self):
+        return pd.concat([s.results for s in self.samples])
 if __name__ == '__main__':
     S = RockPy.Study()
     S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
