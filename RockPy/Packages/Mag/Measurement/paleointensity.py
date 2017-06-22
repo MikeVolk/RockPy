@@ -201,7 +201,11 @@ class Paleointensity(measurement.Measurement):
 
         # print(if_steps)
         # print(zf_steps)
-        if_steps.loc[:, ('x', 'y', 'z')] -= zf_steps.loc[:, ('x', 'y', 'z')]
+        try:
+            if_steps.loc[:, ('x', 'y', 'z')] -= zf_steps.loc[:, ('x', 'y', 'z')]
+        except ValueError:
+            raise ValueError('cannot reindex from a duplicate axis -- likely duplicate values for IF or ZF steps\n'
+                             'IF steps: %s \nZF_steps: %s'%(if_steps['level'].values,zf_steps['level'].values))
         if_steps['LT_code'] = 'PTRM'
         if_steps['m'] = np.sqrt(if_steps.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
         return if_steps
