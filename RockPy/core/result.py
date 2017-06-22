@@ -24,7 +24,7 @@ class Result():
             result_name = self.name
 
         self.mobj.sobj._results.loc[self.mobj.mid, result_name] = result
-        self.mobj.sobj._results.loc[self.mobj.mid, 'sid'] = self.mobj.sobj.sid
+        self.mobj.sobj._results.loc[self.mobj.mid, 'sID'] = self.mobj.sobj.sid
 
 
     def get_result(self, result_name=None):

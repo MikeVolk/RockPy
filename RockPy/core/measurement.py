@@ -542,8 +542,8 @@ class Measurement(object):
             return
 
         # add column with measurement ids (mID) and sample ids (sID)
-        mdata['mid'] = self.mid
-        mdata['sid'] = self.sid
+        mdata['mID'] = self.mid
+        mdata['sID'] = self.sid
 
         # append data to raw data (_clsdata)
         self.__class__._clsdata.append(mdata)
