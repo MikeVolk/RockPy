@@ -10,14 +10,38 @@ class Jr6(RockPy.core.ftype.Ftype):
     pint_treatment_codes = ('LT-NO', 'LT-T-Z', 'LT-T-I', 'LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z')
 
     table = {'tdt': ['NRM', '0', '1', '2', '3', '4']}
+    imported_files = dict()
 
     def __init__(self, dfile, snames=None, dialect=None, volume=10 ** -5):
         super().__init__(dfile, snames=snames, dialect=dialect)
         self.volume = volume
 
         xyz = ['magn_x', 'magn_y', 'magn_z']
+        # filter specimens
+        if self.snames:
+            self.data = self.data[np.in1d(self.data['specimen'], self.snames)]
+            self.data = self.data.reset_index(drop=True)
 
-        data = pd.read_fwf(dfile, widths=(10, 8, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 4, 2),
+        # divide by exponent
+        self.data[xyz] = [v / 10 ** -self.data['exp'].iloc[i] for i, v in enumerate(self.data[xyz].values)]
+
+        # unnormalize the volume
+        self.data[xyz] *= self.volume
+
+        # calculate Magnetic moment
+        self.data['magn_moment'] = np.linalg.norm(self.data[xyz], axis=1)
+        self.data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in self.data['step']]
+        self.data['treat_temp'] = self.data['level'] + 273
+        self.data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in self.data['step']]
+        self.data = self.data.drop('step', 1)
+        self.data = self.data.drop('exp', 1)
+
+    def read_file(self):
+        ''' 
+        Method that does the actual reading of the whole file. All specimens are in the file
+        '''
+
+        data = pd.read_fwf(self.dfile, widths=(10, 8, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 4, 2),
                            names=['specimen', 'step', 'magn_x', 'magn_y', 'magn_z', 'exp',
                                   'azimuth', 'dip',
                                   'foliation plane azimuth of dip', 'foliation plane dip',
@@ -25,30 +49,10 @@ class Jr6(RockPy.core.ftype.Ftype):
                                   'P1', 'P2', 'P3', 'P4', 'Precision of measurement', 'CR-LF'
                                   ], usecols=[0, 1, 2, 3, 4, 5], comment='#')
 
-        if snames:
-            snames = RockPy.to_tuple(snames)
-            data = data[np.in1d(data['specimen'], snames)]
-            data = data.reset_index(drop=True)
+        data['specimen'] = data['specimen'].astype(str)
 
         assert isinstance(data, pd.DataFrame)
-
-        # divide by exponent
-        data[xyz] = [v / 10 ** -data['exp'].iloc[i] for i, v in enumerate(data[xyz].values)]
-
-        # unnormalize the volume
-        data[xyz] *= volume
-
-        # calculate Magnetic moment
-        data['magn_moment'] = np.linalg.norm(data[xyz], axis=1)
-        data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in data['step']]
-        data['treat_temp'] = data['level'] + 273
-        data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in data['step']]
-        data = data.drop('step', 1)
-        data = data.drop('exp', 1)
-        self.data = data
-
-    def read_file(self):
-        pass
+        return data
 
     def lookup_lab_treatment_code(self, item):
         """
@@ -82,5 +86,6 @@ class Jr6(RockPy.core.ftype.Ftype):
 
 
 if __name__ == '__main__':
-    j6 = Jr6(os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'), dialect='tdt')
+    j6 = Jr6(os.path.join(RockPy.test_data_path, 'TT-paleointensity.jr6'), dialect='tdt', snames=61)
     print(j6.data)
+    print(j6.imported_files)
