@@ -583,7 +583,7 @@ class ImportHelper(object):
             return block
 
     @classmethod
-    def extract_add_dialect_block(block):
+    def extract_add_dialect_block(cls, block):
         """
         creates the add block. additional information is comma seperated. 
 
@@ -685,8 +685,8 @@ class ImportHelper(object):
             series = None
 
         # additional and dialect
-        if len(splits) > 3:
-            additional, dialect = cls.extract_add_block(splits[3])
+        if len(splits) > 3 and splits[3]:
+            additional, dialect = cls.extract_add_dialect_block(splits[3])
         else:
             additional, dialect = (None, None)
 
@@ -698,9 +698,9 @@ class ImportHelper(object):
 
         return cls(snames=snames, mtypes=mtypes, ftype=ftype, fpath=fpath, sgroups=sgroups,
                    dialect=dialect,
-                   mass=mass, massunit=massunit,
-                   height=height, heightunit=heightunit,
-                   diameter=diameter, diameterunit=diameterunit,
+                   mass=mass, massunit=massunit if massunit else 'kg',
+                   height=height, heightunit=heightunit if heightunit else 'm',
+                   diameter=diameter, diameterunit=diameterunit if diameterunit else 'm',
                    series=series, comment=comment, additional=additional, suffix=suffix)
 
     @classmethod
