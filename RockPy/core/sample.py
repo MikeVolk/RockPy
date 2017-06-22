@@ -220,9 +220,9 @@ class Sample(object):
 
         for mtype in parameters:
             if mtype == 'mass':
-                value = (kwargs.pop(mtype), kwargs.pop('massunit'))
+                value = (kwargs.pop(mtype), kwargs.pop('massunit', 'kg'))
             else:
-                value = (kwargs.pop(mtype), kwargs.pop('lengthunit'))
+                value = (kwargs.pop(mtype), kwargs.pop('lengthunit', 'm'))
             mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, **kwargs)
             # catch cant create error case where no data is written
             if mobj.data is None:
@@ -650,4 +650,4 @@ class Sample(object):
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+    S.import_folder('/Users/mike/github/2016-Pressure_cleaning/data/JGR_data')
