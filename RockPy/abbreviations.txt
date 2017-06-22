@@ -42,8 +42,8 @@ viscosity: visc
 forc: forc
 thermocurve: rmp, mom
 
-thellier: tt
-paleointensity: pint
+#thellier: tt
+paleointensity: pint, tt
 
 anisotropy: ani, aniso
 anisotropy: irmani
