@@ -114,6 +114,34 @@ class Paleointensity(measurement.Measurement):
         del data['inc']
         return data
 
+    @staticmethod
+    def format_cryomag(ftype_data, sobj_name):
+        '''
+        formats the data fro ftype.cryomag into paleointensity readable format
+        
+        Parameters
+        ----------
+        ftype_data
+        sobj_name
+
+        Returns
+        -------
+
+        '''
+        # only use results
+        data = ftype_data.data[ftype_data.data['mode']=='results']
+
+        # rename the columns from magic format -> RockPy internal names
+        data = data.rename(
+            columns={'magn_x': 'x', 'magn_y': 'y', 'magn_z': 'z', 'magn_moment': 'm'})
+
+        data['ti'] = data['level']
+
+        for col in ('coreaz', 'coredip', 'bedaz', 'beddip', 'vol', 'weight', 'a95', 'Dc', 'Ic', 'Dg', 'Ig', 'Ds', 'Is'):
+            del data[col]
+
+        return data
+
     @property
     def zf_steps(self):
         """
@@ -124,6 +152,7 @@ class Paleointensity(measurement.Measurement):
             pandas.DataFrame
         """
         d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
+        d = d.groupby(d.index).first()
         return d
 
     @property
@@ -146,6 +175,8 @@ class Paleointensity(measurement.Measurement):
             pandas.DataFrame
         """
         d = self.data[(self.data['LT_code'] == 'LT-T-I') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
+        d = d.groupby(d.index).first()
+
         return d
 
     @property
@@ -159,6 +190,8 @@ class Paleointensity(measurement.Measurement):
         """
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-I'].set_index('ti')
+        d = d.groupby(d.index).first()
+        plt.Line2D
         return d
 
     @property
@@ -190,7 +223,7 @@ class Paleointensity(measurement.Measurement):
     @property
     def ifzf_diff(self):
         """
-        pTRM acuisition steps of the experiments. Vector substration of the pt[[x,y,z]] and th[[x,y,z]] steps for
+        pTRM acquisition steps of the experiments. Vector substration of the pt[[x,y,z]] and th[[x,y,z]] steps for
         each ti. Also recalculates the moment ['m'] using np.linalg.norm
 
         Returns

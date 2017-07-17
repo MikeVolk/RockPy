@@ -212,6 +212,7 @@ class Measurement(object):
             ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name, dialect=dialect)
         else:
             cls.log().error('CANNOT IMPORT ')
+            cls.log().error('ftype not in implemented ftypes: %s '%', '.join(cls.implemented_ftypes().keys()))
 
         # check wether the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():

@@ -63,8 +63,8 @@ simulation: sim, simulation
 none: none
 
 # ftypes
-cryomag: cryo
-cryomagcsv: cry
+#cryomag: cryo
+cryomag: cry
 vftb: vftb
 sushibar: sush
 vsm: vsm, vibrating sample magnetometer

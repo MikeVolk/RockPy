@@ -5,7 +5,6 @@ import RockPy.core.utils
 
 class Ftype(object):
     imported_files = {}
-    _clsdata = pd.DataFrame(columns=('dfile',))
 
     def has_specimen(self, specimen):
         if specimen not in self.data['specimen'].values:

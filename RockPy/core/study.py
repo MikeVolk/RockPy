@@ -367,6 +367,7 @@ class Study(object):
     def import_folder(self,
                       folder,
                       filter=None,
+                      **kwargs
                       ):
         """
         Method takes folder as input, cycles through all files and imports them. Does not import subfolders.
@@ -384,7 +385,7 @@ class Study(object):
         start = time.clock()
         filter = RockPy.to_tuple(filter)
 
-        iHelper = ImportHelper.from_folder(folder)
+        iHelper = ImportHelper.from_folder(folder, **kwargs)
 
         mlist = []
         slist = []
