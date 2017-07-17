@@ -650,4 +650,16 @@ class Sample(object):
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    S.import_folder('/Users/mike/github/2016-Pressure_cleaning/data/JGR_data')
+    # S.import_folder('/Users/mike/github/2016-Pressure_cleaning/data/JGR_data')
+    s = S.add_sample('1a')
+    m = s.add_measurement(fpath='/Users/mike/github/2016-Pressure_cleaning/data/JGR_data/LF4C-HX_1a_TT_CRY#320[mg]_5,17[mm]_5,84[mm]#pressure_0,6_GPa#.000',
+                      mtype='paleointensity',
+                      ftype='cryomag', dialect='tdt')
+    print(m.data.columns)
+    m.calc_all()
+    # print(s.results)
+
+    # from RockPy.Packages.Mag.io.cryomag import CryoMag
+    # d = CryoMag(dfile='/Users/mike/github/2016-Pressure_cleaning/data/JGR_data/LF4C-HX_1a_TT_CRY#320[mg]_5,17[mm]_5,84[mm]#pressure_0,6_GPa#.000')
+    #
+    # print(d.data)

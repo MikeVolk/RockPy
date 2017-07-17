@@ -10,55 +10,14 @@ class Vsm(Ftype):
     standard_calibration_exponent = 0
 
     def __init__(self, dfile, snames=None, dialect=None):
+
+        # get the file infos first -> line numbers needed ect.
+        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths = self.read_basic_file_info(dfile)
+
+        self.header = self.read_header(dfile, header_end)
+        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_widths)
+
         super().__init__(dfile, snames=snames, dialect=dialect)
-
-        with open(self.dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
-            for i, l in enumerate(f.readlines()):
-                if i == 1:
-                    mtype = l
-                if 'Number of data' in l:
-                    header_end = i
-                if '0000001' in l:
-                    widths = [len(n)+1 for n in l.split(',')]
-                    segment_start = i
-                if l.startswith('+') or l.startswith('-'):
-                    data_start = i
-                    data_widths = [len(n) for n in l.split(',')]
-                    break
-
-        self.mtype = mtype
-
-        # reading the header
-        header = pd.read_fwf(self.dfile,
-                             skiprows=2, nrows=header_end - 1, skip_blank_lines=True,
-                             widths=(31, 13), index_col=0, names=[0]).dropna()
-        header = header.replace('No', False)
-        header = header.replace('Yes', True)
-
-        self.header = header
-
-        if not 'First-order reversal curves' in mtype:
-            # reading segments_tab data
-            segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
-                              pd.read_fwf(self.dfile, skiprows=header_end + 1, nrows=segment_start - header_end -2,
-                                          widths=widths, header=None).values.T]
-            segments = pd.read_csv(self.dfile, skiprows=segment_start, nrows=int(header[0]['Number of segments']),
-                                   names=segment_header,
-                                   )
-
-            self.segments_tab = segments
-
-        # reading data
-        data_header = [' '.join([str(n) for n in line]).replace('nan', '').replace('�', '2').strip() for line in
-                       pd.read_fwf(self.dfile, skiprows=data_start - 4,
-                                   nrows=3, widths=data_widths).values.T]
-
-        data = pd.read_csv(self.dfile, skiprows=data_start,
-                           nrows=int(header[0]['Number of data'])+int(header[0]['Number of segments'])-1,
-                           names=data_header, skip_blank_lines=False, squeeze=True,
-                           )
-
-        self.data = data#.dropna(axis=0)
 
         # check the calibration factor
         self.calibration_factor = float(self.header.T['Calibration factor'])
@@ -77,7 +36,83 @@ class Vsm(Ftype):
                 if any(t in c for t in ('(Am2)', )):
                     self.data[c] *= self.correct_exp
 
+    def read_basic_file_info(self, dfile):
+        '''
+        Opens the file and extracts the mtype, header lines, segment lines, segment widths, data lines, and data widths.
+        '''
+        mtype, header_end, segment_start, segment_widths, data_start, data_widths = None, None, None, None, None, None
 
+        with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
+            for i, l in enumerate(f.readlines()):
+                if i == 1:
+                    mtype = l
+                if 'Number of data' in l:
+                    header_end = i
+                if '0000001' in l:
+                    segment_widths = [len(n)+1 for n in l.split(',')]
+                    segment_start = i
+                if l.startswith('+') or l.startswith('-'):
+                    data_start = i
+                    data_widths = [len(n) for n in l.split(',')]
+                    break
+
+        return mtype, header_end, segment_start, segment_widths, data_start, data_widths
+
+    def read_header(self, dfile, header_end):
+        '''
+        Function reads the header file
+        
+        Returns
+        -------
+
+        '''
+        header = pd.read_fwf(dfile,
+                             skiprows=2, nrows=header_end - 1, skip_blank_lines=True,
+                             widths=(31, 13), index_col=0, names=[0]).dropna()
+        header = header.replace('No', False)
+        header = header.replace('Yes', True)
+
+        return header
+
+    def read_segement_infos(self, dfile,
+                            mtype, header_end, segment_start, segment_widths,
+                            ):
+        '''
+        reads the segments of the VSM file
+        
+        Notes
+        -----
+        VSM - FORC measurements do not have a segments part -> returns None
+        
+        Returns
+        -------
+
+        '''
+        segment_infos = None
+
+        if not 'First-order reversal curves' in mtype:
+            # reading segments_tab data
+            segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
+                              pd.read_fwf(dfile, skiprows=header_end + 1, nrows=segment_start - header_end -2,
+                                          widths=segment_widths, header=None).values.T]
+            segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
+                                   names=segment_header,
+                                   )
+        return segment_infos
+
+    def read_file(self):
+
+        # reading data
+        data_header = [' '.join([str(n) for n in line]).replace('nan', '').replace('�', '2').strip() for line in
+                       pd.read_fwf(self.dfile, skiprows=self.data_start - 4,
+                                   nrows=3, widths=self.data_widths).values.T]
+
+        data = pd.read_csv(self.dfile, skiprows=self.data_start,
+                           nrows=int(self.header[0]['Number of data'])+int(self.header[0]['Number of segments'])-1,
+                           names=data_header, skip_blank_lines=False, squeeze=True,
+                           )
+
+        return data
 
 
     @property
@@ -93,5 +128,5 @@ class Vsm(Ftype):
             yield self.data.loc[indices[i]:indices[i+1]].dropna(axis=0)
 
 if __name__ == '__main__':
-    dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
-    hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
+    # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
+    hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
