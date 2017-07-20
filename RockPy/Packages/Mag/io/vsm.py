@@ -124,9 +124,13 @@ class Vsm(Ftype):
         -------
             pandas.DataFrame
         """
-        indices = [0] + [seg['Final Index']+i for i, seg in self.segments_tab.iterrows()]
+        # indices of the first row of each segment
+        indices = [0] + [seg['Final Index']+i for i, seg in self.segment_header.iterrows()]
         for i, idx in enumerate(indices[:-1]):
             yield self.data.loc[indices[i]:indices[i+1]].dropna(axis=0)
+    @property
+    def segment_list(self):
+        return list(self.segments)
 
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
