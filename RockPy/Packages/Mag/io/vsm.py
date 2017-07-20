@@ -12,7 +12,7 @@ class Vsm(Ftype):
     def __init__(self, dfile, snames=None, dialect=None):
 
         # get the file infos first -> line numbers needed ect.
-        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths = self.read_basic_file_info(dfile)
+        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, self.file_length = self.read_basic_file_info(dfile)
 
         self.header = self.read_header(dfile, header_end)
         self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_widths)
@@ -43,7 +43,9 @@ class Vsm(Ftype):
         mtype, header_end, segment_start, segment_widths, data_start, data_widths = None, None, None, None, None, None
 
         with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
-            for i, l in enumerate(f.readlines()):
+            d = f.readlines()
+            file_length = len(d)
+            for i, l in enumerate(d):
                 if i == 1:
                     mtype = l
                 if 'Number of data' in l:
@@ -56,7 +58,7 @@ class Vsm(Ftype):
                     data_widths = [len(n) for n in l.split(',')]
                     break
 
-        return mtype, header_end, segment_start, segment_widths, data_start, data_widths
+        return mtype, header_end, segment_start, segment_widths, data_start, data_widths, file_length
 
     def read_header(self, dfile, header_end):
         '''
@@ -96,7 +98,7 @@ class Vsm(Ftype):
                               pd.read_fwf(dfile, skiprows=header_end + 1, nrows=segment_start - header_end -2,
                                           widths=segment_widths, header=None).values.T]
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
-                                   names=segment_header,
+                                   names=segment_header, encoding = 'latin-1',
                                    )
         return segment_infos
 
@@ -108,10 +110,9 @@ class Vsm(Ftype):
                                    nrows=3, widths=self.data_widths).values.T]
 
         data = pd.read_csv(self.dfile, skiprows=self.data_start,
-                           nrows=int(self.header[0]['Number of data'])+int(self.header[0]['Number of segments'])-1,
+                           nrows=int(self.file_length-self.data_start)-2,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
-
         return data
 
 
@@ -129,4 +130,5 @@ class Vsm(Ftype):
 
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
-    hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
+    # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
+    print(Vsm(dfile='/Users/mike/Google Drive/LHMGt4000-12_VSM_preisach_try.001').data)
