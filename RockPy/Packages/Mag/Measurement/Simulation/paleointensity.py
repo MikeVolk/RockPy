@@ -12,7 +12,6 @@ from pylatex import Document, Section, Subsection, Tabular, Math, TikZ, Axis, \
     Plot, Figure, Matrix, Package
 from pylatex.utils import italic
 from copy import deepcopy
-import tabulate
 
 import logging
 
