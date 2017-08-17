@@ -128,6 +128,9 @@ class Vsm(Ftype):
         indices = [0] + [seg['Final Index']+i for i, seg in self.segment_header.iterrows()]
         for i, idx in enumerate(indices[:-1]):
             yield self.data.loc[indices[i]:indices[i+1]].dropna(axis=0)
+    @property
+    def segment_list(self):
+        return list(self.segments)
 
     @property
     def segment_list(self):
