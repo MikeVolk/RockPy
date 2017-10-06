@@ -94,10 +94,41 @@ class Study(object):
             yield s
 
     @property
+    def sample_list(self):
+        """
+        Iterator that returns each sample in Study
+
+        Returns
+        -------
+            RockPy.sample
+        """
+
+        return list(RockPy.samples)
+
+    @property
     def measurements(self):
+        '''
+        Iterator that returns each measurement in the Study
+
+        Returns
+        -------
+            RockPy.Measurement
+        '''
+
         for s in self.samples:
             for m in s.measurements:
                 yield m
+
+    @property
+    def measurement_list(self):
+        """
+        List of all measurements in the Study
+
+        Returns
+        -------
+            list
+        """
+        return list(self.measurements)
 
     @property
     def samplenames(self):
@@ -414,9 +445,8 @@ class Study(object):
                 if s.name != measurement_dict['sname']:
                     continue
                 m = s.add_measurement(create_parameters=False, **measurement_dict)
-                #     self.log().debug('*'*90)
-                #     if m is not None:
-                #         mlist.append(m)
+                if m is not None:
+                    mlist.append(m)
             print('='*90)
 
         self.log().info(
@@ -452,12 +482,4 @@ class Study(object):
         return results
 if __name__ == '__main__':
     S = RockPy.Study()
-    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
-
-    for m in S.measurements:
-        print(m.series)
-    # print(list(S.measurements))
-    print(S.info())
-    # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
-
-    # print(S.samples)
+    S.import_folder('/Users/mike/Dropbox/experimental_data/LF4C/Ms[T];Mrs[T];Bc[T]/VSM/hysteresis')
