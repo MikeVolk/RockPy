@@ -9,6 +9,10 @@ from RockPy.core.utils import to_tuple
 import pandas as pd
 import numpy as np
 
+import ipywidgets as widgets
+from IPython.display import clear_output, display
+from ipywidgets import HBox, Label
+
 log = logging.getLogger(__name__)
 
 
@@ -73,7 +77,6 @@ class Study(object):
         else:
             self.log().error('Sample not in Study')
 
-
     ''' SAMPLES '''
 
     @property
@@ -94,12 +97,6 @@ class Study(object):
             yield s
 
     @property
-    def measurements(self):
-        for s in self.samples:
-            for m in s.measurements:
-                yield m
-
-    @property
     def samplenames(self):
         """
         Iterator yields all samplenames in Study
@@ -111,6 +108,20 @@ class Study(object):
 
         for sname in sorted(self._samples.keys()):
             yield sname
+
+    ''' measurements '''
+    @property
+    def measurements(self):
+        for s in self.samples:
+            for m in s.measurements:
+                yield m
+
+    @property
+    def mtypes(self):
+        '''
+        returns a sorted list of unique mtypes
+        '''
+        return sorted(set(m.mtype for m in self.measurements))
 
     ''' SAMPLE GROUPS '''
 
@@ -131,7 +142,7 @@ class Study(object):
     def sample_exists(self, sname=None, sobj=None):
         '''
         Method checks if a sample is in the _samples dictionary
-         
+
         Parameters
         ----------
         sname: str (optional)
@@ -141,11 +152,11 @@ class Study(object):
         -------
             False if sample does not exist
             RockPy.Sample if sample exists
-        
+
         Notes
         -----
-            either 
-            
+            either
+
         '''
         if sname is None and sobj is None:
             raise TypeError('sample_exists() missing 1 required positional argument: ''sname'' or ''sobj''')
@@ -175,21 +186,20 @@ class Study(object):
             samplegroup or groups the sample should belong to
         sobj: RockPy.Sample (optional)
             RockPy.Sample instace, no sample is created instance is just added to Study
-            
+
         kwargs are passed on to RockPy.Sample
 
         """
 
         if self.sample_exists(sname, sobj):
-
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
                         'Returning sample' % (sname if sname is not None else sobj.name))
 
         if sobj is None:
             sobj = RockPy.Sample(
-                    name=str(sname),
-                    comment=comment,
-                    sgroups=sgroups, **kwargs)
+                name=str(sname),
+                comment=comment,
+                sgroups=sgroups, **kwargs)
 
         self._samples.setdefault(sobj.name, sobj)
         return sobj
@@ -277,6 +287,7 @@ class Study(object):
         raise NotImplementedError
 
     ''' GET functions '''
+
     ####################################################################################################################
 
     def get_samplegroup(self, gname=None):
@@ -332,7 +343,6 @@ class Study(object):
                                                            invert=invert)]
         return slist
 
-
     def get_measurement(self,
                         gname=None,
                         sname=None,
@@ -360,8 +370,6 @@ class Study(object):
                                                                    invert=invert))
         return list(mlist)
 
-
-
     ''' IMPORT functions '''
 
     def import_folder(self,
@@ -372,12 +380,12 @@ class Study(object):
         """
         Method takes folder as input, cycles through all files and imports them. Does not import subfolders.
         Can be filtered to only import certain files.
-        
+
         Parameters
         ----------
         folder: str
         filter: str
-         
+
         Notes
         -----
             for now only samplenames can be filtered
@@ -392,22 +400,22 @@ class Study(object):
         # create all samples
         for sample_info_dict in iHelper.gen_sample_dict:
             if any(sample_info_dict[v] in filter for v in ('sname',)):
-                self.log().debug('filtering out file: %s'%sample_info_dict['fpath'])
+                self.log().debug('filtering out file: %s' % sample_info_dict['fpath'])
                 continue
-            print('='*90)
-            s  = self.add_sample(**sample_info_dict)
+            print('=' * 90)
+            s = self.add_sample(**sample_info_dict)
             slist.append(s)
 
-        # #create all measurements
-        # for s in slist:
-        #     for measurement_info_dict in iHelper.gen_measurement_dict:
-        #         if not s.name == sample_info_dict['sname']:
-        #             continue
-        #         if any(sample_info_dict[v] in filter for v in ('sname',)):
-        #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
-        #             continue
-        #         else:
-        #             s.add_measurement()
+            # #create all measurements
+            # for s in slist:
+            #     for measurement_info_dict in iHelper.gen_measurement_dict:
+            #         if not s.name == sample_info_dict['sname']:
+            #             continue
+            #         if any(sample_info_dict[v] in filter for v in ('sname',)):
+            #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
+            #             continue
+            #         else:
+            #             s.add_measurement()
 
             # for ih in iHelper.getImportHelper(snames=sample_info_dict['sname']):
             for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
@@ -417,13 +425,13 @@ class Study(object):
                 #     self.log().debug('*'*90)
                 #     if m is not None:
                 #         mlist.append(m)
-            print('='*90)
+            print('=' * 90)
 
         self.log().info(
-            '%i / %i files imported in %.2f seconds'%(
+            '%i / %i files imported in %.2f seconds' % (
                 len(mlist),
                 iHelper.nfiles,
-                time.clock()-start))
+                time.clock() - start))
 
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
@@ -437,9 +445,11 @@ class Study(object):
         info = pd.DataFrame(columns=['mass[kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
         for s in self.samples:
-            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement('mass') else np.nan
+            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement(
+                'mass') else np.nan
             info.loc[s.name, 'sample groups'] = s._samplegroups
-            info.loc[s.name, 'mtypes'] = ','.join(['%s(%i)'%(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes])
+            info.loc[s.name, 'mtypes'] = ','.join(
+                ['%s(%i)' % (mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes])
             info.loc[s.name, 'stypes'] = s.stypes
             info.loc[s.name, 'svals'] = s.svals
 
@@ -450,6 +460,37 @@ class Study(object):
         results = pd.concat([s.results for s in self.samples])
         results['sname'] = [s.name for s in self.samples for m in range(s.results.shape[0])]
         return results
+
+    def import_widget(self):
+        display(Label('import file'),
+                HBox([]),
+                HBox([]))
+
+    def plot_widget(self):
+
+        def next_(event):
+            pass
+
+        # samples selection
+        samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0], description='sample:',
+                                            disabled=False, layout=widgets.Layout(width='250px'))
+        next_sample = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
+        previous_sample = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
+        sample_select = widgets.HBox([samples_dropdown, previous_sample, next_sample])
+
+        # mtype selection
+        mtype_dropdown = widgets.Dropdown(options=list(self.mtypes), value=None, description='mtype:',
+                                            disabled=False, layout=widgets.Layout(width='250px'))
+        next_mtype = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
+        previous_mtype = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
+        mtype_select = widgets.HBox([mtype_dropdown, previous_mtype, next_mtype])
+
+        RightPane = widgets.VBox([sample_select, mtype_select], layout=widgets.Layout(width='300px'))
+        LeftPane = widgets.VBox([widgets.Label(value=self.name)], layout=widgets.Layout(width='600px'))
+
+
+        display(HBox([LeftPane, RightPane]))
+
 if __name__ == '__main__':
     S = RockPy.Study()
     S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
