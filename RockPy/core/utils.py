@@ -8,7 +8,8 @@ from contextlib import contextmanager
 from math import degrees, radians, atan2, asin, cos, sin, tan
 from numba import jit
 
-conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+import matplotlib.colors as mcol
+from matplotlib.lines import Line2D
 
 def convert(value, unit, SIunit):
     """
@@ -260,3 +261,11 @@ def set_get_attr(obj, attr, value=None):
     if not hasattr(obj, attr):
         setattr(obj, attr, value)
     return getattr(obj, attr)
+
+# colors and mappings
+def red_blue_colormap():
+    # Make a user-defined colormap.
+    cm1 = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
+    return cm1
+
+conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)

@@ -722,6 +722,40 @@ class Measurement(object):
             series = (None, np.nan, None)  # no series
             return [series]
 
+    def has_sval(self, svals=None, method='all'):
+        """
+        Checks if a measurement has any, all, or none of the specified svals
+
+        Parameters
+        ----------
+            sval: str, list, tuple
+                stypes to test for
+            method: 'all' or 'any' or 'none'
+                defines the check method:
+                    all: all svals need to exist
+                    any: any svals needs to exist
+                    none: none of the svals can exist
+
+        Returns
+        -------
+            bool
+            True if all stypes exist, False if not
+            If stype = None : returns True if no series else True
+        """
+        if not self._series:
+            return False
+
+        if svals is not None:
+            svals = to_tuple(svals)
+            if method == 'all':
+                return True if all(i in self.svals for i in svals) else False
+            if method == 'any':
+                return True if any(i in self.svals for i in svals) else False
+            if method == 'none':
+                return True if not any(i in self.svals for i in svals) else False
+        else:
+            return True if not self.svals else False
+
     def has_stype(self, stype=None, method='all'):
         """
         Checks if a measurement has all of the specified series
