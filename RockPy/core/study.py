@@ -103,7 +103,7 @@ class Study(object):
             RockPy.sample
         """
 
-        return list(RockPy.samples)
+        return list(self.samples)
 
     @property
     def measurements(self):
@@ -480,6 +480,3 @@ class Study(object):
         results = pd.concat([s.results for s in self.samples])
         results['sname'] = [s.name for s in self.samples for m in range(s.results.shape[0])]
         return results
-if __name__ == '__main__':
-    S = RockPy.Study()
-    S.import_folder('/Users/mike/Dropbox/experimental_data/LF4C/Ms[T];Mrs[T];Bc[T]/VSM/hysteresis')

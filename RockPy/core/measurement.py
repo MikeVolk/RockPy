@@ -456,8 +456,9 @@ class Measurement(object):
             add = 'mean_'
         else:
             add = ''
-        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype, '',
-                                                    # self.stype_sval_tuples, #todo fix
+        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
+                                                    '['+';'.join(['{},{}({})'.format(i[0],i[1],i[2]) for i in self.get_series()])+']' if self.has_series() else '',
+
                                                     hex(self.mid))
 
     def __hash__(self):
@@ -1146,7 +1147,7 @@ class Measurement(object):
 if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
     s = RockPy.Sample('test')
-    m = s.add_simulation(mtype='paleointensity')
-
-    m.calc_all()
-    print(m.results)
+    m = s.add_simulation(mtype='paleointensity', series=[('test',1,'abc'),('test2',2,'abc')])
+    print(m)
+    # m.calc_all()
+    # print(m.results)
