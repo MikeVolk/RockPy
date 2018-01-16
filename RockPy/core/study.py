@@ -468,10 +468,14 @@ class Study(object):
 
         for s in self.samples:
             info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement('mass') else np.nan
-            info.loc[s.name, 'sample groups'] = s._samplegroups
-            info.loc[s.name, 'mtypes'] = ','.join(['%s(%i)'%(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes])
-            info.loc[s.name, 'stypes'] = s.stypes
-            info.loc[s.name, 'svals'] = s.svals
+            info.loc[s.name, 'sample groups'] = s._samplegroups if s._samplegroups else 'None'
+
+            mtypes = [(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
+            info.loc[s.name, 'mtypes'] = mtypes if len(mtypes)>1 else mtypes[0]
+
+            info.loc[s.name, 'stypes'] = sorted(s.stypes) if len(s.stypes) > 1 else list(s.stypes)[0]
+            info.loc[s.name, 'svals'] = sorted(s.svals) if len(s.svals) > 1 else list(s.svals)[0]
+
 
         return info
 
