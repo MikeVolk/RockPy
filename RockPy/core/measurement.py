@@ -722,9 +722,9 @@ class Measurement(object):
             series = (None, np.nan, None)  # no series
             return [series]
 
-    def has_sval(self, svals=None, method='all'):
+    def has_sval(self, sval=None, method='all'):
         """
-        Checks if a measurement has any, all, or none of the specified svals
+        Checks if a measurement has any, all, or none of the specified sval
 
         Parameters
         ----------
@@ -732,9 +732,9 @@ class Measurement(object):
                 stypes to test for
             method: 'all' or 'any' or 'none'
                 defines the check method:
-                    all: all svals need to exist
-                    any: any svals needs to exist
-                    none: none of the svals can exist
+                    all: all sval need to exist
+                    any: any sval needs to exist
+                    none: none of the sval can exist
 
         Returns
         -------
@@ -745,14 +745,14 @@ class Measurement(object):
         if not self._series:
             return False
 
-        if svals is not None:
-            svals = to_tuple(svals)
+        if sval is not None:
+            sval = to_tuple(sval)
             if method == 'all':
-                return True if all(i in self.svals for i in svals) else False
+                return True if all(i in self.svals for i in sval) else False
             if method == 'any':
-                return True if any(i in self.svals for i in svals) else False
+                return True if any(i in self.svals for i in sval) else False
             if method == 'none':
-                return True if not any(i in self.svals for i in svals) else False
+                return True if not any(i in self.svals for i in sval) else False
         else:
             return True if not self.svals else False
 
