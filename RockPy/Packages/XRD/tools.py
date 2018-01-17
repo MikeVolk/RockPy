@@ -10,7 +10,7 @@ def wavelength(anode):
 
 def theta_to_q(theta, lamb):
     """
-    Calculate the Theta value into Q
+    Calculate the Theta (1 Theta!) value into Q
 
     Parameters
     ----------
@@ -40,7 +40,7 @@ def q_to_theta(q, lamb):
 
     Returns
     -------
-
+    list new theta (1 Theta!) values
     """
     if isinstance(lamb, str):
         lamb = wavelength(lamb)
@@ -70,8 +70,8 @@ def pdd_transpose_wavelength(pdd, lambda1, lambda2, column='index'):
     else:
         theta = pdd[column]
 
-    q = theta_to_q(theta=theta, lamb=lambda1)
-    theta_new = q_to_theta(q, lamb=lambda2)
+    q = theta_to_q(theta=theta/2, lamb=lambda1)
+    theta_new = q_to_theta(q, lamb=lambda2) *2
 
     if column == 'index':
         pdd.index = theta_new
