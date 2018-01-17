@@ -47,3 +47,35 @@ def q_to_theta(q, lamb):
 
     theta = np.arcsin((lamb * q) / (4 * np.pi))
     return np.rad2deg(theta)
+
+def pdd_transpose_wavelength(pdd, lambda1, lambda2, column='index'):
+    """
+    transposes the wavelength of a pandas dataframe from one wavelength to a second one.
+
+    Parameters
+    ----------
+    pdd
+    lambda1
+    lambda2
+
+    Returns
+    -------
+
+    """
+
+    pdd = pdd.copy()
+
+    if column == 'index':
+        theta = pdd.index
+    else:
+        theta = pdd[column]
+
+    q = theta_to_q(theta=theta, lamb=lambda1)
+    theta_new = q_to_theta(q, lamb=lambda2)
+
+    if column == 'index':
+        pdd.index = theta_new
+    else:
+        pdd[column] = theta_new
+
+    return pdd
