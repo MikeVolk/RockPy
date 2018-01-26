@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
-from lmfit import minimize, Parameters, report_fit
+# from lmfit import minimize, Parameters, report_fit
 import matplotlib.dates
 import datetime
 

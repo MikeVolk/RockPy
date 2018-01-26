@@ -8,9 +8,9 @@ import os
 import matplotlib.pylab as plt
 import RockPy.Packages.Mag.Measurement.Simulation.utils as SimUtils
 
-from pylatex import Document, Section, Subsection, Tabular, Math, TikZ, Axis, \
-    Plot, Figure, Matrix, Package
-from pylatex.utils import italic
+# from pylatex import Document, Section, Subsection, Tabular, Math, TikZ, Axis, \
+#     Plot, Figure, Matrix, Package
+# from pylatex.utils import italic
 from copy import deepcopy
 
 import logging
