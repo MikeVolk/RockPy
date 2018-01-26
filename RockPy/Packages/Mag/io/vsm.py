@@ -9,11 +9,16 @@ from copy import deepcopy
 class Vsm(Ftype):
     standard_calibration_exponent = 0
 
+    mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),
+                         'Remanence curves:  DCD\n': ('dcd',)}
+
     def __init__(self, dfile, snames=None, dialect=None):
 
         # get the file infos first -> line numbers needed ect.
-        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, self.file_length = self.read_basic_file_info(dfile)
+        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, self.file_length = self.read_basic_file_info(
+            dfile)
 
+        self.mtype = self.mtype_translation[mtype]
         self.header = self.read_header(dfile, header_end)
         self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_widths)
 
@@ -33,7 +38,7 @@ class Vsm(Ftype):
 
         if self.correct_exp:
             for c in self.data:
-                if any(t in c for t in ('(Am2)', )):
+                if any(t in c for t in ('(Am2)',)):
                     self.data[c] *= self.correct_exp
 
     def read_basic_file_info(self, dfile):
@@ -51,7 +56,7 @@ class Vsm(Ftype):
                 if 'Number of data' in l:
                     header_end = i
                 if '0000001' in l:
-                    segment_widths = [len(n)+1 for n in l.split(',')]
+                    segment_widths = [len(n) + 1 for n in l.split(',')]
                     segment_start = i
                 if l.startswith('+') or l.startswith('-'):
                     data_start = i
@@ -63,17 +68,22 @@ class Vsm(Ftype):
     def read_header(self, dfile, header_end):
         '''
         Function reads the header file
-        
+
         Returns
         -------
 
         '''
         header = pd.read_fwf(dfile,
                              skiprows=2, nrows=header_end - 1, skip_blank_lines=True,
-                             widths=(31, 13), index_col=0, names=[0]).dropna()
+                             widths=(31, 13), index_col=0, names=[0])
+
+        # remove empty line and section headers
+        idx = [i for i,v in enumerate(header.index) if not str(v).upper() == v if str(v) != 'nan']
+
+        header = header.iloc[idx]
         header = header.replace('No', False)
         header = header.replace('Yes', True)
-
+        header.loc['fpath'] = dfile
         return header
 
     def read_segement_infos(self, dfile,
@@ -81,11 +91,11 @@ class Vsm(Ftype):
                             ):
         '''
         reads the segments of the VSM file
-        
+
         Notes
         -----
         VSM - FORC measurements do not have a segments part -> returns None
-        
+
         Returns
         -------
 
@@ -95,11 +105,11 @@ class Vsm(Ftype):
         if not 'First-order reversal curves' in mtype:
             # reading segments_tab data
             segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
-                              pd.read_fwf(dfile, skiprows=header_end + 1, nrows=segment_start - header_end -2,
+                              pd.read_fwf(dfile, skiprows=header_end + 1, nrows=segment_start - header_end - 2,
                                           widths=segment_widths, header=None).values.T]
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
-                                   names=segment_header, encoding = 'latin-1',
-                                   )
+                                        names=segment_header, encoding='latin-1',
+                                        )
         return segment_infos
 
     def read_file(self):
@@ -110,11 +120,10 @@ class Vsm(Ftype):
                                    nrows=3, widths=self.data_widths).values.T]
 
         data = pd.read_csv(self.dfile, skiprows=self.data_start,
-                           nrows=int(self.file_length-self.data_start)-2,
+                           nrows=int(self.file_length - self.data_start) - 2,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
         return data
-
 
     @property
     def segments(self):
@@ -125,9 +134,10 @@ class Vsm(Ftype):
             pandas.DataFrame
         """
         # indices of the first row of each segment
-        indices = [0] + [seg['Final Index']+i for i, seg in self.segment_header.iterrows()]
+        indices = [0] + [seg['Final Index'] + i for i, seg in self.segment_header.iterrows()]
         for i, idx in enumerate(indices[:-1]):
-            yield self.data.loc[indices[i]:indices[i+1]].dropna(axis=0)
+            yield self.data.loc[indices[i]:indices[i + 1]].dropna(axis=0)
+
     @property
     def segment_list(self):
         return list(self.segments)
@@ -135,8 +145,9 @@ class Vsm(Ftype):
     @property
     def segment_list(self):
         return list(self.segments)
-    
+
+
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
     # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
-    print(Vsm(dfile='/Users/mike/Google Drive/LHMGt4000-12_VSM_preisach_try.001').data)
+    print(Vsm(dfile='/Users/mike/Dropbox/github/collaborations/Andrew Fowler (UMN)/data/VSM/pyrrhotite#3base_7.2mg_DCD_VSM.001').header)
