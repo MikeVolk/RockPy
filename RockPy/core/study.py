@@ -397,7 +397,7 @@ class Study(object):
 
     def import_folder(self,
                       folder,
-                      filter=None,
+                      arg_filter=None,
                       **kwargs
                       ):
         """
@@ -407,14 +407,14 @@ class Study(object):
         Parameters
         ----------
         folder: str
-        filter: str
+        arg_filter: str
          
         Notes
         -----
             for now only samplenames can be filtered
         """
         start = time.clock()
-        filter = RockPy.to_tuple(filter)
+        arg_filter = RockPy.to_tuple(arg_filter)
 
         iHelper = ImportHelper.from_folder(folder, **kwargs)
 
@@ -422,7 +422,7 @@ class Study(object):
         slist = []
         # create all samples
         for sample_info_dict in iHelper.gen_sample_dict:
-            if any(sample_info_dict[v] in filter for v in ('sname',)):
+            if any(sample_info_dict[v] in arg_filter for v in ('sname',)):
                 self.log().debug('filtering out file: %s'%sample_info_dict['fpath'])
                 continue
             print('='*90)
