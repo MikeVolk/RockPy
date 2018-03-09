@@ -10,6 +10,7 @@ class Vsm(Ftype):
     standard_calibration_exponent = 0
 
     mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),
+                         'Direct moment vs. field; Initial magnetization; Hysteresis loop\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',)}
 
     def __init__(self, dfile, snames=None, dialect=None):

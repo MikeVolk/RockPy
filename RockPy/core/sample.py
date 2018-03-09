@@ -307,6 +307,7 @@ class Sample(object):
         if fpath and not any((mtype, ftype)):
             import_helper = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
         else:
+            print('creating minfo from mtype:', mtype)
             import_helper = RockPy.core.file_io.ImportHelper.from_dict(fpath=fpath,
                                                                      sgroups=sgroups,
                                                                      snames=self.name,
@@ -650,16 +651,7 @@ class Sample(object):
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    # S.import_folder('/Users/mike/github/2016-Pressure_cleaning/data/JGR_data')
     s = S.add_sample('1a')
-    m = s.add_measurement(fpath='/Users/mike/github/2016-Pressure_cleaning/data/JGR_data/LF4C-HX_1a_TT_CRY#320[mg]_5,17[mm]_5,84[mm]#pressure_0,6_GPa#.000',
-                      mtype='paleointensity',
-                      ftype='cryomag', dialect='tdt')
-    print(m.data.columns)
-    m.calc_all()
-    # print(s.results)
-
-    # from RockPy.Packages.Mag.io.cryomag import CryoMag
-    # d = CryoMag(dfile='/Users/mike/github/2016-Pressure_cleaning/data/JGR_data/LF4C-HX_1a_TT_CRY#320[mg]_5,17[mm]_5,84[mm]#pressure_0,6_GPa#.000')
-    #
-    # print(d.data)
+    m = s.add_measurement(fpath='/Users/mike/Dropbox/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001',
+                          ftype='vsm',
+                          mtype='hys')
