@@ -15,6 +15,11 @@ from RockPy.core.study import Study
 from RockPy.core.sample import Sample
 
 from RockPy.core.utils import to_tuple
+
+''' PLOTTING '''
+from RockPy.plotting import colorpalettes
+colors = colorpalettes['cat10']
+
 ''' LOGGING '''
 
 logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))

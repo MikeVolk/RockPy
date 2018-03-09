@@ -340,12 +340,6 @@ class Sample(object):
         # DATA import from MOBJ
         if mobj:
             # todo from measurement
-            # if isinstance(mobj, tuple) or ftype == 'from_measurement':
-            #     if not RockPy.core.utils.mtype_implemented(mtype):
-            #         return
-            #     mobj = RockPy.implemented_measurements[mtype].from_measurement(sobj=self,
-            #                                                                    mobj=mobj,
-            #                                                                    **import_info)
 
             self.log().info('ADDING\t << %s, %s >>' % (mobj.ftype, mobj.mtype))
             self._add_mobj(mobj)
