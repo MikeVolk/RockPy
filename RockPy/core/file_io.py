@@ -500,7 +500,6 @@ class ImportHelper(object):
         ftype = RockPy.abbrev_to_classname[ftype.lower()]
 
         mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in RockPy.to_tuple(mtypes))
-
         return sgroups, snames, mtypes, ftype
 
     @staticmethod
@@ -752,6 +751,7 @@ class ImportHelper(object):
         self.sgroups = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(sgroups))
 
         self.mtypes = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(mtypes))
+        self.mtypes = [(RockPy.abbrev_to_classname[mt] for mt in mtypes) for mtypes in self.mtypes] #translate from abbrev to classname
 
         self.ftype = RockPy.core.utils.to_list(RockPy.to_tuple(ftype))
         self.fpath = RockPy.core.utils.to_list(fpath)
