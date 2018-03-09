@@ -9,6 +9,10 @@ from RockPy.core.utils import to_tuple
 import pandas as pd
 import numpy as np
 
+import ipywidgets as widgets
+from IPython.display import clear_output, display
+from ipywidgets import HBox, Label
+
 log = logging.getLogger(__name__)
 
 
@@ -143,6 +147,20 @@ class Study(object):
         for sname in sorted(self._samples.keys()):
             yield sname
 
+    ''' measurements '''
+    @property
+    def measurements(self):
+        for s in self.samples:
+            for m in s.measurements:
+                yield m
+
+    @property
+    def mtypes(self):
+        '''
+        returns a sorted list of unique mtypes
+        '''
+        return sorted(set(m.mtype for m in self.measurements))
+
     ''' SAMPLE GROUPS '''
 
     @property
@@ -162,7 +180,7 @@ class Study(object):
     def sample_exists(self, sname=None, sobj=None):
         '''
         Method checks if a sample is in the _samples dictionary
-         
+
         Parameters
         ----------
         sname: str (optional)
@@ -172,11 +190,11 @@ class Study(object):
         -------
             False if sample does not exist
             RockPy.Sample if sample exists
-        
+
         Notes
         -----
-            either 
-            
+            either
+
         '''
         if sname is None and sobj is None:
             raise TypeError('sample_exists() missing 1 required positional argument: ''sname'' or ''sobj''')
@@ -218,9 +236,9 @@ class Study(object):
 
         if sobj is None:
             sobj = RockPy.Sample(
-                    name=str(sname),
-                    comment=comment,
-                    sgroups=sgroups, **kwargs)
+                name=str(sname),
+                comment=comment,
+                sgroups=sgroups, **kwargs)
 
         self._samples.setdefault(sobj.name, sobj)
         return sobj
@@ -397,7 +415,7 @@ class Study(object):
 
     def import_folder(self,
                       folder,
-                      arg_filter=None,
+                      filter=None,
                       **kwargs
                       ):
         """
@@ -407,14 +425,14 @@ class Study(object):
         Parameters
         ----------
         folder: str
-        arg_filter: str
+        filter: str
          
         Notes
         -----
             for now only samplenames can be filtered
         """
         start = time.clock()
-        arg_filter = RockPy.to_tuple(arg_filter)
+        filter = RockPy.to_tuple(filter)
 
         iHelper = ImportHelper.from_folder(folder, **kwargs)
 
@@ -484,3 +502,45 @@ class Study(object):
         results = pd.concat([s.results for s in self.samples])
         results['sname'] = [s.name for s in self.samples for m in range(s.results.shape[0])]
         return results
+
+    def import_widget(self):
+        display(Label('import file'),
+                HBox([]),
+                HBox([]))
+
+    def plot_widget(self):
+
+        def next_(event):
+            pass
+
+        # samples selection
+        samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0], description='sample:',
+                                            disabled=False, layout=widgets.Layout(width='250px'))
+        next_sample = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
+        previous_sample = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
+        sample_select = widgets.HBox([samples_dropdown, previous_sample, next_sample])
+
+        # mtype selection
+        mtype_dropdown = widgets.Dropdown(options=list(self.mtypes), value=None, description='mtype:',
+                                            disabled=False, layout=widgets.Layout(width='250px'))
+        next_mtype = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
+        previous_mtype = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
+        mtype_select = widgets.HBox([mtype_dropdown, previous_mtype, next_mtype])
+
+        RightPane = widgets.VBox([sample_select, mtype_select], layout=widgets.Layout(width='300px'))
+        LeftPane = widgets.VBox([widgets.Label(value=self.name)], layout=widgets.Layout(width='600px'))
+
+
+        display(HBox([LeftPane, RightPane]))
+
+if __name__ == '__main__':
+    S = RockPy.Study()
+    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
+
+    for m in S.measurements:
+        print(m.series)
+    # print(list(S.measurements))
+    print(S.info())
+    # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
+
+    # print(S.samples)

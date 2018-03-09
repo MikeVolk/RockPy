@@ -22,6 +22,7 @@ colors = colorpalettes['cat10']
 
 ''' LOGGING '''
 
+
 logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))
 # create the RockPy main logger
 log = logging.getLogger('RockPy')
