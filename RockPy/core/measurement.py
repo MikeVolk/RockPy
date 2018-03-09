@@ -456,8 +456,9 @@ class Measurement(object):
             add = 'mean_'
         else:
             add = ''
-        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype, '',
-                                                    # self.stype_sval_tuples, #todo fix
+        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
+                                                    '['+';'.join(['{},{}({})'.format(i[0],i[1],i[2]) for i in self.get_series()])+']' if self.has_series() else '',
+
                                                     hex(self.mid))
 
     def __hash__(self):
@@ -720,6 +721,40 @@ class Measurement(object):
         else:
             series = (None, np.nan, None)  # no series
             return [series]
+
+    def has_sval(self, sval=None, method='all'):
+        """
+        Checks if a measurement has any, all, or none of the specified sval
+
+        Parameters
+        ----------
+            sval: str, list, tuple
+                stypes to test for
+            method: 'all' or 'any' or 'none'
+                defines the check method:
+                    all: all sval need to exist
+                    any: any sval needs to exist
+                    none: none of the sval can exist
+
+        Returns
+        -------
+            bool
+            True if all stypes exist, False if not
+            If stype = None : returns True if no series else True
+        """
+        if not self._series:
+            return False
+
+        if sval is not None:
+            sval = to_tuple(sval)
+            if method == 'all':
+                return True if all(i in self.svals for i in sval) else False
+            if method == 'any':
+                return True if any(i in self.svals for i in sval) else False
+            if method == 'none':
+                return True if not any(i in self.svals for i in sval) else False
+        else:
+            return True if not self.svals else False
 
     def has_stype(self, stype=None, method='all'):
         """
@@ -1146,7 +1181,7 @@ class Measurement(object):
 if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
     s = RockPy.Sample('test')
-    m = s.add_simulation(mtype='paleointensity')
-
-    m.calc_all()
-    print(m.results)
+    m = s.add_simulation(mtype='paleointensity', series=[('test',1,'abc'),('test2',2,'abc')])
+    print(m)
+    # m.calc_all()
+    # print(m.results)

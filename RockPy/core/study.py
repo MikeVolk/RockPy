@@ -77,6 +77,7 @@ class Study(object):
         else:
             self.log().error('Sample not in Study')
 
+
     ''' SAMPLES '''
 
     @property
@@ -95,6 +96,43 @@ class Study(object):
 
         for s in sorted(self._samples.values()):
             yield s
+
+    @property
+    def sample_list(self):
+        """
+        Iterator that returns each sample in Study
+
+        Returns
+        -------
+            RockPy.sample
+        """
+
+        return list(self.samples)
+
+    @property
+    def measurements(self):
+        '''
+        Iterator that returns each measurement in the Study
+
+        Returns
+        -------
+            RockPy.Measurement
+        '''
+
+        for s in self.samples:
+            for m in s.measurements:
+                yield m
+
+    @property
+    def measurement_list(self):
+        """
+        List of all measurements in the Study
+
+        Returns
+        -------
+            list
+        """
+        return list(self.measurements)
 
     @property
     def samplenames(self):
@@ -186,12 +224,13 @@ class Study(object):
             samplegroup or groups the sample should belong to
         sobj: RockPy.Sample (optional)
             RockPy.Sample instace, no sample is created instance is just added to Study
-
+            
         kwargs are passed on to RockPy.Sample
 
         """
 
         if self.sample_exists(sname, sobj):
+
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
                         'Returning sample' % (sname if sname is not None else sobj.name))
 
@@ -287,7 +326,6 @@ class Study(object):
         raise NotImplementedError
 
     ''' GET functions '''
-
     ####################################################################################################################
 
     def get_samplegroup(self, gname=None):
@@ -343,6 +381,7 @@ class Study(object):
                                                            invert=invert)]
         return slist
 
+
     def get_measurement(self,
                         gname=None,
                         sname=None,
@@ -370,6 +409,8 @@ class Study(object):
                                                                    invert=invert))
         return list(mlist)
 
+
+
     ''' IMPORT functions '''
 
     def import_folder(self,
@@ -380,12 +421,12 @@ class Study(object):
         """
         Method takes folder as input, cycles through all files and imports them. Does not import subfolders.
         Can be filtered to only import certain files.
-
+        
         Parameters
         ----------
         folder: str
         filter: str
-
+         
         Notes
         -----
             for now only samplenames can be filtered
@@ -399,39 +440,38 @@ class Study(object):
         slist = []
         # create all samples
         for sample_info_dict in iHelper.gen_sample_dict:
-            if any(sample_info_dict[v] in filter for v in ('sname',)):
-                self.log().debug('filtering out file: %s' % sample_info_dict['fpath'])
+            if any(sample_info_dict[v] in arg_filter for v in ('sname',)):
+                self.log().debug('filtering out file: %s'%sample_info_dict['fpath'])
                 continue
-            print('=' * 90)
-            s = self.add_sample(**sample_info_dict)
+            print('='*90)
+            s  = self.add_sample(**sample_info_dict)
             slist.append(s)
 
-            # #create all measurements
-            # for s in slist:
-            #     for measurement_info_dict in iHelper.gen_measurement_dict:
-            #         if not s.name == sample_info_dict['sname']:
-            #             continue
-            #         if any(sample_info_dict[v] in filter for v in ('sname',)):
-            #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
-            #             continue
-            #         else:
-            #             s.add_measurement()
+        # #create all measurements
+        # for s in slist:
+        #     for measurement_info_dict in iHelper.gen_measurement_dict:
+        #         if not s.name == sample_info_dict['sname']:
+        #             continue
+        #         if any(sample_info_dict[v] in filter for v in ('sname',)):
+        #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
+        #             continue
+        #         else:
+        #             s.add_measurement()
 
             # for ih in iHelper.getImportHelper(snames=sample_info_dict['sname']):
             for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
                 if s.name != measurement_dict['sname']:
                     continue
                 m = s.add_measurement(create_parameters=False, **measurement_dict)
-                #     self.log().debug('*'*90)
-                #     if m is not None:
-                #         mlist.append(m)
-            print('=' * 90)
+                if m is not None:
+                    mlist.append(m)
+            print('='*90)
 
         self.log().info(
-            '%i / %i files imported in %.2f seconds' % (
+            '%i / %i files imported in %.2f seconds'%(
                 len(mlist),
                 iHelper.nfiles,
-                time.clock() - start))
+                time.clock()-start))
 
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
@@ -445,13 +485,15 @@ class Study(object):
         info = pd.DataFrame(columns=['mass[kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
         for s in self.samples:
-            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement(
-                'mass') else np.nan
-            info.loc[s.name, 'sample groups'] = s._samplegroups
-            info.loc[s.name, 'mtypes'] = ','.join(
-                ['%s(%i)' % (mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes])
-            info.loc[s.name, 'stypes'] = s.stypes
-            info.loc[s.name, 'svals'] = s.svals
+            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement('mass') else np.nan
+            info.loc[s.name, 'sample groups'] = s._samplegroups if s._samplegroups else 'None'
+
+            mtypes = [(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
+            info.loc[s.name, 'mtypes'] = mtypes if len(mtypes)>1 else mtypes[0]
+
+            info.loc[s.name, 'stypes'] = sorted(s.stypes) if len(s.stypes) > 1 else list(s.stypes)[0]
+            info.loc[s.name, 'svals'] = sorted(s.svals) if len(s.svals) > 1 else list(s.svals)[0]
+
 
         return info
 

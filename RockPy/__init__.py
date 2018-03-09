@@ -38,7 +38,7 @@ abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviation
 
 ''' automatic import of all subpackages in Packages and core '''
 
-# # import all packages
+# # import all RockPy.packages
 __all__ = []
 for loader, module_name, is_pkg in  pkgutil.walk_packages([installation_directory+'/Packages']):
     __all__.append(module_name)
