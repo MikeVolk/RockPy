@@ -415,7 +415,7 @@ class Study(object):
 
     def import_folder(self,
                       folder,
-                      filter=None,
+                      arg_filter=None,
                       **kwargs
                       ):
         """
@@ -432,7 +432,7 @@ class Study(object):
             for now only samplenames can be filtered
         """
         start = time.clock()
-        filter = RockPy.to_tuple(filter)
+        arg_filter = RockPy.to_tuple(arg_filter)
 
         iHelper = ImportHelper.from_folder(folder, **kwargs)
 
