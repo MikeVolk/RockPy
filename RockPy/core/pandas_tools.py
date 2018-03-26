@@ -65,3 +65,48 @@ def XYZ2DIM( df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
     if colM is not None:
         df[colM] = M # set M
     return df
+
+
+def heat( df, tcol='index'):
+    """
+    returns only values where temperature in Tcol is increasing
+
+    Parameters
+    ----------
+    df: pandas dataframe
+        data including columns of D, I and optionally M values
+    tcol: str
+        name of column with temperature input data, may be the index
+
+    Returns
+    -------
+    pandas dataframe with only the heating data
+    """
+
+    if tcol == 'index':
+        df = df[np.gradient(df.index)>0]
+    else:
+        df = df[np.gradient(df[tcol])>0]
+    return df
+
+def cool( df, tcol='index'):
+    """
+    returns only values where temperature in Tcol is decreasing
+
+    Parameters
+    ----------
+    df: pandas dataframe
+        data including columns of D, I and optionally M values
+    tcol: str
+        name of column with temperature input data, may be the index
+
+    Returns
+    -------
+    pandas dataframe with only the heating data
+    """
+
+    if tcol == 'index':
+        df = df[np.gradient(df.index)<0]
+    else:
+        df = df[np.gradient(df[tcol])<0]
+    return df
