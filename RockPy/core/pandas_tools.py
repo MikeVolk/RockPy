@@ -1,7 +1,8 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
 
-def DIM2XYZ( df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
+
+def DIM2XYZ(df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
     """
     adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
 
@@ -33,7 +34,8 @@ def DIM2XYZ( df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
     df[colZ] = np.cos(np.radians(df[colI])) * np.tan(np.radians(df[colI])) * M
     return df
 
-def XYZ2DIM( df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
+
+def XYZ2DIM(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
     """
     adds D,I,(M) columns to pandas dataframe calculated from x,y,z columns
 
@@ -59,15 +61,15 @@ def XYZ2DIM( df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
 
     """
 
-    M = np.linalg.norm( [df[colX], df[colY], df[colZ]], axis=0)  # calculate total moment for all rows
-    df[colD] = np.degrees(np.arctan2(df[colY], df[colX])) % 360 # calculate D and map to 0-360 degree range
-    df[colI] = np.degrees(np.arcsin(df[colZ] / M)) # calculate I
+    M = np.linalg.norm([df[colX], df[colY], df[colZ]], axis=0)  # calculate total moment for all rows
+    df[colD] = np.degrees(np.arctan2(df[colY], df[colX])) % 360  # calculate D and map to 0-360 degree range
+    df[colI] = np.degrees(np.arcsin(df[colZ] / M))  # calculate I
     if colM is not None:
-        df[colM] = M # set M
+        df[colM] = M  # set M
     return df
 
 
-def heat( df, tcol='index'):
+def heat(df, tcol='index'):
     """
     returns only values where temperature in Tcol is increasing
 
@@ -84,12 +86,13 @@ def heat( df, tcol='index'):
     """
 
     if tcol == 'index':
-        df = df[np.gradient(df.index)>0]
+        df = df[np.gradient(df.index) > 0]
     else:
-        df = df[np.gradient(df[tcol])>0]
+        df = df[np.gradient(df[tcol]) > 0]
     return df
 
-def cool( df, tcol='index'):
+
+def cool(df, tcol='index'):
     """
     returns only values where temperature in Tcol is decreasing
 
@@ -106,7 +109,7 @@ def cool( df, tcol='index'):
     """
 
     if tcol == 'index':
-        df = df[np.gradient(df.index)<0]
+        df = df[np.gradient(df.index) < 0]
     else:
-        df = df[np.gradient(df[tcol])<0]
+        df = df[np.gradient(df[tcol]) < 0]
     return df
