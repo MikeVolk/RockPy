@@ -113,3 +113,17 @@ def cool(df, tcol='index'):
     else:
         df = df[np.gradient(df[tcol]) < 0]
     return df
+
+
+def gradient(df, ycol, xcol='Temperature (K)', append=False):
+    """
+    """
+    df = df.reset_index().copy()
+
+    dx = np.gradient(df[xcol])
+    dy = np.gradient(df[ycol], df[xcol])
+
+    df = df.set_index(xcol)  # todo fix issue where adding dx yields wrong results
+
+    df['d({})/d({})'.format(ycol, xcol)] = dy
+    return df if append else df['d({})/d({})'.format(ycol, xcol)]
