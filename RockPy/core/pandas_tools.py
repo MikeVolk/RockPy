@@ -115,15 +115,26 @@ def cool(df, tcol='index'):
     return df
 
 
-def gradient(df, ycol, xcol='Temperature (K)', append=False):
+def gradient(df, ycol, xcol='Temperature (K)', append=False, rolling=False, **kwargs):
     """
+
+    kwargs are forwarded to rolling
     """
-    df = df.reset_index().copy()
+    df_copy = df.copy()
 
-    dx = np.gradient(df[xcol])
-    dy = np.gradient(df[ycol], df[xcol])
+    # calculate the rolling mean before differentiation
+    if rolling:
 
-    df = df.set_index(xcol)  # todo fix issue where adding dx yields wrong results
+        kwargs.setdefault('center', True)
+        # kwargs.setdefault('edge_order', 2)
+        df_copy = df_copy.rolling(**kwargs).mean()
 
+    # reset index, so that the index col can be accessed
+    df_copy = df_copy.reset_index()
+    x = df_copy[xcol]
+    y = df_copy[ycol]
+
+    dy = np.gradient(y, x, edge_order=1)
     df['d({})/d({})'.format(ycol, xcol)] = dy
-    return df if append else df['d({})/d({})'.format(ycol, xcol)]
+    print(dy[10], df['d({})/d({})'.format(ycol, xcol)].iloc[10])
+    return df.copy() if append else df['d({})/d({})'.format(ycol, xcol)]
