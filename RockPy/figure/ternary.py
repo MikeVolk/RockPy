@@ -7,6 +7,16 @@ class TernaryDiagram(object):
 
     @staticmethod
     def h(a):
+        """
+        calculates the height (y) at a given a (x)
+        Parameters
+        ----------
+        a: float
+
+        Returns
+        -------
+            float
+        """
         if a == 0:
             return 0
         return np.sqrt(3) * a / 2
