@@ -1,5 +1,6 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
+import pandas as pd
 
 
 def DIM2XYZ(df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
@@ -115,26 +116,67 @@ def cool(df, tcol='index'):
     return df
 
 
-def gradient(df, ycol, xcol='Temperature (K)', append=False, rolling=False, **kwargs):
+def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder=1, **kwargs):
     """
+    Calculates the derivative of the pandas dataframe. The xcolumn and ycolumn have to be specified.
+    Rolling adds a rolling mean BEFORE differentiation is done. The kwargs can be used to change the rolling.
 
-    kwargs are forwarded to rolling
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        data to be differentiated
+
+    xcol: str
+        column name of the x values. Can be index then index.name is used. Default: 'index'
+
+    ycol: str
+        column name of the y column
+
+    # append: bool #todo implement
+    #     - if True: the column is appended to the original dataframe
+    #     - if False: the column is returned individually
+    #     Default: False
+
+    rolling: bool
+        Uses a rolling mean before differentiation. Default: False
+
+    n: ({1, 2}, optional)
+        Degree of differentiation. Default:1
+
+    edgeorder: ({1, 2}, optional)
+        Gradient is calculated using N-th order accurate differences at the boundaries. Default: 1
+
+
+    kwargs:
+        passed to rolling
+
+    Returns
+    -------
+        Pandas dataframe
     """
+    # use index column if specified, if index is unnemaded, use 'index'
+    if xcol == 'index' and df.index.name is not None:
+        xcol = df.index.name
+
     df_copy = df.copy()
 
     # calculate the rolling mean before differentiation
     if rolling:
-
         kwargs.setdefault('center', True)
-        # kwargs.setdefault('edge_order', 2)
         df_copy = df_copy.rolling(**kwargs).mean()
 
     # reset index, so that the index col can be accessed
     df_copy = df_copy.reset_index()
     x = df_copy[xcol]
     y = df_copy[ycol]
-
     dy = np.gradient(y, x, edge_order=1)
-    df['d({})/d({})'.format(ycol, xcol)] = dy
-    print(dy[10], df['d({})/d({})'.format(ycol, xcol)].iloc[10])
-    return df.copy() if append else df['d({})/d({})'.format(ycol, xcol)]
+
+    if n == 2:
+        dy = np.gradient(dy, x, edge_order=1)
+
+    col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1','d').replace(')1', ')')
+
+    out = pd.DataFrame(data=np.array([x, dy]).T, columns=[xcol, col_name])
+    out = out.set_index(xcol)
+
+    return out
