@@ -27,7 +27,7 @@ class Ftype(object):
     def subclass_name(cls):
         return cls.__name__
 
-    def __init__(self, dfile, snames=None, dialect=None):
+    def __init__(self, dfile, snames=None, dialect=None, reload=False):
         """
         Constructor of the basic file type instance
         """
@@ -36,12 +36,15 @@ class Ftype(object):
         self.dfile = dfile
         self.dialect = dialect
 
-        if dfile not in self.__class__.imported_files:
+        if dfile not in self.__class__.imported_files or reload:
             self.log().info('IMPORTING << %s , %s >> file: << %s >>' % (self.snames,
                                                                         type(self).__name__, dfile))
             self.data = self.read_file()
             self.__class__.imported_files[dfile] = self.data.copy()
         else:
+            self.log().info('LOADING previously imported file << %s , %s >> file: << %s >>\n\t--- USE reload option if you want to read files from HD ---' % (self.snames,
+                                                                        type(self).__name__, dfile))
+
             self.data = self.__class__.imported_files[dfile]
 
     def read_file(self):

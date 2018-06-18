@@ -12,8 +12,8 @@ class Jr6(RockPy.core.ftype.Ftype):
     table = {'tdt': ['NRM', '0', '1', '2', '3', '4']}
     imported_files = dict()
 
-    def __init__(self, dfile, snames=None, dialect=None, volume=10 ** -5):
-        super().__init__(dfile, snames=snames, dialect=dialect)
+    def __init__(self, dfile, snames=None, dialect=None, reload=False, volume=10 ** -5):
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
         self.volume = volume
 
         xyz = ['magn_x', 'magn_y', 'magn_z']

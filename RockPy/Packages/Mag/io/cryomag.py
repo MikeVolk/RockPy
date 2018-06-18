@@ -12,8 +12,8 @@ class CryoMag(ftype.Ftype):
     pint_treatment_codes = ('LT-NO', 'LT-T-Z', 'LT-T-I', 'LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z')
     table = {'tdt':['NRM', 'TH', 'PT', 'CK', 'AC', 'TR']}
 
-    def __init__(self, dfile, snames=None, dialect='tdt'):
-        super().__init__(dfile=dfile, snames=snames, dialect=dialect)
+    def __init__(self, dfile, snames=None, dialect='tdt', reload=False):
+        super().__init__(dfile=dfile, snames=snames, dialect=dialect, reload = reload)
 
     @property
     def _raw_data(self):

@@ -12,8 +12,8 @@ class tdt(Ftype):
 
     table = {'tdt':['NRM', '0', '1', '2', '3', '4']}
 
-    def __init__(self, dfile, snames=None, volume= 1, dialect=None):
-        super().__init__(dfile, snames=snames, dialect='tdt')
+    def __init__(self, dfile, snames=None, volume= 1, dialect=None, reload=False):
+        super().__init__(dfile, snames=snames, dialect='tdt', reload = reload)
 
         self.volume = volume
 

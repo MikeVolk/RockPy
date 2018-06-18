@@ -13,7 +13,7 @@ class Vsm(Ftype):
                          'Direct moment vs. field; Initial magnetization; Hysteresis loop\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',)}
 
-    def __init__(self, dfile, snames=None, dialect=None):
+    def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
         # get the file infos first -> line numbers needed ect.
         mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, self.file_length = self.read_basic_file_info(
@@ -23,7 +23,7 @@ class Vsm(Ftype):
         self.header = self.read_header(dfile, header_end)
         self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_widths)
 
-        super().__init__(dfile, snames=snames, dialect=dialect)
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
 
         # check the calibration factor
         self.calibration_factor = float(self.header.T['Calibration factor'])

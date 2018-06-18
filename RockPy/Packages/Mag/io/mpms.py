@@ -6,8 +6,8 @@ import io
 from copy import deepcopy
 
 class Mpms(Ftype):
-    def __init__(self, dfile, snames=None, dialect=None):
-        super().__init__(dfile, snames=snames, dialect=dialect)
+    def __init__(self, dfile, snames=None, dialect=None, reload=False):
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
 
     def get_data_index(self):
         '''

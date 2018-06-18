@@ -7,9 +7,9 @@ import io
 from copy import deepcopy
 
 class Vftb(Ftype):
-    def __init__(self, dfile, snames=None, dialect=None):
+    def __init__(self, dfile, snames=None, dialect=None, reload=False):
         self.mass, self.header, self.segment_idx, self.header_idx = self.read_header(dfile)
-        super().__init__(dfile, snames=snames, dialect=dialect)
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
 
         # get the header_index for iterator
         self.header_idx += [len(self.data)]
