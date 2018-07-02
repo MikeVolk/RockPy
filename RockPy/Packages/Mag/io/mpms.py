@@ -27,8 +27,10 @@ class Mpms(Ftype):
         # reading data
         data_start_index = self.get_data_index()
 
-        data = pd.read_csv(self.dfile, skiprows=data_start_index,
+        data = pd.read_csv(self.dfile, skiprows=data_start_index, comment='#',
                            squeeze=True)
+
+        self.check_comments()
         return data
 
     def group_by(self, what):

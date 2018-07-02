@@ -11,7 +11,7 @@ import numpy as np
 
 import ipywidgets as widgets
 from IPython.display import clear_output, display
-from ipywidgets import HBox, Label
+from ipywidgets import HBox, VBox, Label
 
 log = logging.getLogger(__name__)
 
@@ -77,11 +77,17 @@ class Study(object):
         else:
             self.log().error('Sample not in Study')
 
-
     ''' SAMPLES '''
 
     @property
     def n_samples(self):
+        """
+        Property that returns the number of samples
+
+        Returns
+        -------
+            int
+        """
         return len(self._samples)
 
     @property
@@ -148,6 +154,7 @@ class Study(object):
             yield sname
 
     ''' measurements '''
+
     @property
     def measurements(self):
         for s in self.samples:
@@ -230,7 +237,6 @@ class Study(object):
         """
 
         if self.sample_exists(sname, sobj):
-
             log.warning('CANT create << %s >> already in Study. Please use unique sample names. '
                         'Returning sample' % (sname if sname is not None else sobj.name))
 
@@ -238,6 +244,7 @@ class Study(object):
             sobj = RockPy.Sample(
                 name=str(sname),
                 comment=comment,
+                study=self,
                 sgroups=sgroups, **kwargs)
 
         self._samples.setdefault(sobj.name, sobj)
@@ -326,6 +333,7 @@ class Study(object):
         raise NotImplementedError
 
     ''' GET functions '''
+
     ####################################################################################################################
 
     def get_samplegroup(self, gname=None):
@@ -381,7 +389,6 @@ class Study(object):
                                                            invert=invert)]
         return slist
 
-
     def get_measurement(self,
                         gname=None,
                         sname=None,
@@ -408,8 +415,6 @@ class Study(object):
                                                                    stype=stype, sval=sval, sval_range=sval_range,
                                                                    invert=invert))
         return list(mlist)
-
-
 
     ''' IMPORT functions '''
 
@@ -441,22 +446,22 @@ class Study(object):
         # create all samples
         for sample_info_dict in iHelper.gen_sample_dict:
             if any(sample_info_dict[v] in arg_filter for v in ('sname',)):
-                self.log().debug('filtering out file: %s'%sample_info_dict['fpath'])
+                self.log().debug('filtering out file: %s' % sample_info_dict['fpath'])
                 continue
-            print('='*90)
-            s  = self.add_sample(**sample_info_dict)
+            print('=' * 90)
+            s = self.add_sample(**sample_info_dict)
             slist.append(s)
 
-        # #create all measurements
-        # for s in slist:
-        #     for measurement_info_dict in iHelper.gen_measurement_dict:
-        #         if not s.name == sample_info_dict['sname']:
-        #             continue
-        #         if any(sample_info_dict[v] in filter for v in ('sname',)):
-        #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
-        #             continue
-        #         else:
-        #             s.add_measurement()
+            # #create all measurements
+            # for s in slist:
+            #     for measurement_info_dict in iHelper.gen_measurement_dict:
+            #         if not s.name == sample_info_dict['sname']:
+            #             continue
+            #         if any(sample_info_dict[v] in filter for v in ('sname',)):
+            #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
+            #             continue
+            #         else:
+            #             s.add_measurement()
 
             # for ih in iHelper.getImportHelper(snames=sample_info_dict['sname']):
             for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
@@ -465,13 +470,13 @@ class Study(object):
                 m = s.add_measurement(create_parameters=False, **measurement_dict)
                 if m is not None:
                     mlist.append(m)
-            print('='*90)
+            print('=' * 90)
 
         self.log().info(
-            '%i / %i files imported in %.2f seconds'%(
+            '%i / %i files imported in %.2f seconds' % (
                 len(mlist),
                 iHelper.nfiles,
-                time.clock()-start))
+                time.clock() - start))
 
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
@@ -485,15 +490,15 @@ class Study(object):
         info = pd.DataFrame(columns=['mass[kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
         for s in self.samples:
-            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement('mass') else np.nan
+            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement(
+                'mass') else np.nan
             info.loc[s.name, 'sample groups'] = s._samplegroups if s._samplegroups else 'None'
 
             mtypes = [(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
-            info.loc[s.name, 'mtypes'] = mtypes if len(mtypes)>1 else mtypes[0]
+            info.loc[s.name, 'mtypes'] = mtypes if len(mtypes) > 1 else mtypes[0]
 
             info.loc[s.name, 'stypes'] = sorted(s.stypes) if len(s.stypes) > 1 else list(s.stypes)[0]
             info.loc[s.name, 'svals'] = sorted(s.svals) if len(s.svals) > 1 else list(s.svals)[0]
-
 
         return info
 
@@ -503,18 +508,72 @@ class Study(object):
         results['sname'] = [s.name for s in self.samples for m in range(s.results.shape[0])]
         return results
 
-    def import_widget(self):
-        display(Label('import file'),
+    def widget_add_sample(self):
+
+        out = widgets.Output()
+        # left panel
+
+        # first line with sample name and create button
+        samplename = widgets.Text(value='',
+                                  description='name:',
+                                  disabled=False, layout=widgets.Layout(width='325px'),
+                                  )
+        add_sample_button = widgets.Button(description='create', layout=widgets.Layout(width='75px'))
+        topline = HBox([samplename, add_sample_button], layout=widgets.Layout(width='400px'))
+
+        # second line mass and mass unit
+        mass = widgets.FloatText(value=None,
+                                 description='mass:',
+                                 disabled=False, layout=widgets.Layout(width='243px'),
+                                 )
+
+        mass_unit = widgets.Dropdown(options=['T', 'kg', 'g', 'mg', 'mug', 'ng'],
+                                     value='mg',
+                                     description='unit',
+                                     disabled=False, layout=widgets.Layout(width='150px'))
+        mass_line = HBox([mass, mass_unit], layout=widgets.Layout(width='450px'))
+
+
+        comment = widgets.Textarea(value='',
+                                   placeholder='',
+                                   description='comment',
+                                   disabled=False, layout=widgets.Layout(width='397px', height='30px'))
+
+        # right panel
+        label = Label('Sample list:', layout=widgets.Layout(width='160px'))
+        samplelist = widgets.Textarea(value='\n'.join(self.samplenames),
+                                      placeholder='No samples yet',
+                                      description='',
+                                      disabled=True,
+                                      layout=widgets.Layout(width='25%', height='160px'))
+
+        display(HBox([VBox([topline, mass_line, comment]), sample_column], layout=widgets.Layout(width='100%')),
+                )
+
+        def button_click(button):
+            out.clear_output()
+
+
+            s = self.add_sample(sname=samplename.value, mass=mass.value, massunit=mass_unit.value)
+
+            if not '{}\t{}\n'.format(s.idx, s.name) in samplelist.value:
+                samplelist.value += '{}\t{}\n'.format(s.idx, s.name)
+
+        add_sample_button.on_click(button_click)
+
+    def widget_import(self):
+        display(Label('import file', layout=widgets.Layout(width='150px')),
                 HBox([]),
                 HBox([]))
 
-    def plot_widget(self):
+    def widget_plot(self):
 
         def next_(event):
             pass
 
         # samples selection
-        samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0], description='sample:',
+        samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0],
+                                            description='sample:',
                                             disabled=False, layout=widgets.Layout(width='250px'))
         next_sample = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
         previous_sample = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
@@ -522,7 +581,7 @@ class Study(object):
 
         # mtype selection
         mtype_dropdown = widgets.Dropdown(options=list(self.mtypes), value=None, description='mtype:',
-                                            disabled=False, layout=widgets.Layout(width='250px'))
+                                          disabled=False, layout=widgets.Layout(width='250px'))
         next_mtype = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
         previous_mtype = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
         mtype_select = widgets.HBox([mtype_dropdown, previous_mtype, next_mtype])
@@ -530,8 +589,8 @@ class Study(object):
         RightPane = widgets.VBox([sample_select, mtype_select], layout=widgets.Layout(width='300px'))
         LeftPane = widgets.VBox([widgets.Label(value=self.name)], layout=widgets.Layout(width='600px'))
 
-
         display(HBox([LeftPane, RightPane]))
+
 
 if __name__ == '__main__':
     S = RockPy.Study()
