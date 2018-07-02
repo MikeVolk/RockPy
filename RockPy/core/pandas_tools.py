@@ -116,7 +116,7 @@ def cool(df, tcol='index'):
     return df
 
 
-def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder=1, **kwargs):
+def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder=1, norm = False, **kwargs):
     """
     Calculates the derivative of the pandas dataframe. The xcolumn and ycolumn have to be specified.
     Rolling adds a rolling mean BEFORE differentiation is done. The kwargs can be used to change the rolling.
@@ -137,8 +137,9 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder
     #     - if False: the column is returned individually
     #     Default: False
 
-    rolling: bool
+    rolling: bool, int
         Uses a rolling mean before differentiation. Default: False
+        if integer is given, the int is used as ''window'' parameter in DataFrame.rolling
 
     n: ({1, 2}, optional)
         Degree of differentiation. Default:1
@@ -146,6 +147,8 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder
     edgeorder: ({1, 2}, optional)
         Gradient is calculated using N-th order accurate differences at the boundaries. Default: 1
 
+    norm: bool
+        returns data normalized to the maximum
 
     kwargs:
         passed to rolling
@@ -163,6 +166,11 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder
     # calculate the rolling mean before differentiation
     if rolling:
         kwargs.setdefault('center', True)
+
+
+        if isinstance(rolling, int):
+            kwargs.setdefault('window', rolling)
+
         df_copy = df_copy.rolling(**kwargs).mean()
 
     # reset index, so that the index col can be accessed
@@ -174,9 +182,15 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder
     if n == 2:
         dy = np.gradient(dy, x, edge_order=1)
 
+    if norm:
+        dy /= dy.max()
+
     col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1','d').replace(')1', ')')
 
     out = pd.DataFrame(data=np.array([x, dy]).T, columns=[xcol, col_name])
     out = out.set_index(xcol)
 
     return out
+
+    def normalize(df):
+        pass
