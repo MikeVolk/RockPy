@@ -497,8 +497,24 @@ class Study(object):
             mtypes = [(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
             info.loc[s.name, 'mtypes'] = mtypes if len(mtypes) > 1 else mtypes[0]
 
-            info.loc[s.name, 'stypes'] = sorted(s.stypes) if len(s.stypes) > 1 else list(s.stypes)[0]
-            info.loc[s.name, 'svals'] = sorted(s.svals) if len(s.svals) > 1 else list(s.svals)[0]
+            ''' STYPES '''
+            if len(s.stypes) == 0:
+                stypes = 'None'
+            elif len(s.stypes) > 1:
+                stypes = sorted(s.stypes)
+            else:
+                stypes = list(s.stypes)[0]
+
+            info.loc[s.name, 'stypes'] = stypes
+
+            ''' SVALS '''
+            if len(s.svals) == 0:
+                svals = 'None'
+            elif len(s.svals) > 1:
+                svals = sorted(s.svals)
+            else:
+                svals = list(s.stypes)[0]
+            info.loc[s.name, 'svals'] = svals
 
         return info
 
