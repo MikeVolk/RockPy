@@ -237,10 +237,10 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ BC """
 
-    class bc(Result):
+    class Bc(Result):
         default_recipe = 'linear'
 
-        def recipe_linear(self, npoints=4, check=False, **unused_params):
+        def recipe_linear(self, npoints=4, check=False):
             """
             Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield and down field slope.
 
@@ -252,56 +252,11 @@ class Hysteresis(Measurement):
 
             Note
             ----
-                Uses scipy.linregress for calculation
+                Uses numpy.polyfit for calculation
             """
-            # initialize result
-            result = []
+            self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
-            m = self.mobj
-
-            # get magnetization limits for a calculation using the n points closest to 0 fro each direction
-            df_moment = sorted(abs(m.downfield['M'].values))[npoints - 1]
-            uf_moment = sorted(abs(m.upfield['M'].values))[npoints - 1]
-
-            # filter data for fields higher than field_limit
-            down_f = m.downfield[m.downfield['M'].abs() <= df_moment]
-            up_f = m.upfield[m.upfield['M'].abs() <= uf_moment]
-
-            # calculate bc for both measurement directions
-            for i, dir in enumerate([down_f, up_f]):
-
-                # calculate the linear regression
-                res = stats.linregress(dir['M'],dir.index)
-                result.append(res[1])
-
-                # check plot
-                if check:
-                    slope, intercept, r_value, p_value, std_err = stats.linregress(dir.index, dir['M'])
-                    x = dir.index
-                    y_new = slope * x + intercept
-                    l, = plt.plot(x, dir['M'], '.', label='data')
-                    plt.plot(x, y_new, '--', color=l.get_color(), label='fit')
-
-            # check plot
-            if check:
-                plt.plot(result, [0, 0], 'ko', mfc='w', label='Bc (branch)')
-                plt.plot([-np.nanmean(np.abs(result)), np.nanmean(np.abs(result))], [0, 0], 'xk', label='mean Bc')
-                plt.grid()
-                plt.xlabel('Field')
-                plt.ylabel('Moment')
-                plt.title('Bc - check')
-                plt.legend()
-                plt.text(0.8,0.1, '$B_c = $ %.1f mT'%(np.nanmean(np.abs(result))*1000),
-                         transform=plt.gca().transAxes,
-                         bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
-
-                plt.tight_layout()
-                plt.show()
-
-            result = np.abs(result)
-            self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.nanmean(result)
-
-        def recipe_nonlinear(self, npoints=8, check=False, **unused_params):
+        def recipe_nonlinear(self, npoints=8, order = 2, check=False):
             """
             Calculates the coercivity using a spline interpolation between the points crossing
             the x axis for upfield and down field slope.
@@ -314,7 +269,7 @@ class Hysteresis(Measurement):
 
             Note
             ----
-                Uses scipy Univariate spline for interpolation
+                Uses numpy.polyfit for calculation
             """
             # retireve measurement instance
             m = self.mobj
@@ -324,38 +279,58 @@ class Hysteresis(Measurement):
 
             # the field_limit has to be set higher than the lowest field
             # if not the field_limit will be chosen to be 2 points for uf and df separately
+
+            m = self.mobj
+
+            if npoints > len(m.data):
+                npoints = len(m.data) - 1
+
+
             if npoints < 2:
-                self.log().warning('NPOINTS INCOMPATIBLE minimum 2 required' % (npoints))
+                self.log().warning('NPOINTS INCOMPATIBLE minimum 2 required')
                 self.log().warning('\t\t setting NPOINTS - << 2 >> ')
                 npoints = 2
                 self.params['npoints'] = npoints
+            if npoints > len(m.downfield):
+                self.log().warning('NPOINTS INCOMPATIBLE maximum %i allowed' % (len(m.downfield)))
+                self.log().warning('\t\t setting NPOINTS - << %i >> '% (len(m.downfield)))
+                npoints = 2
+                self.params['npoints'] = len(m.downfield)
 
-            # get magnetization limits for a calculation using the n points closest to 0 fro each direction
+            # get magnetization limits for a calculation using the n points closest to 0
+            moment = sorted(abs(m.data['M'].values))[npoints - 1]
+
+            # get magnetization limits for a calculation using the n points closest to 0
             df_moment = sorted(abs(m.downfield['M'].values))[npoints - 1]
             uf_moment = sorted(abs(m.upfield['M'].values))[npoints - 1]
 
             # filter data for fields higher than field_limit
-            down_f = m.downfield[m.downfield['M'].abs() <= df_moment]
-            up_f = m.upfield[m.upfield['M'].abs() <= uf_moment]
+            df_data = m.downfield[m.downfield['M'].abs() <= df_moment]
+            uf_data = m.upfield[m.upfield['M'].abs() <= uf_moment]
 
-            for i, dir in enumerate([down_f, up_f]):
-                spl = UnivariateSpline(dir['M'].values, dir.index)
-                bc = spl(0)
-                result.append(bc)
+            # fit second order polynomial
+            df_fit = np.polyfit(df_data['M'].values, df_data.index, order)
+            uf_fit = np.polyfit(uf_data['M'].values, uf_data.index, order)
+            result = [np.poly1d(df_fit)(0), np.poly1d(uf_fit)(0)]
 
-                if check:
-                    spl = UnivariateSpline(dir.index, dir['M'].values)
-                    x_new = np.linspace(min(dir.index), max(dir.index), 100)
-                    l, = plt.plot(x_new, spl(x_new), '--', label='fit')
-                    plt.plot(dir.index, dir['M'], '.', label='data', color=l.get_color())
 
             if check:
-                plt.plot(result, [0,0], 'ko', mfc='w', label='Bc(branch)')
-                plt.plot([-np.nanmean(np.abs(result)), np.nanmean(np.abs(result))], [0, 0], 'xk', label='mean Bc')
+                ''' upper '''
+                l, = plt.plot(-df_data.index, -df_data['M'], '.', mfc='w', label='%s data' % ('upper'))
+                y = np.linspace(df_data['M'].iloc[0], df_data['M'].iloc[-1])
+                plt.plot(-np.poly1d(df_fit)(y), -y, '--', label='%s fit' % ('upper'), color = l.get_color())
+                ''' lower '''
+                l, = plt.plot(uf_data.index, uf_data['M'], '.', mfc='w', label='%s data' % ('lower'))
+                y = np.linspace(uf_data['M'].iloc[0], uf_data['M'].iloc[-1])
+                plt.plot(np.poly1d(uf_fit)(y), y, '--', label='%s fit' % ('upper'), color = l.get_color())
+
+
+                plt.plot(np.abs(result), [0,0], 'ko', mfc='none', label='Bc(branch)')
+                plt.plot(np.nanmean(np.abs(result)), 0, 'xk', label='mean Bc')
                 plt.grid()
-                plt.xlabel('Field')
-                plt.ylabel('Moment')
-                plt.title('Bc [%s]- check'%'nonlinear')
+                plt.xlabel('B [T]')
+                plt.ylabel('M [Am$^2$]')
+                plt.title('Bc - check')
                 plt.text(0.8,0.1, '$B_c = $ %.1f mT'%(np.nanmean(np.abs(result))*1000),
                          transform=plt.gca().transAxes,
                          bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
@@ -369,7 +344,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ MRS """
 
-    class mrs(Result):
+    class Mrs(Result):
         def recipe_default(self, npoints=4, check=False, **unused_params):
 
             # set measurement instance
@@ -418,7 +393,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ MS """
 
-    class ms(Result):
+    class Ms(Result):
         def get_df_uf_plus_minus(self, saturation_percent, ommit_last_n):
             """
             Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters the last :code:`ommit_last_n` and splits into pos and negative components
@@ -458,7 +433,7 @@ class Hysteresis(Measurement):
         #     self.results = self.results.append_columns(column_names=['alpha'],
         #                                                data=[[[np.mean(slope), np.std(slope)]]])
         #
-        def recipe_simple(self, saturation_percent=75., ommit_last_n=0, check=False, **unused_params):
+        def recipe_simple(self, saturation_percent=75., ommit_last_n=0, check=False):
             """
             Calculates High-Field susceptibility using a simple linear regression on all branches
 
@@ -515,10 +490,10 @@ class Hysteresis(Measurement):
                 plt.grid()
                 plt.show()
 
-            self.mobj.sobj.results.loc[self.mobj.mid, 'hf_sus'] = np.nanmean(np.abs(hf_sus_result))
-            self.mobj.sobj.results.loc[self.mobj.mid, 'ms'] = np.nanmean(np.abs(ms_result))
+            self.mobj.sobj.results.loc[self.mobj.mid, 'Hf_sus'] = np.nanmean(np.abs(hf_sus_result))
+            self.mobj.sobj.results.loc[self.mobj.mid, 'Ms'] = np.nanmean(np.abs(ms_result))
 
-    class hf_sus(ms):
+    class Hf_sus(Ms):
         dependencies = ['ms']
 
 
@@ -526,7 +501,7 @@ if __name__ == '__main__':
 
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
-                          fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/hys_vsm.001')
+                          fpath='/Users/mike/Dropbox/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
 
     # import matplotlib.pyplot as plt
     # plt.plot(m.upfield['M'], color='r')
@@ -543,6 +518,7 @@ if __name__ == '__main__':
     # print(m.result_bc(npoints=15, check=True))
     # print(m.result_bc(recipe='nonlinear', npoints=10, check=True))
     # print(m.result_ms(ommit_last_n=4, check=True, saturation_percent=90))
-    print(m.result_hf_sus(check=True))
+    print(m.Ms(check=True))
+
     # print(m.results)
 

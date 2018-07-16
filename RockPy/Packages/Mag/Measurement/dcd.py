@@ -123,7 +123,7 @@ class Dcd(Measurement):
         """
         default_recipe = 'nonlinear'
 
-        def recipe_linear(self, no_points=4, check=False):
+        def recipe_linear(self, npoints=4, check=False):
             """
             Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield
             and down field slope.
@@ -132,17 +132,16 @@ class Dcd(Measurement):
             ----------
                 check: bool
                     creates a small plot to check results
-                no_points: int
+                npoints: int
                     number of points to use for fit
 
             Note
             ----
                 Uses scipy.linregress for calculation
             """
-            non_method_parameters.pop('order', None)
-            self.recipe_nonlinear(no_points=no_points, order=1, check=check)
+            self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
-        def recipe_nonlinear(self, no_points=4, order=2, check=False):
+        def recipe_nonlinear(self, npoints=4, order=2, check=False):
             """
             Calculates the coercivity of remanence using a spline interpolation between the points crossing
             the x axis for upfield and down field slope.
@@ -151,7 +150,7 @@ class Dcd(Measurement):
             ----------
                 check: bool
                     creates a small plot to check results
-                no_points: int
+                npoints: int
                     default: 4
                     number of points to use for fit
                 order: int
@@ -166,11 +165,11 @@ class Dcd(Measurement):
             # raise NotImplementedError
             m = self.mobj
 
-            if no_points > len(m.data):
-                no_points = len(m.data) - 1
+            if npoints > len(m.data):
+                npoints = len(m.data) - 1
 
             # get magnetization limits for a calculation using the n points closest to 0
-            moment = sorted(abs(m.data['M'].values))[no_points - 1]
+            moment = sorted(abs(m.data['M'].values))[npoints - 1]
 
             # filter data for fields higher than field_limit
             data = m.data[m.data['M'].abs() <= moment]
