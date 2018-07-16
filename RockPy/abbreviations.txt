@@ -37,7 +37,7 @@ thermaldemagnetization: thdemag
 
 
 hysteresis: hys, hysteresis
-backfield: dcd, coe, backfield
+dcd: dcd, coe, backfield
 viscosity: visc
 forc: forc
 thermocurve: rmp, mom

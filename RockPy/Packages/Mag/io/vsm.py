@@ -11,7 +11,8 @@ class Vsm(Ftype):
 
     mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),
                          'Direct moment vs. field; Initial magnetization; Hysteresis loop\n': ('hys',),
-                         'Remanence curves:  DCD\n': ('dcd',)}
+                         'Remanence curves:  DCD\n': ('dcd',),
+                         'Remanence curves:  IRM + DCD\n':('irm','dcd')}
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
