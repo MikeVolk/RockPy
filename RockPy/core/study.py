@@ -407,10 +407,7 @@ class Study(object):
             samples = self.get_sample(gname=gname, sname=sname, mtype=mtype, series=series,
                                       stype=stype, sval=sval, sval_range=sval_range, invert=invert,
                                       sid=sid)
-            print(samples)
-            for s in samples:
-                print(s, s.get_measurement(), s.measurements)
-            print(samples)
+
             mlist = (m for s in samples for m in s.get_measurement(mtype=mtype, series=series,
                                                                    stype=stype, sval=sval, sval_range=sval_range,
                                                                    invert=invert))

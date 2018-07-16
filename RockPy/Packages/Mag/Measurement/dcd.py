@@ -210,5 +210,5 @@ if __name__ == '__main__':
     # plt.plot(m.data['M'])
     # plt.show()
     # print(m.bcr(recipe = 'nonlinear', no_points=5, check=True))
-    m.calc_all(bcr={'recipe':'nonlinear','no_points': 10, 'check': True})
+    m.calc_results(bcr={'recipe': 'nonlinear', 'no_points': 10, 'check': True})
     print(m.results)

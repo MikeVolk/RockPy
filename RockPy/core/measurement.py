@@ -696,7 +696,7 @@ class Measurement(object):
         except KeyError:
             return
 
-    def calc_all(self, **parameters):
+    def calc_results(self, **parameters):
         """
         Method that calls all result function of a given measurement object.
         """
@@ -1040,7 +1040,7 @@ class Measurement(object):
                     self.initial_state.data[dtype]['mag'] = self.initial_state.data[dtype].magnitude(('x', 'y', 'z'))
 
         if reference == 'mass':
-            self.calc_all(force_recalc=True, **self.calculation_parameter)
+            self.calc_results(force_recalc=True, **self.calculation_parameter)
 
         self.is_normalized = {'reference': reference, 'ref_dtype': ref_dtype,
                               'norm_dtypes': norm_dtypes, 'vval': vval,
@@ -1186,5 +1186,5 @@ if __name__ == '__main__':
     s = RockPy.Sample('test')
     m = s.add_simulation(mtype='paleointensity', series=[('test',1,'abc'),('test2',2,'abc')])
     print(m)
-    # m.calc_all()
+    # m.calc_results()
     # print(m.results)

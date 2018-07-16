@@ -17,7 +17,8 @@ from RockPy.core.sample import Sample
 from RockPy.core.utils import to_tuple
 
 ''' PLOTTING '''
-from RockPy.plotting_tools import colorpalettes
+from RockPy.plotting_tools import colorpalettes, marker, ls
+
 colors = colorpalettes['cat10']
 
 ''' LOGGING '''
@@ -54,5 +55,6 @@ print('\n'.join(['\t{:<26}: \t{}'.format(m, ', '.join(obj.ftype_formatters().key
                  for m, obj in sorted(RockPy.implemented_measurements.items())]))
 print()
 
+auto_calc_results = True
 log.info('creating Masterstudy. Can be used with ``RockPy.MasterStudy``')
 RockPy.MasterStudy = RockPy.Study('MasterStudy')

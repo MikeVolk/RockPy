@@ -344,6 +344,8 @@ class Sample(object):
             self.log().info('ADDING\t << %s, %s >>' % (mobj.ftype, mobj.mtype))
             self._add_mobj(mobj)
 
+            if RockPy.auto_calc_results:
+                mobj.calc_results()
             return mobj
         else:
             self.log().error('COULD not create measurement << %s >>' % mtype)
@@ -379,14 +381,14 @@ class Sample(object):
 
     def calc_results(self, **kwargs):
         '''
-        Method calls calc_all for each measurement
+        Method calls calc_results for each measurement
         
         Returns
         -------
             self.results
         '''
         for m in self.measurements:
-            m.calc_all(**kwargs)
+            m.calc_results(**kwargs)
         return self.results.copy()
 
     def remove_measurement(self):  # todo write
