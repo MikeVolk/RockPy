@@ -46,22 +46,13 @@ class Dcd(Measurement):
         out = super().data
         return out.set_index('B')
 
-    ####################################################################################################################
+    @property
+    def log_data(self):
+        out = super().data
+        out = out.set_index('B')
+        out.index = np.log(-out.index)
+        return out
 
-    @classmethod
-    def from_simulation(cls, sobj, idx=None,
-                        ms=250., bmax=0.5, E=0.005, G=0.3, steps=20, log_steps=False,
-                        noise=None, color=None, marker=None, linestyle=None):  # todo implement simulation
-        """
-        Simulates a backfield measurement based on a single log-normal gaussian distribution.
-
-        E:  Median destructive field - represents the mean value of the log-Gaussian distribution, and therefore, the
-            logarithmic field value of the maximum gradient.
-
-        G:  G describes the standard deviation or half-width of the distribution.
-
-        """
-        raise NotImplementedError
 
     ####################################################################################################################
     """ formatting functions """
