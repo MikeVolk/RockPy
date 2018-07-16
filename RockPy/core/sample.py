@@ -639,6 +639,31 @@ class Sample(object):
 
         return sorted(out)
 
+    def mass(self, mid=None, mobj=None):
+        """
+        Returns the mass of that sample.
+
+        # NOT IMPLEMENTED, YET #todo implement
+        Specifying the measurement id (mid) or specifying a measurement returns the mass measurement just before
+        that measurement.
+
+        Parameters
+        ----------
+        mobj: RockPy.measurement
+            if specified, the mass before that easurement is returned
+        mid: int
+            measurement id
+            if specified, the mass before that easurement is returned
+
+        Returns
+        -------
+            mass in kg
+        """
+
+        mass_measurements = self.get_measurement(mtype='mass')
+
+        return mass_measurements[0].data['mass[kg]'].iloc[0]
+
     def __repr__(self):
         return '<< RockPy3.Sample.{} >>'.format(self.name)
 
