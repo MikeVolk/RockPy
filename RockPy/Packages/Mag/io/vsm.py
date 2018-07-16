@@ -148,6 +148,23 @@ class Vsm(Ftype):
     def segment_list(self):
         return list(self.segments)
 
+    def get_segment_data(self, segment_index):
+        """
+        Returns the segment of a measurement corresponding to the index (segment_index).
+
+        This is used in read file functions such as DCD, if more than one measurement is stored in a single run,
+        e.g. (IRM,DCD).
+
+        Parameters
+        ----------
+        segment_index: int
+            the index of the segment
+
+        Returns
+        -------
+            pandas Dataframe
+        """
+        return list(self.segments)[segment_index]
 
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')

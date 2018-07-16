@@ -104,7 +104,7 @@ class Result():
         """
 
         if recipe is not None and recipe.replace('recipe_', '') not in self._recipes().keys():
-            raise KeyError('%s is not a valud recipe for the measurement %s: try one of these << %s >>'%(recipe, self.mobj.mtype, self._recipes().keys()))
+            raise KeyError('%s is not a valid recipe for the measurement %s: try one of these << %s >>'%(recipe, self.mobj.mtype, list(self._recipes().keys())))
 
         # if no recipe is specified use the last one calculated
         if recipe is None:
@@ -124,7 +124,6 @@ class Result():
             Pandas.Series
                 the result that is actually calculated by the recipe. can be more than just the value, not sure if that is good
         """
-
         recipe = self.get_recipe(recipe=recipe)
 
         # initialize signature
@@ -139,14 +138,15 @@ class Result():
 
                 # set default_recipe parameters
                 signature = inspect.signature(result._recipes()[recipe]).parameters
+
                 for p in signature:
                     if p == 'check':
                         continue
-                    if p == 'self':
+                    elif p == 'self':
                         continue
-                    if p in parameters:
+                    elif p in parameters:
                         continue
-                    if p == 'unused_params':
+                    elif p == 'unused_params':
                         continue
                     else:
                         parameters[p] = signature[p].default

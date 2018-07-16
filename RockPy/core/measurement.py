@@ -697,8 +697,11 @@ class Measurement(object):
             return
 
     def calc_all(self, **parameters):
+        """
+        Method that calls all result function of a given measurement object.
+        """
         for resname, res in self._results.items():
-            r = res(**parameters)
+            r = res(**parameters.pop(resname, dict()))
         return self.results
 
 
