@@ -1,19 +1,9 @@
 __author__ = 'volk'
 import RockPy
 import logging
-import numpy as np
-import os
-import scipy as sp
-from scipy import stats
-from scipy.stats import lognorm
-from scipy.interpolate import UnivariateSpline
-import matplotlib.pyplot as plt
-
 from RockPy.core.measurement import Measurement
 from RockPy.core.result import Result
 import numpy as np
-from scipy import stats
-from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
 
 
@@ -53,13 +43,24 @@ class Dcd(Measurement):
         out.index = np.log(-out.index)
         return out
 
+    #################################################################################
+    # ABSTRACT METHODS
+    #################################################################################
+    def set_initial_state(self, mtype=None, fpath=None, ftype=None, mobj=None, series=None):
+        pass
+
+    def set_calibration_measurement(self, fpath=None, mdata=None, mobj=None):
+        pass
+
+    def delete_dtype_var_val(self, dtype, var, val):
+        pass
 
     ####################################################################################################################
     """ formatting functions """
 
     @staticmethod
-    def format_vsm(ftype_data, sobj_name=None):
-        '''
+    def format_vsm(ftype_data, **kwargs):
+        """
         formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
 
         Parameters
@@ -71,8 +72,6 @@ class Dcd(Measurement):
               - header
               - segment_header
 
-        sobj_name: str
-            unused
 
         Returns
         -------
@@ -82,7 +81,7 @@ class Dcd(Measurement):
                 io object as read by Mag.io.Vsm.vsm
 
 
-        '''
+        """
 
         # expected column names for typical VSM hysteresis experiments
         expected_columns = ['Field (T)', 'Remanence (Am2)']
@@ -97,21 +96,19 @@ class Dcd(Measurement):
 
     @staticmethod
     def format_vftb(ftype_data, sobj_name=None):  # todo implement VFTB
-        '''
+        """
         formats the output from vftb to measurement.data
         :return:
-        '''
+        """
         raise NotImplementedError
 
     ####################################################################################################################
     ''' Mrs '''
 
-    class mrs(Result):
+    class Mrs(Result):
         def recipe_max(self, **non_method_parameters):
             """
             Magnetic Moment at first measurement point
-            :param parameter:
-            :return:
             """
             m = self.mobj
             result = m.data['M'].max()
@@ -120,39 +117,46 @@ class Dcd(Measurement):
     ####################################################################################################################
     ''' Bcr '''
 
-    class bcr(Result):
-        '''
+    class Bcr(Result):
+        """
         Calculates the coercivity of remanence from the dcd curve
-        '''
+        """
         default_recipe = 'nonlinear'
 
-        def recipe_linear(self, no_points=4, check=False, **non_method_parameters):
+        def recipe_linear(self, no_points=4, check=False):
             """
-            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield and down field slope.
+            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield
+            and down field slope.
 
             Parameters
             ----------
-                field_limit: float
-                    default: 0, 0mT
-                    the maximum/ minimum fields used for the linear regression
+                check: bool
+                    creates a small plot to check results
+                no_points: int
+                    number of points to use for fit
 
             Note
             ----
                 Uses scipy.linregress for calculation
             """
             non_method_parameters.pop('order', None)
-            self.recipe_nonlinear(no_points=no_points, order=1, check=check, **non_method_parameters)
+            self.recipe_nonlinear(no_points=no_points, order=1, check=check)
 
-        def recipe_nonlinear(self, no_points=4, order=2, check=False, **non_method_parameters):
+        def recipe_nonlinear(self, no_points=4, order=2, check=False):
             """
             Calculates the coercivity of remanence using a spline interpolation between the points crossing
             the x axis for upfield and down field slope.
 
             Parameters
             ----------
-                field_limit: float
-                    default: 0, 0mT
-                    the maximum/ minimum fields used for the linear regression
+                check: bool
+                    creates a small plot to check results
+                no_points: int
+                    default: 4
+                    number of points to use for fit
+                order: int
+                    default: 2
+                    order of polynomial fit
 
             Note
             ----
@@ -163,7 +167,7 @@ class Dcd(Measurement):
             m = self.mobj
 
             if no_points > len(m.data):
-                no_points = len(m.data)-1
+                no_points = len(m.data) - 1
 
             # get magnetization limits for a calculation using the n points closest to 0
             moment = sorted(abs(m.data['M'].values))[no_points - 1]
@@ -179,27 +183,28 @@ class Dcd(Measurement):
                 y = np.linspace(data['M'].values[0], data['M'].values[-1])
                 x_new = np.poly1d(fit)(y)
 
-                plt.plot(data.index, data['M'], '.', color=RockPy.colors[0], mfc='w')
-                plt.plot(x_new, y, color=RockPy.colors[0])
-                plt.plot(result, 0, 'xk')
-                plt.xlabel('B [mT')
-                plt.ylabel('M [Am$^2$')
+                plt.plot(-data.index, data['M'], '.', color=RockPy.colors[0], mfc='w',label='data')
+                plt.plot(-x_new, y, color=RockPy.colors[0], label='fit')
+                plt.plot(-result, 0, 'xk',label='B$_{cr}$')
+                plt.axhline(0, color = 'k', zorder=0)
+
+                plt.gca().text(0.05, 0.1, 'B$_{cr}$ = %.2f mT'%(abs(result)*1000),
+                           verticalalignment='bottom', horizontalalignment='left',
+                           transform=plt.gca().transAxes,
+                           bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                           color='k')
+
+                plt.xlabel('B [mT]')
+                plt.ylabel('M [Am$^2$]')
+                plt.legend(frameon=True)
                 plt.grid()
                 plt.show()
 
             # set result so it can be accessed
             self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.array(result)
 
-
 if __name__ == '__main__':
+
     S = RockPy.Study()
-    s = S.add_sample(sname='test')
-    m = s.add_measurement(
-        fpath='/Users/mike/Dropbox/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_(IRM,DCD)_VSM#36.5mg#(ni,0,perc)_(gc,1,No).001',
-        mtype='dcd',
-        ftype='vsm')
-    # plt.plot(m.data['M'])
-    # plt.show()
-    # print(m.bcr(recipe = 'nonlinear', no_points=5, check=True))
-    m.calc_results(bcr={'recipe': 'nonlinear', 'no_points': 10, 'check': True})
-    print(m.results)
+    s = S.add_sample('FeCoAa36-G02')
+    m = s.add_measurement('/Users/mike/Dropbox/github/collaborations/Cournede (IRM)/data/VSM/FeCo_FeCoAa36-G02_(DCD,IRM)_VSM#61.9mg.001')
