@@ -3,17 +3,17 @@ from RockPy.core.measurement import Measurement
 from RockPy.core.result import Result
 import numpy as np
 from scipy import stats
-from scipy.interpolate import UnivariateSpline
+from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
 
 class Hysteresis(Measurement):
 
-
     @property
     def data(self):
         out = super().data
         return out.set_index('B')
+
     ####################################################################################################################
     """ formatting functions """
 
@@ -71,7 +71,7 @@ class Hysteresis(Measurement):
     def max_field(self):
         """ returns maximum field of measurement """
         return np.nanmax(np.abs(self.data.index.values))
-    
+
     @property
     def _regularize_fields(self):
         '''
@@ -82,7 +82,7 @@ class Hysteresis(Measurement):
         '''
         virgin_fields = np.arange(0, self.max_field + self.fieldspacing, self.fieldspacing)
         df_fields = np.arange(self.max_field, (self.max_field + self.fieldspacing) * -1, -self.fieldspacing)
-        uf_fields = np.arange(-1*self.max_field, self.max_field + self.fieldspacing, self.fieldspacing)
+        uf_fields = np.arange(-1 * self.max_field, self.max_field + self.fieldspacing, self.fieldspacing)
         if self.has_virgin:
             fields = np.concatenate([virgin_fields, df_fields, uf_fields])
         else:
@@ -105,7 +105,7 @@ class Hysteresis(Measurement):
         else:
             return True
 
-    def get_polarity_switch(self, window = 1):
+    def get_polarity_switch(self, window=1):
         '''
 
         Parameters
@@ -133,14 +133,13 @@ class Hysteresis(Measurement):
         if window > 1:
             a = a.rolling(window, win_type='hamming', center=True).mean()
 
-
         # calculating differences between individual points
         diffs = a.diff()
         diffs = diffs.rolling(window, center=True).median()
 
         # filling in missing data due to window size
-        diffs = diffs.fillna(method = 'bfill') #filling missing values at beginning
-        diffs = diffs.fillna(method = 'ffill') #filling missing values at end
+        diffs = diffs.fillna(method='bfill')  # filling missing values at beginning
+        diffs = diffs.fillna(method='ffill')  # filling missing values at end
 
         # reduce to sign of the differences
         asign = diffs.apply(np.sign)
@@ -167,7 +166,7 @@ class Hysteresis(Measurement):
         signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
 
         # return np.where(signchange!=0)[0].astype(int)
-        return (np.where(signchange!=0)[0]).astype(int)
+        return (np.where(signchange != 0)[0]).astype(int)
 
     @property
     def downfield(self):
@@ -177,7 +176,7 @@ class Hysteresis(Measurement):
         -------
             pandas.DataFrame with only downfield data. Window size for selecting the polarity change is 5
         '''
-        #todo how to change window size?
+        # todo how to change window size?
         idx = self.get_polarity_switch_index(5)
         if len(idx) > 1:
             return self.data.iloc[int(idx[0]):int(idx[1])].dropna()
@@ -192,11 +191,12 @@ class Hysteresis(Measurement):
         -------
             pandas.DataFrame with only upfield data. Window size for selecting the polarity change is 5
         '''
-        #todo how to change window size?
+        # todo how to change window size?
         idx = self.get_polarity_switch_index(5)
-        return self.data.iloc[int(idx[-1])-1:].dropna()
+        return self.data.iloc[int(idx[-1]) - 1:].dropna()
 
     """ CALCULATIONS """
+
     @property
     def irreversible(self):
         """
@@ -216,7 +216,7 @@ class Hysteresis(Measurement):
 
         raise NotImplementedError
 
-    def get_reversible(self): # todo implement reversible part
+    def get_reversible(self):  # todo implement reversible part
         # """
         # Calculates the reversible hysteretic components :math:`M_{rh}` from the data.
         #
@@ -256,7 +256,7 @@ class Hysteresis(Measurement):
             """
             self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
-        def recipe_nonlinear(self, npoints=8, order = 2, check=False):
+        def recipe_nonlinear(self, npoints=8, order=2, check=False):
             """
             Calculates the coercivity using a spline interpolation between the points crossing
             the x axis for upfield and down field slope.
@@ -285,7 +285,6 @@ class Hysteresis(Measurement):
             if npoints > len(m.data):
                 npoints = len(m.data) - 1
 
-
             if npoints < 2:
                 self.log().warning('NPOINTS INCOMPATIBLE minimum 2 required')
                 self.log().warning('\t\t setting NPOINTS - << 2 >> ')
@@ -293,9 +292,9 @@ class Hysteresis(Measurement):
                 self.params['npoints'] = npoints
             if npoints > len(m.downfield):
                 self.log().warning('NPOINTS INCOMPATIBLE maximum %i allowed' % (len(m.downfield)))
-                self.log().warning('\t\t setting NPOINTS - << %i >> '% (len(m.downfield)))
-                npoints = 2
-                self.params['npoints'] = len(m.downfield)
+                self.log().warning('\t\t setting NPOINTS - << %i >> ' % (len(m.downfield)))
+                npoints = len(m.downfield)
+                self.params['npoints'] = npoints
 
             # get magnetization limits for a calculation using the n points closest to 0
             moment = sorted(abs(m.data['M'].values))[npoints - 1]
@@ -313,25 +312,23 @@ class Hysteresis(Measurement):
             uf_fit = np.polyfit(uf_data['M'].values, uf_data.index, order)
             result = [np.poly1d(df_fit)(0), np.poly1d(uf_fit)(0)]
 
-
             if check:
                 ''' upper '''
                 l, = plt.plot(-df_data.index, -df_data['M'], '.', mfc='w', label='%s data' % ('upper'))
                 y = np.linspace(df_data['M'].iloc[0], df_data['M'].iloc[-1])
-                plt.plot(-np.poly1d(df_fit)(y), -y, '--', label='%s fit' % ('upper'), color = l.get_color())
+                plt.plot(-np.poly1d(df_fit)(y), -y, '--', label='%s fit' % ('upper'), color=l.get_color())
                 ''' lower '''
                 l, = plt.plot(uf_data.index, uf_data['M'], '.', mfc='w', label='%s data' % ('lower'))
                 y = np.linspace(uf_data['M'].iloc[0], uf_data['M'].iloc[-1])
-                plt.plot(np.poly1d(uf_fit)(y), y, '--', label='%s fit' % ('upper'), color = l.get_color())
+                plt.plot(np.poly1d(uf_fit)(y), y, '--', label='%s fit' % ('upper'), color=l.get_color())
 
-
-                plt.plot(np.abs(result), [0,0], 'ko', mfc='none', label='Bc(branch)')
+                plt.plot(np.abs(result), [0, 0], 'ko', mfc='none', label='Bc(branch)')
                 plt.plot(np.nanmean(np.abs(result)), 0, 'xk', label='mean Bc')
                 plt.grid()
                 plt.xlabel('B [T]')
                 plt.ylabel('M [Am$^2$]')
                 plt.title('Bc - check')
-                plt.text(0.8,0.1, '$B_c = $ %.1f mT'%(np.nanmean(np.abs(result))*1000),
+                plt.text(0.8, 0.1, '$B_c = $ %.1f mT' % (np.nanmean(np.abs(result)) * 1000),
                          transform=plt.gca().transAxes,
                          bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
 
@@ -380,7 +377,7 @@ class Hysteresis(Measurement):
                 plt.ylabel('Moment')
                 plt.title('$M_{rs}$ - check')
                 plt.legend()
-                plt.text(0.8,0.1, '$M_{rs} = $ %.1f '%(np.nanmean(np.abs(result))),
+                plt.text(0.8, 0.1, '$M_{rs} = $ %.1f ' % (np.nanmean(np.abs(result))),
                          transform=plt.gca().transAxes,
                          bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 3})
 
@@ -394,6 +391,44 @@ class Hysteresis(Measurement):
     """ MS """
 
     class Ms(Result):
+        """
+        Calculates the saturation magnetization from a hysteresis loop. The standard recipe is 'linear'.
+
+        Recipes
+        -------
+            - simple:
+                simple linear fit for fields higher than specified
+            - app2sat:
+                Uses approach to saturation to calculate Ms, Hf_sus
+
+        """
+
+        default_recipe = 'simple'
+
+        @staticmethod
+        def approach2sat_func(h, ms, chi, alpha, beta=-2):
+            """
+            General approach to saturation function
+
+            Parameters
+            ----------
+               x: ndarray
+                  field
+               ms: float
+                  saturation magnetization
+               chi: float
+                  susceptibility
+               alpha: float
+               beta: float
+                  not fitted assumed -2
+
+            Returns
+            -------
+               ndarray:
+                  :math:`M_s \chi * B + \\alpha * B^{\\beta = -2}`
+            """
+            return ms + chi * h + alpha * h ** beta
+
         def get_df_uf_plus_minus(self, saturation_percent, ommit_last_n):
             """
             Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters the last :code:`ommit_last_n` and splits into pos and negative components
@@ -402,7 +437,7 @@ class Hysteresis(Measurement):
             saturation_percent /= 100
 
             # filter ommitted points
-            if ommit_last_n >0:
+            if ommit_last_n > 0:
                 df = self.mobj.downfield.iloc[ommit_last_n:-ommit_last_n]
                 uf = self.mobj.upfield.iloc[ommit_last_n:-ommit_last_n]
             else:
@@ -418,21 +453,67 @@ class Hysteresis(Measurement):
 
             return df_plus, df_minus, uf_plus, uf_minus
 
-        # @calculate
-        # def calculate_ms_APP2SAT(self, saturation_percent=75., ommit_last_n=0, check=False, **non_method_parameters):
-        #     """
-        #     Calculates the high field susceptibility using approach to saturation
-        #     :return:
-        #     """
-        #
-        #     ms, slope, alpha = self.calc_approach2sat(saturation_percent=saturation_percent,
-        #                                               ommit_last_n=ommit_last_n)
-        #
-        #     self.results['ms'] = [[[np.mean(ms), np.std(ms)]]]
-        #     self.results['hf_sus'] = [[[np.mean(slope), np.std(slope)]]]
-        #     self.results = self.results.append_columns(column_names=['alpha'],
-        #                                                data=[[[np.mean(slope), np.std(slope)]]])
-        #
+        def recipe_app2sat(self, saturation_percent=75., ommit_last_n=0, check=False, **non_method_parameters):
+            """
+            Calculates the high field susceptibility and Ms using approach to saturation
+            :return:
+            """
+            df_pos, df_neg, uf_pos, uf_neg = self.get_df_uf_plus_minus(saturation_percent=saturation_percent,
+                                                                       ommit_last_n=ommit_last_n)
+
+            # initialize out
+            ms = []
+            slope = []
+            alpha = []
+
+            for d in [df_pos, df_neg, uf_pos, uf_neg]:
+                fields = d.index
+                moments = d['M'].values
+
+                if len(fields) < 2:
+                    self.log.warning('CANT calculate approach to saturation. Not enough points (<=2) in data. '
+                                     'Consider using smaller <saturation_percent> value')
+                    continue
+                popt, pcov = curve_fit(self.approach2sat_func, np.fabs(fields), np.fabs(moments),
+                                       p0=[max(abs(moments)), 0, 0])
+
+                ms.append(popt[0])
+                slope.append(popt[1])
+                alpha.append(popt[2])
+
+            self.mobj.sobj.results.loc[self.mobj.mid, 'Hf_sus'] = np.nanmean(slope)
+            self.mobj.sobj.results.loc[self.mobj.mid, 'Ms'] = np.nanmean(np.abs(ms))
+            self.mobj.sobj.results.loc[self.mobj.mid, 'alpha'] = np.nanmean(alpha)
+
+            if check:
+
+                for i, d in enumerate([df_pos, df_neg, uf_pos, uf_neg]):
+                    fields = np.abs(d.index)
+                    moments = np.abs(d['M'].values)
+
+                    # calculate for raw data plot
+                    raw_d = self.get_df_uf_plus_minus(saturation_percent=0, ommit_last_n=ommit_last_n)
+                    # plot all data
+                    plt.plot(np.abs(raw_d[i].index), np.abs(raw_d[i]['M']), '.', mfc='w',
+                             color=RockPy.colors[i], alpha=0.5, label='')
+                    # plot data used for fit
+                    plt.plot(fields, moments, '.', color=RockPy.colors[i],
+                             label=['upper +', 'upper -', 'lower +', 'lower -'][i] + '(data)')
+                    # plot app2sat function
+                    plt.plot(np.linspace(0.1, max(fields)),
+                             self.approach2sat_func(np.linspace(0.1, max(fields)), ms[i], slope[i], alpha[i], -2), '--',
+                             color=RockPy.colors[i], label=['upper +', 'upper -', 'lower +', 'lower -'][i]+'(fit)')
+                    # plot linear fit
+                    plt.plot(np.linspace(0, max(fields)), slope[i] * np.linspace(0, max(fields)) + ms[i], '-',
+                             color=RockPy.colors[i])
+
+                plt.legend()
+                plt.xlim(0, max(fields))
+                plt.ylim(0, max(ms)*1.1)
+                plt.xlabel('B [T]')
+                plt.ylabel('M [Am$^2$]')
+                plt.show()
+
         def recipe_simple(self, saturation_percent=75., ommit_last_n=0, check=False):
             """
             Calculates High-Field susceptibility using a simple linear regression on all branches
@@ -460,8 +541,8 @@ class Hysteresis(Measurement):
                 self.log().warning('SATURATION > 100%! setting to default_recipe value (75%)')
                 saturation_percent = 75.0
 
-            df_plus, df_minus, uf_plus, uf_minus= self.get_df_uf_plus_minus(saturation_percent=saturation_percent,
-                                                                            ommit_last_n=ommit_last_n)
+            df_plus, df_minus, uf_plus, uf_minus = self.get_df_uf_plus_minus(saturation_percent=saturation_percent,
+                                                                             ommit_last_n=ommit_last_n)
 
             # calculate for each branch for positive and negative fields
             for i, dir in enumerate([df_plus, df_minus, uf_plus, uf_minus]):
@@ -471,7 +552,7 @@ class Hysteresis(Measurement):
 
                 # check plot
                 if check:
-                    d0 = self.get_df_uf_plus_minus(0,0)
+                    d0 = self.get_df_uf_plus_minus(0, 0)
                     x = np.linspace(0, self.mobj.max_field)
                     y_new = slope * x + abs(intercept)
                     l, = plt.plot(abs(d0[i].index), d0[i]['M'].abs(), ':', lw=1, label='data')
@@ -480,12 +561,12 @@ class Hysteresis(Measurement):
             # check plot
             if check:
                 # plt.plot([0,0,0,0], np.abs(ms_result), 'ko', label='Ms (branch)', mfc='none', mew=0.5)
-                plt.errorbar([0], np.mean(np.abs(ms_result)), yerr=2*np.std(np.abs(ms_result)),
+                plt.errorbar([0], np.mean(np.abs(ms_result)), yerr=2 * np.std(np.abs(ms_result)),
                              color='k', marker='.', label='mean Ms', zorder=100, )
-                plt.axvline(self.mobj.max_field*saturation_percent/100, ls='--', color='grey')
-                plt.xlabel('Field')
-                plt.ylabel('Moment')
-                plt.xlim([-self.mobj.max_field*0.01,self.mobj.max_field])
+                plt.axvline(self.mobj.max_field * saturation_percent / 100, ls='--', color='grey')
+                plt.xlabel('B [T]')
+                plt.ylabel('M [Am$^2}')
+                plt.xlim([-self.mobj.max_field * 0.01, self.mobj.max_field])
 
                 plt.grid()
                 plt.show()
@@ -498,7 +579,6 @@ class Hysteresis(Measurement):
 
 
 if __name__ == '__main__':
-
     s = RockPy.Sample('test')
     m = s.add_measurement(mtype='hys', ftype='vsm',
                           fpath='/Users/mike/Dropbox/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
@@ -518,7 +598,7 @@ if __name__ == '__main__':
     # print(m.result_bc(npoints=15, check=True))
     # print(m.result_bc(recipe='nonlinear', npoints=10, check=True))
     # print(m.result_ms(ommit_last_n=4, check=True, saturation_percent=90))
-    print(m.Ms(check=True))
+    # print(m.Ms(check=True, recipe='simple'))
+    print(m.Ms(check=False, saturation_percent=50, recipe='default'))
 
     # print(m.results)
-
