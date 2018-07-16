@@ -307,7 +307,7 @@ class Sample(object):
         if fpath and not any((mtype, ftype)):
             import_helper = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
         else:
-            print('creating minfo from mtype:', mtype)
+            self.log().debug('creating minfo from mtype: << %s >>'%mtype)
             import_helper = RockPy.core.file_io.ImportHelper.from_dict(fpath=fpath,
                                                                      sgroups=sgroups,
                                                                      snames=self.name,
