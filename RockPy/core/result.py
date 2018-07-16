@@ -128,7 +128,6 @@ class Result():
 
         # initialize signature
         signature = None
-
         if self._needs_to_be_calculated(self, recipe, **parameters):
             # calculation stack with all dependents and subjects of the result, that need to be calculated
             stack = self.get_stack()
@@ -172,6 +171,7 @@ class Result():
                     else:
                         result.log().debug('calling result %s recipe %s' % (result.name, recipe))
                         result.log().debug('\t%s' % result._recipes()[recipe])
+                        parameters.pop('recalc', None)
                         result._recipes()[recipe](result, **parameters)
 
                     # set the calculation recipe
@@ -183,7 +183,9 @@ class Result():
 
         if result.mobj.mid not in result.mobj.sobj.results.index:
             return True
-
+        if parameters.pop('recalc', False):
+            result.log().debug('FORCED recalculation of %s using keyword ''recalc''' % result.name)
+            return True
         if not result._is_calculated:
             return True
         if result._parameters_changed(**parameters):
