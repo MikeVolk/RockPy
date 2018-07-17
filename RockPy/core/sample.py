@@ -565,7 +565,7 @@ class Sample(object):
 
         if mid is not None:
             mid = to_tuple(mid)
-            mlist = (x for x in mlist if x.id in mid)
+            mlist = (x for x in mlist if x.mid in mid)
             return list(mlist)
 
         if mtype:
