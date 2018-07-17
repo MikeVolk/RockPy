@@ -517,8 +517,9 @@ class Study(object):
 
     @property
     def results(self):
-        results = pd.concat([s.results for s in self.samples])
+        results = pd.concat([s.results for s in self.samples], sort=True)
         results['sname'] = [s.name for s in self.samples for m in range(s.results.shape[0])]
+        results['mtype'] = [self.get_measurement(mid=mid)[0].mtype for mid in results.index]
         return results
 
     def widget_add_sample(self):
