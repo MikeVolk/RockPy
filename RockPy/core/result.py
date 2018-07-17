@@ -103,6 +103,9 @@ class Result():
             KeyError if recipe is not in self._recipes().keys()
         """
 
+        if recipe == 'default':
+            self.log().info('Setting %s to default recipe << %s >>'%(self.name, self.default_recipe))
+            recipe = self.default_recipe
 
         if recipe is not None and recipe.replace('recipe_', '') not in self._recipes().keys():
             raise KeyError('%s is not a valid recipe for the measurement %s: try one of these << %s >>'%(recipe, self.mobj.mtype, list(self._recipes().keys())))
