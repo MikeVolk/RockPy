@@ -269,3 +269,4 @@ def red_blue_colormap():
     return cm1
 
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+
