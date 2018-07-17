@@ -200,7 +200,7 @@ class Dcd(Measurement):
                 plt.show()
 
             # set result so it can be accessed
-            self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.array(result)
+            self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.abs(result)
 
 if __name__ == '__main__':
 
