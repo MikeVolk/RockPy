@@ -555,7 +555,7 @@ class Hysteresis(Measurement):
                     d0 = self.get_df_uf_plus_minus(0, 0)
                     x = np.linspace(0, self.mobj.max_field)
                     y_new = slope * x + abs(intercept)
-                    l, = plt.plot(abs(d0[i].index), d0[i]['M'].abs(), ':', lw=1, label='data')
+                    l, = plt.plot(abs(d0[i].index), d0[i]['M'].abs(), '.', mfc='w', label='data', color=RockPy.colors[i])
                     plt.plot(x, y_new, '--', color=l.get_color())
 
             # check plot
