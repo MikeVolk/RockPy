@@ -527,9 +527,13 @@ class Hysteresis(Measurement):
                 ommit_last_n: int, pos
                     last n points of each branch are not used for the calculation
 
+
             Calculation
             -----------
-                calculates the slope using SciPy.linregress for each branch at positive and negative fields. Giving four values for the slope. The result is the mean for all four values, and the error is the standard deviation
+
+                calculates the slope using SciPy.linregress for each branch at positive and negative fields.
+                Giving four values for the slope.
+                The result is the mean for all four values, and the error is the standard deviation
 
             """
 

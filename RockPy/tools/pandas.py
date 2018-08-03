@@ -116,7 +116,7 @@ def cool(df, tcol='index'):
     return df
 
 
-def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder=1, norm = False, **kwargs):
+def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm = False, **kwargs):
     """
     Calculates the derivative of the pandas dataframe. The xcolumn and ycolumn have to be specified.
     Rolling adds a rolling mean BEFORE differentiation is done. The kwargs can be used to change the rolling.
@@ -177,13 +177,13 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edgeorder
     df_copy = df_copy.reset_index()
     x = df_copy[xcol]
     y = df_copy[ycol]
-    dy = np.gradient(y, x, edge_order=1)
+    dy = np.gradient(y, x, edge_order=edge_order)
 
     if n == 2:
-        dy = np.gradient(dy, x, edge_order=1)
+        dy = np.gradient(dy, x, edge_order=edge_order)
 
     if norm:
-        dy /= dy.max()
+        dy /= max(abs(dy))
 
     col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1','d').replace(')1', ')')
 
