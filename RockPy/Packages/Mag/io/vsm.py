@@ -12,7 +12,8 @@ class Vsm(Ftype):
     mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),
                          'Direct moment vs. field; Initial magnetization; Hysteresis loop\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',),
-                         'Remanence curves:  IRM + DCD\n':('irm','dcd')}
+                         'Remanence curves:  IRM + DCD\n':('irm','dcd'),
+                         }
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
@@ -102,7 +103,6 @@ class Vsm(Ftype):
         -------
 
         '''
-        segment_infos = None
 
         if not 'First-order reversal curves' in mtype:
             # reading segments_tab data
@@ -112,7 +112,62 @@ class Vsm(Ftype):
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
                                         names=segment_header, encoding='latin-1',
                                         )
+        else:
+            # constructs segment header from file itself
+            segment_infos = self._construct_segment_infos_from_data()
+
+        # add column with start indices for each segment
+        segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+
         return segment_infos
+
+    def _construct_segment_infos_from_data(self):
+        """
+        Uses the Nan rows in the data to construct the segment_info DataFrame.
+
+        Returns
+        -------
+            pd.DataFrame
+                with segment infos.
+                columns : 'Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment','Final Field', 'Pause', 'Final Index'
+        """
+        segment_header = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
+                                               'Final Field', 'Pause', 'Final Index'])
+
+        # an empty row == only nan values separates the different segments
+        # get nan indices
+        nanidx = np.where(~self.data.iloc[:, 1].notnull())[0]
+
+        Binit = []
+        step = []
+        Bfin = []
+
+        for i, idx in enumerate(nanidx):
+            # get start index of segment
+            if i == 0:
+                sidx = 0
+            else:
+                sidx = nanidx[i - 1] + 1
+            # end index
+            eidx = idx - 1
+
+            Binit.append(self.data['Field (T)'].iloc[sidx])
+            Bfin.append(self.data['Field (T)'].iloc[eidx])
+
+            if Binit[i] != Bfin[i]:
+                step.append(np.mean(np.diff(self.data['Field (T)'].iloc[sidx:eidx + 1])))
+            else:
+                step.append(np.nan)
+
+        segment_header['Segment Number'] = np.arange(len(nanidx))
+        segment_header['Initial Field'] = Binit
+        segment_header['Field Increment'] = step
+        segment_header['Final Field'] = Bfin
+        segment_header['Final Index'] = nanidx
+        segment_header['Pause'] = self.header.loc['Averaging time'].iloc[0, 0]
+        segment_header['Averaging Time'] = self.header.loc['Averaging time'].iloc[0, 0]
+
+        return segment_header
 
     def read_file(self):
 
@@ -128,25 +183,29 @@ class Vsm(Ftype):
         return data
 
     @property
-    def segments(self):
+    def iter_segments(self):
         """
         Generator that cycles through the segments
         Returns
         -------
             pandas.DataFrame
         """
-        # indices of the first row of each segment
-        indices = [0] + [seg['Final Index'] + i for i, seg in self.segment_header.iterrows()]
-        for i, idx in enumerate(indices[:-1]):
-            yield self.data.loc[indices[i]:indices[i + 1]].dropna(axis=0)
+
+        # iterate over individual rows (segments) in the header
+        for i, seg in self.segment_header.iterrows():
+            segment = self.data.iloc[int(seg['Start Index']):int(seg['Final Index'])].dropna(axis=0)
+            yield segment
 
     @property
-    def segment_list(self):
-        return list(self.segments)
+    def segments(self):
+        """
+        returns a list of individual pandas DataFrames for segments
+        Returns
+        -------
+            list
+        """
+        return list(self.iter_segments)
 
-    @property
-    def segment_list(self):
-        return list(self.segments)
 
     def get_segment_data(self, segment_index):
         """
@@ -164,7 +223,7 @@ class Vsm(Ftype):
         -------
             pandas Dataframe
         """
-        return list(self.segments)[segment_index]
+        return list(self.iter_segments)[segment_index]
 
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
