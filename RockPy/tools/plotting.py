@@ -181,14 +181,23 @@ def add_log10_isolines(ax=None):
                 color='k', clip_on=True)
 
 
-def getvivible_data(line):
-    '''
-    takes a line and ax and returns the data that is actually visible
+def add_zerolines(ax=None, **kwargs):
+    """
+    add x,y lines at x,y = 0
+
     Parameters
     ----------
-    line
+    ax
+    kwargs
 
     Returns
     -------
 
-    '''
+    """
+
+    if ax is None:
+        ax = plt.gca()
+
+
+    ax.axhline(0, color=kwargs.pop('color', 'k'), **kwargs)
+    ax.axvline(0, color=kwargs.pop('color', 'k'), **kwargs)
