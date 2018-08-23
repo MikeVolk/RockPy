@@ -1,15 +1,13 @@
 import RockPy
-import logging
 import numpy as np
 import pandas as pd
 import os
+import decorator
 
 from contextlib import contextmanager
-from math import degrees, radians, atan2, asin, cos, sin, tan
-from numba import jit
 
-import matplotlib.colors as mcol
-from matplotlib.lines import Line2D
+conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+
 
 def convert(value, unit, SIunit):
     """
@@ -262,11 +260,18 @@ def set_get_attr(obj, attr, value=None):
         setattr(obj, attr, value)
     return getattr(obj, attr)
 
-# colors and mappings
-def red_blue_colormap():
-    # Make a user-defined colormap.
-    cm1 = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
-    return cm1
 
-conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
+@decorator.decorator
+def correction(func, *args, **kwargs):
+    """
+    automatically adds the called correction_function to self._correct
+    """
+    self = args[0]
+    if func.__name__ in self._correction:
+        self.log().warning('CORRECTION {} has already been applied'.format(func.__name__))
+        return
+    else:
+        self.log().info('APPLYING correction {}, resetting results'.format(func.__name__))
 
+    self.correction.append(func.__name__)
+    func(*args, **kwargs)

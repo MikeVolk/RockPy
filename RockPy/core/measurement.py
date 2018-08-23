@@ -13,6 +13,7 @@ import RockPy.core.result
 import inspect
 from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 
+
 class Measurement(object):
     """
 
@@ -101,6 +102,7 @@ class Measurement(object):
         return subclasses
 
     ''' implemented dicts '''
+
     @property
     def midx(self):
         return self.__class__._mids.index(self.mid)
@@ -138,7 +140,7 @@ class Measurement(object):
 
         measurement_formatters = {
             i.replace('format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('format_')
-            }
+        }
         return measurement_formatters
 
     @classmethod
@@ -213,7 +215,7 @@ class Measurement(object):
             ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name, dialect=dialect, reload=reload)
         else:
             cls.log().error('CANNOT IMPORT ')
-            cls.log().error('ftype not in implemented ftypes: %s '%', '.join(cls.implemented_ftypes().keys()))
+            cls.log().error('ftype not in implemented ftypes: %s ' % ', '.join(cls.implemented_ftypes().keys()))
 
         # check wether the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():
@@ -280,7 +282,7 @@ class Measurement(object):
 
     def __init__(self, sobj,
                  fpath=None, ftype=None, mdata=None,
-                 ftype_data = None,
+                 ftype_data=None,
                  series=None,
                  idx=None,
                  **options
@@ -332,7 +334,6 @@ class Measurement(object):
         self.base_measurements = options.get('base_measurements',
                                              False)  # list with all measurements used to generate the mean
 
-
         self.ftype = ftype
         self.fpath = fpath
         self.ftype_data = ftype_data
@@ -367,7 +368,7 @@ class Measurement(object):
         self.__init_results()
         self.__class__.n_created += 1
 
-    def _result_classes(self): #todo make iterator
+    def _result_classes(self):  # todo make iterator
         """
         Mothod that gets all result classes of the measurement
          
@@ -385,8 +386,7 @@ class Measurement(object):
                     out.append(cls)
         return out
 
-
-    def __init_results(self, **parameters): #todo is _results needed?
+    def __init_results(self, **parameters):  # todo is _results needed?
         """ 
         creates a list of results for that measurement 
         
@@ -394,12 +394,12 @@ class Measurement(object):
         if self._results is None:
             self._results = {}
             for cls in self._result_classes():
-                    res = cls.__name__.replace('result_', '')
-                    instance = cls(mobj=self, **parameters)
-                    # replace the method with the instance
-                    self._results[res] = instance
-                    self.log().debug('replacing class %s with instance %s' % (cls.__name__, instance))
-                    setattr(self, cls.__name__, instance)
+                res = cls.__name__.replace('result_', '')
+                instance = cls(mobj=self, **parameters)
+                # replace the method with the instance
+                self._results[res] = instance
+                self.log().debug('replacing class %s with instance %s' % (cls.__name__, instance))
+                setattr(self, cls.__name__, instance)
 
         return self._results
 
@@ -433,8 +433,6 @@ class Measurement(object):
 
         return True if result in self._results.keys() else False
 
-
-
     def __lt__(self, other):
         """
         for sorting measurements. They are sorted by their index
@@ -458,7 +456,8 @@ class Measurement(object):
         else:
             add = ''
         return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
-                                                    '['+';'.join(['{},{}({})'.format(i[0],i[1],i[2]) for i in self.get_series()])+']' if self.has_series() else '',
+                                                    '[' + ';'.join(['{},{}({})'.format(i[0], i[1], i[2]) for i in
+                                                                    self.get_series()]) + ']' if self.has_series() else '',
 
                                                     hex(self.mid))
 
@@ -526,7 +525,7 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
-    def reset_data(self): #todo rewrite new data pandas
+    def reset_data(self):  # todo rewrite new data pandas
         """
         Resets all data back to the original state. Deepcopies _raw_data back to _data and resets correction
         """
@@ -554,7 +553,7 @@ class Measurement(object):
             self.log().error('NO mdata in instance cant assign sid, mid')
             return
 
-        self.log().debug('appending data to << %s >> cls data'%(self.mtype))
+        self.log().debug('appending data to << %s >> cls data' % (self.mtype))
 
         # add column with measurement ids (mID) and sample ids (sID)
         mdata['mID'] = self.mid
@@ -585,7 +584,7 @@ class Measurement(object):
         '''
 
         midx = cls._mids.index(mid)
-        cls.log().debug('removing all data of mid: %s from  %s cls data'%(mid, cls.get_subclass_name()))
+        cls.log().debug('removing all data of mid: %s from  %s cls data' % (mid, cls.get_subclass_name()))
 
         for lst in [cls.clsdata, cls._clsdata, cls._mids, cls._sids]:
 
@@ -603,7 +602,7 @@ class Measurement(object):
         mdata: pandas.Dataframe
         """
 
-        self.remove_from_clsdata(self.mid, replacement = True)
+        self.remove_from_clsdata(self.mid, replacement=True)
         self.append_to_clsdata(mdata)
 
     @property
@@ -682,7 +681,6 @@ class Measurement(object):
         """
         return RockPy.core.utils.set_get_attr(self, '_correction', value=list())
 
-
     ####################################################################################################################
     ''' DATA RELATED '''
 
@@ -731,7 +729,14 @@ class Measurement(object):
         return self.results
 
     def reset_results(self):
+        """
+        resets all results to nan for that measurement
 
+        """
+
+        for res in self.sobj._results.columns:
+            if not res.endswith('*') or res in ('sID', 'mID'):
+                self.sobj._results.loc[self.mid, res] = np.nan
 
     ##################################################################################################################
     ''' SERIES related '''
@@ -853,7 +858,7 @@ class Measurement(object):
             return True if self._series else False
 
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
-        #todo change to set_series with styoe, sval, suit, series
+        # todo change to set_series with styoe, sval, suit, series
         """
         adds a series to measurement.series
 
@@ -874,7 +879,7 @@ class Measurement(object):
         series = (stype, sval, sunit)
 
         # set stype as column in results
-        self.sobj._results.loc[self.mid, stype+'*'] = sval
+        self.sobj._results.loc[self.mid, stype + '*'] = sval
 
         self._series.append(series)
 
@@ -893,7 +898,7 @@ class Measurement(object):
         # remove series from _series list
         self._series.remove(stup)
 
-        #remove the series from the results
+        # remove the series from the results
         self.sobj.results.loc[self.mid, stype] = np.nan
 
     def get_series(self, stype=None, sval=None, series=None):
@@ -1051,7 +1056,7 @@ class Measurement(object):
                         dtype_data[ntype] = dtype_data[ntype].v / norm_factor
                     except KeyError:
                         self.log.warning(
-                                'CAN\'T normalize << %s, %s >> to %s' % (self.sobj.name, self.mtype, ntype))
+                            'CAN\'T normalize << %s, %s >> to %s' % (self.sobj.name, self.mtype, ntype))
 
                 if 'mag' in dtype_data.column_names:
                     try:
@@ -1209,10 +1214,11 @@ class Measurement(object):
         equal_vals = list(set(a[key].values) & set(b[key].values))
         return sorted(equal_vals)
 
+
 if __name__ == '__main__':
     # RockPy.convertlog.setLevel(logging.WARNING)
     s = RockPy.Sample('test')
-    m = s.add_simulation(mtype='paleointensity', series=[('test',1,'abc'),('test2',2,'abc')])
+    m = s.add_simulation(mtype='paleointensity', series=[('test', 1, 'abc'), ('test2', 2, 'abc')])
     print(m)
     # m.calc_results()
     # print(m.results)
