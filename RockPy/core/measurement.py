@@ -1,17 +1,18 @@
 import logging
 import os
-import shutil
-from collections import OrderedDict
 from copy import deepcopy
 
 import RockPy
 import RockPy.core
-import numpy as np
-import pandas as pd
 import RockPy.core.utils
 import RockPy.core.result
-import inspect
+from RockPy.core.ftype import Ftype
+from RockPy.Packages.Generic.Measurement.Parameter import Parameter
 from RockPy.core.utils import to_tuple, tuple2list_of_tuples
+
+import numpy as np
+import pandas as pd
+import inspect
 
 
 class Measurement(object):
@@ -120,7 +121,7 @@ class Measurement(object):
 
         dict: classname:
         """
-        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.ftype.Ftype.__subclasses__()}
+        implemented_ftypes = {cl.__name__.lower(): cl for cl in Ftype.__subclasses__()}
         return implemented_ftypes
 
     @classmethod
@@ -364,11 +365,11 @@ class Measurement(object):
         self.idx = idx if idx else self.__idx  # external index e.g. 3rd hys measurement of sample 1
 
         ''' initialize results '''
-        self._result_classes()
+        # self._result_classes()
         self.__init_results()
         self.__class__.n_created += 1
 
-    def _result_classes(self):  # todo make iterator
+    def _result_classes(self):  #todo test
         """
         Mothod that gets all result classes of the measurement
          
@@ -377,14 +378,15 @@ class Measurement(object):
             list: <class 'RockPy.Result'>
             
         """
-        if not Measurement._result_classes_list:
-            out = []
-            for name, cls in inspect.getmembers(self.__class__):
-                if not inspect.isclass(cls):
-                    continue
-                if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
-                    out.append(cls)
-        return out
+        # if not Measurement._result_classes_list:
+        # out = []
+        for name, cls in inspect.getmembers(self.__class__):
+            if not inspect.isclass(cls):
+                continue
+            if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
+                yield cls
+        #         out.append(cls)
+        # return out
 
     def __init_results(self, **parameters):  # todo is _results needed?
         """ 
@@ -654,23 +656,6 @@ class Measurement(object):
         except KeyError:
             return
 
-    def transform_data_coord(self, final_coord):
-        """
-        transform columns x,y,z in data object to final_coord coordinate system
-        """
-        if self._actual_data_coord != final_coord:
-            # check if we have x,y,z columns in data
-            # TODO look for orientation measurements
-            # extract coreaz, coredip, bedaz and beddip
-            # transform x, y, z columns in _data['data']
-            # final_xyz = RockPy3.utils.general.coord_transform(initial_xyz, self._actual_data_coord, final_coord)
-            self.log.warning('data needs to be transformed from %s to %s coordinates. NOT IMPLEMENTED YET!' % (
-                self._actual_data_coord, final_coord))
-            # return self._data
-        else:
-            self.log.debug('data is already in %s coordinates.' % final_coord)
-            # return self._data
-
     @property
     def correction(self):
         """
@@ -696,7 +681,8 @@ class Measurement(object):
            var: the variable e.g. temperature
            val: the value of that step e.g. 500
 
-        example: measurement.delete_step(dtype='th', var='temp', val=500) will delete the th step where the variable (temperature) is 500
+        example: measurement.delete_step(dtype='th', var='temp', val=500)
+            will delete the th step where the variable (temperature) is 500
         """
         # idx = self._get_idx_dtype_var_val(dtype=dtype, var=var, val=val)
         # self.data[dtype] = self.data[dtype].filter_idx(idx, invert=True)
@@ -868,7 +854,7 @@ class Measurement(object):
               series type to be added
            sval: float or int
               series value to be added
-           unit: str
+           sunit: str
               unit to be added. can be None #todo change so it uses Pint
 
         Returns
@@ -981,7 +967,7 @@ class Measurement(object):
                   reference='data', ref_dtype='mag', norm_dtypes='all', vval=None,
                   norm_method='max', norm_factor=None, result=None,
                   normalize_variable=False, dont_normalize=('temperature', 'field'),
-                  norm_initial_state=True, **options):
+                  norm_initial_state=True, **options): #todo check if works
         """
         normalizes all available data to reference value, using norm_method
 
@@ -1015,11 +1001,11 @@ class Measurement(object):
         """
 
         if self.is_normalized and self.is_normalized['reference'] == reference:
-            self.log.info('{} is already normalized with: {}'.format(self, self.is_normalized))
+            self.log().info('{} is already normalized with: {}'.format(self, self.is_normalized))
             return
 
         # dont normalize parameter measurements
-        if isinstance(self, RockPy.Parameter):
+        if isinstance(self, Parameter):
             return
         # print(self.mtype, locals())
         # separate the calc from non calc parameters
@@ -1034,7 +1020,7 @@ class Measurement(object):
                                                 result=result,
                                                 **calculation_parameter)
 
-        norm_dtypes = RockPy3._to_tuple(norm_dtypes)  # make sure its a list/tuple
+        norm_dtypes = RockPy.core.utils.to_tuple(norm_dtypes)  # make sure its a list/tuple
 
         for dtype, dtype_data in self.data.items():  # cycling through all dtypes in data
             if dtype_data:
@@ -1048,23 +1034,23 @@ class Measurement(object):
                     norm_dtypes = [i for i in norm_dtypes if not i == variable]
 
                 if dont_normalize:
-                    dont_normalize = RockPy3._to_tuple(dont_normalize)
+                    dont_normalize = RockPy.core.utils.to_tuple(dont_normalize)
                     norm_dtypes = [i for i in norm_dtypes if not i in dont_normalize]
 
                 for ntype in norm_dtypes:  # else use norm_dtypes specified
                     try:
                         dtype_data[ntype] = dtype_data[ntype].v / norm_factor
                     except KeyError:
-                        self.log.warning(
+                        self.log().warning(
                             'CAN\'T normalize << %s, %s >> to %s' % (self.sobj.name, self.mtype, ntype))
 
                 if 'mag' in dtype_data.column_names:
                     try:
                         self.data[dtype]['mag'] = self.data[dtype].magnitude(('x', 'y', 'z'))
                     except KeyError:
-                        self.log.debug('no (x,y,z) data found in {} keeping << mag >>'.format(dtype))
+                        self.log().debug('no (x,y,z) data found in {} keeping << mag >>'.format(dtype))
 
-        self.log.debug('NORMALIZING << %s >> with << %.2e >>' % (', '.join(norm_dtypes), norm_factor))
+        self.log().debug('NORMALIZING << %s >> with << %.2e >>' % (', '.join(norm_dtypes), norm_factor))
 
         if self.initial_state and norm_initial_state:
             for dtype, dtype_rpd in self.initial_state.data.items():
@@ -1073,7 +1059,7 @@ class Measurement(object):
                     self.initial_state.data[dtype]['mag'] = self.initial_state.data[dtype].magnitude(('x', 'y', 'z'))
 
         if reference == 'mass':
-            self.calc_results(force_recalc=True, **self.calculation_parameter)
+            self.calc_results(force_recalc=True, **self.params)
 
         self.is_normalized = {'reference': reference, 'ref_dtype': ref_dtype,
                               'norm_dtypes': norm_dtypes, 'vval': vval,
@@ -1110,14 +1096,15 @@ class Measurement(object):
 
             if reference in ['is', 'initial', 'initial_state']:
                 if self.initial_state:
-                    norm_factor = self._norm_method(norm_method, vval, rtype, self.initial_state.data['data'])
+                    raise NotImplementedError
+                    # norm_factor = self._norm_method(norm_method, vval, rtype, self.initial_state.data['data']) # todo fix
                 if self.is_initial_state:
                     norm_factor = self._norm_method(norm_method, vval, rtype, self.data['data'])
 
             if reference == 'mass':
                 m = self.get_mtype_prior_to(mtype='mass')
                 if not m:
-                    self.log.error('CANT find mass measurement')
+                    self.log().error('CANT find mass measurement')
                     return 1
                 return m.data['data']['mass'].v[0]
 
@@ -1127,7 +1114,7 @@ class Measurement(object):
         elif result:
             norm_factor = getattr(self, 'result_' + result)(**calculation_parameter)[0]
         else:
-            self.log.warning('NO reference specified, do not know what to normalize to.')
+            self.log().warning('NO reference specified, do not know what to normalize to.')
         return norm_factor
 
     def _norm_method(self, norm_method, vval, rtype, data):
