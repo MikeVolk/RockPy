@@ -526,6 +526,16 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
+    def reset_data(self): #todo rewrite new data pandas
+        """
+        Resets all data back to the original state. Deepcopies _raw_data back to _data and resets correction
+        """
+        midx = self.__class__._mids.index(self.mid)
+
+        self.clsdata[midx] = self._clsdata[midx]
+
+        # create _correction if not exists
+        self._correction = []
 
     def append_to_clsdata(self, mdata):
         '''
@@ -544,6 +554,8 @@ class Measurement(object):
             self.log().error('NO mdata in instance cant assign sid, mid')
             return
 
+        self.log().debug('appending data to << %s >> cls data'%(self.mtype))
+
         # add column with measurement ids (mID) and sample ids (sID)
         mdata['mID'] = self.mid
         mdata['sID'] = self.sid
@@ -557,21 +569,42 @@ class Measurement(object):
         self.__class__.clsdata.append(mdata)
 
     @classmethod
-    def remove_from_clsdata(cls, mid: int):
+    def remove_from_clsdata(cls, mid: int, replacement=False):
         '''
         method that removes the data of that measurement from the _clsdata and cls data as well as _sids and _mids
         lists.
 
         Parameters
         ----------
+        replacement: bool
+            if True: only non hidden attributes are removed -> eg for correction of data
+            if False: measurement is completely removed
+
         mid: int
              the id of the measurement to be removed from the measurement class
         '''
 
         midx = cls._mids.index(mid)
+        cls.log().debug('removing all data of mid: %s from  %s cls data'%(mid, cls.get_subclass_name()))
 
-        for lst in [cls._clsdata, cls.clsdata, cls._mids, cls._sids]:
+        for lst in [cls.clsdata, cls._clsdata, cls._mids, cls._sids]:
+
             del lst[midx]
+
+            if replacement and lst == cls.clsdata:
+                break
+
+    def replace_data(self, mdata):
+        """
+        removes old data from clsdata and appends the new data
+
+        Parameters
+        ----------
+        mdata: pandas.Dataframe
+        """
+
+        self.remove_from_clsdata(self.mid, replacement = True)
+        self.append_to_clsdata(mdata)
 
     @property
     def m_idx(self):
@@ -649,14 +682,6 @@ class Measurement(object):
         """
         return RockPy.core.utils.set_get_attr(self, '_correction', value=list())
 
-    def reset_data(self): #todo rewrite new data pandas
-        """
-        Resets all data back to the original state. Deepcopies _raw_data back to _data and resets correction
-        """
-        self._data = deepcopy(self._raw_data)
-        # create _correction if not exists
-        self.set_get_attr('_correction', value=list())
-        self._correction = []
 
     ####################################################################################################################
     ''' DATA RELATED '''
@@ -704,6 +729,8 @@ class Measurement(object):
         for resname, res in self._results.items():
             r = res(**parameters.pop(resname, dict()))
         return self.results
+
+    def reset_results(self):
 
 
     ##################################################################################################################
