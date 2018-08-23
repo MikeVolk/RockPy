@@ -1,10 +1,12 @@
 import RockPy
 from RockPy.core.measurement import Measurement
 from RockPy.core.result import Result
+from RockPy.core.utils import correction
 import numpy as np
 from scipy import stats
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class Hysteresis(Measurement):
@@ -51,6 +53,7 @@ class Hysteresis(Measurement):
             Hysteresis.log().debug('ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         data = ftype_data.data.rename(columns={"Field (T)": "B", "Moment (Am2)": "M"})
+        data = data.dropna(how='all')
         return data
 
     ####################################################################################################################
@@ -105,7 +108,7 @@ class Hysteresis(Measurement):
         else:
             return True
 
-    def get_polarity_switch(self, window=1):
+    def get_polarity_switch(self, window=5):
         '''
 
         Parameters
@@ -307,7 +310,7 @@ class Hysteresis(Measurement):
             df_data = m.downfield[m.downfield['M'].abs() <= df_moment]
             uf_data = m.upfield[m.upfield['M'].abs() <= uf_moment]
 
-            # fit second order polynomial
+            # fit polynomial
             df_fit = np.polyfit(df_data['M'].values, df_data.index, order)
             uf_fit = np.polyfit(uf_data['M'].values, uf_data.index, order)
             result = [np.poly1d(df_fit)(0), np.poly1d(uf_fit)(0)]
@@ -401,6 +404,34 @@ class Hysteresis(Measurement):
             - app2sat:
                 Uses approach to saturation to calculate Ms, Hf_sus
 
+        Parameters
+        ----------
+            recipe = simple
+            ---------------
+                saturation_percent: float
+                    percent where saturation is assumed
+                    default = 75.
+                ommit_last_n: int
+                    omits the last n points
+                    default = 0
+                check: bool
+                    creates a plot to check the result
+                    default:False
+
+            recipe = app2sat
+            ---------------
+                saturation_percent: float
+                    percent where saturation is assumed
+                    default = 75.
+                ommit_last_n: int
+                    omits the last n points
+                    default = 0
+                check: bool
+                    creates a plot to check the result
+                    default:False
+
+
+
         """
 
         default_recipe = 'simple'
@@ -453,7 +484,7 @@ class Hysteresis(Measurement):
 
             return df_plus, df_minus, uf_plus, uf_minus
 
-        def recipe_app2sat(self, saturation_percent=75., ommit_last_n=0, check=False, **non_method_parameters):
+        def recipe_app2sat(self, saturation_percent=75., ommit_last_n=0, check=False):
             """
             Calculates the high field susceptibility and Ms using approach to saturation
             :return:
@@ -502,14 +533,14 @@ class Hysteresis(Measurement):
                     # plot app2sat function
                     plt.plot(np.linspace(0.1, max(fields)),
                              self.approach2sat_func(np.linspace(0.1, max(fields)), ms[i], slope[i], alpha[i], -2), '--',
-                             color=RockPy.colors[i], label=['upper +', 'upper -', 'lower +', 'lower -'][i]+'(fit)')
+                             color=RockPy.colors[i], label=['upper +', 'upper -', 'lower +', 'lower -'][i] + '(fit)')
                     # plot linear fit
                     plt.plot(np.linspace(0, max(fields)), slope[i] * np.linspace(0, max(fields)) + ms[i], '-',
                              color=RockPy.colors[i])
 
                 plt.legend()
                 plt.xlim(0, max(fields))
-                plt.ylim(0, max(ms)*1.1)
+                plt.ylim(0, max(ms) * 1.1)
                 plt.xlabel('B [T]')
                 plt.ylabel('M [Am$^2$]')
                 plt.show()
@@ -559,7 +590,8 @@ class Hysteresis(Measurement):
                     d0 = self.get_df_uf_plus_minus(0, 0)
                     x = np.linspace(0, self.mobj.max_field)
                     y_new = slope * x + abs(intercept)
-                    l, = plt.plot(abs(d0[i].index), d0[i]['M'].abs(), '.', mfc='w', label='data', color=RockPy.colors[i])
+                    l, = plt.plot(abs(d0[i].index), d0[i]['M'].abs(), '.', mfc='w', label='data',
+                                  color=RockPy.colors[i])
                     plt.plot(x, y_new, '--', color=l.get_color())
 
             # check plot
@@ -580,6 +612,239 @@ class Hysteresis(Measurement):
 
     class Hf_sus(Ms):
         dependencies = ['ms']
+
+    ####################################################################################################################
+    ''' CORRECTIONS '''
+
+    def rotate_branch(self, branch):
+        """
+        rotates a branch by 180 degrees, by multiplying the field and mag values by -1.
+
+        Parameters
+        ----------
+            branch: str or. pandas.DataFrame
+                up-field or down-field
+                RockPyData: will rotate the data
+
+        Returns
+        -------
+            deepcopy of branch
+        """
+        if isinstance(branch, str):
+            data = getattr(self, branch).copy()
+
+        if isinstance(branch, pd.DataFrame):
+            data = branch.copy()
+
+        data.index *= -1
+        data['M'] *= -1
+
+        return data.sort_index()  # todo may fail for hysteresis loops with virgin branch
+
+    @classmethod
+    def get_grid(cls, bmax=1, grid_points=30, tuning=10):
+        """
+        Creates a grid of field values
+
+        Parameters
+        ----------
+        bmax
+        grid_points
+        tuning
+
+        Returns
+        -------
+
+        """
+        grid = []
+        # calculating the grid
+        for i in range(-grid_points, grid_points + 1):
+            if i != 0:
+                boi = (abs(i) / i) * (bmax / tuning) * ((tuning + 1) ** (abs(i) / float(grid_points)) - 1.)
+            else:  # catch exception for i = 0
+                boi = 0
+            grid.append(boi)
+        return np.array(grid)
+
+    @correction
+    def data_gridding(self, order=2, grid_points=20, tuning=1, ommit_n_points=0, check=False, **parameter):
+        """
+        Data griding after :cite:`Dobeneck1996a`. Generates an interpolated hysteresis loop with
+        :math:`M^{\pm}_{sam}(B^{\pm}_{exp})` at mathematically defined (grid) field values, identical for upper
+        and lower branch.
+
+        .. math::
+
+           B_{\text{grid}}(i) = \\frac{|i|}{i} \\frac{B_m}{\lambda} \\left[(\lambda + 1 )^{|i|/n} - 1 \\right]
+
+        Parameters
+        ----------
+
+           method: str
+              method with which the data is fitted between grid points.
+
+              first:
+                  data is fitted using a first order polinomial :math:`M(B) = a_1 + a2*B`
+              second:
+                  data is fitted using a second order polinomial :math:`M(B) = a_1 + a2*B +a3*B^2`
+
+           parameter: dict
+              Keyword arguments passed through
+
+        See Also
+        --------
+           get_grid
+        """
+
+        if any([len(i.index) <= 50 for i in [self.downfield, self.upfield]]):
+            self.log.warning('Hysteresis branches have less than 50 (%i) points, gridding not possible' % (
+                len(self.data['down_field']['field'].v)))
+            return
+
+        bmax = min([max(self.downfield.index), max(self.upfield.index)])
+        bmin = max([min(self.downfield.index), min(self.upfield.index)])
+        bm = max([abs(bmax), abs(bmin)])
+
+        grid = self.get_grid(bmax=bm, grid_points=grid_points, tuning=tuning, **parameter)
+
+        # interpolate the magnetization values M_int(Bgrid(i)) for i = -n+1 .. n-1
+        # by fitting M_{measured}(B_{experimental}) individually in all intervals [Bgrid(i-1), Bgrid(i+1)]
+        # with first or second order polinomials
+
+        if check:
+            uncorrected_data = self.data.copy()
+
+        # initialize DataFrame for gridded data
+        interp_data = pd.DataFrame(columns=self.data.columns)
+
+        for n, dtype in enumerate(['downfield', 'upfield', 'virgin']):
+            aux = pd.DataFrame(columns=self.data.columns)
+
+            # catch missing branches
+            if not hasattr(self, dtype):
+                continue
+
+            d = getattr(self, dtype)
+
+            if ommit_n_points > 0:
+                d = d.iloc[ommit_n_points:-ommit_n_points]
+            # cycle through gridpoints
+
+            for col in self.data.columns:
+                # calculate interpolation for all columns (e.g. temperature)
+                if col in ['B', 'sID', 'mID']:
+                    continue
+
+                for i, B in enumerate(grid):
+                    # set B to B column
+                    aux.loc[i, 'B'] = B
+
+                    # indices of points within the grid points
+                    if i == 0:
+                        idx = [j for j, v in enumerate(d.index) if v <= grid[i]]
+                    elif i == len(grid)-1:
+                        idx = [j for j, v in enumerate(d.index) if grid[i] <= v]
+                    else:
+                        idx = [j for j, v in enumerate(d.index) if grid[i - 1] <= v <= grid[i + 1]]
+
+                    if len(idx) > 1:  # if no points between gridpoints -> no interpolation
+                        data = d.iloc[idx]
+
+
+                        # make fit object
+                        fit = np.polyfit(data.index, data[col], order)
+                        # calculate Moment at B
+                        dfit = np.poly1d(fit)(B)
+
+                        aux.loc[i, col] = dfit
+
+                        # plt.plot(data.index, data[col], '.')
+                        # plt.plot(np.linspace(min(data.index), max(data.index)),
+                        #          np.poly1d(fit)(np.linspace(min(data.index), max(data.index))), '-')
+                        # plt.plot(B, dfit, 'x')
+                        # plt.show()
+
+                # set dtype to float -> calculations dont work -> pandas sets object
+                aux[col] = aux[col].astype(np.float)
+
+            if dtype == 'downfield':
+                aux = aux.iloc[::-1]
+                aux = aux.reset_index(drop=True)
+
+            interp_data = pd.concat([interp_data, aux], sort=True)
+            # interp_data.index = interp_data.index.astype(np.float)
+
+        self.replace_data(interp_data)
+
+        if check:
+            ax = self.check_plot(self.data, uncorrected_data)
+            return ax
+
+    # def correct_symmetry(self, check=False):
+    #
+    #     if check:
+    #         uncorrected_data = self.data.copy()
+    #
+    #     df = self.downfield
+    #     uf = self.upfield
+    #
+    #     uf_rotate = self.rotate_branch(uf)
+    #     df_rotate = self.rotate_branch(df)
+    #
+    #     fields = sorted(list(set(df.index) | set(uf.index) | set(df_rotate.index) | set(uf_rotate.index)))
+    #
+    #     # interpolate all branches and rotations
+    #     df = df.interpolate(fields)
+    #     uf = uf.interpolate(fields)
+    #
+    #     # df_rotate = df_rotate.interpolate(fields)
+    #     uf_rotate = uf_rotate.interpolate(fields)
+    #
+    #     down_field_corrected = deepcopy(df)
+    #     up_field_corrected = deepcopy(uf)
+    #     down_field_corrected['mag'] = (df['mag'].v + uf_rotate['mag'].v) / 2
+    #
+    #     up_field_corrected['field'] = - down_field_corrected['field'].v
+    #     up_field_corrected['mag'] = - down_field_corrected['mag'].v
+    #
+    #     self.data.update(dict(up_field=up_field_corrected, down_field=down_field_corrected))
+    #
+    #     if check:
+    #         self.check_plot(uncorrected_data=uncorrected_data)
+
+    ####################################################################################################################
+    ''' PLOTTING '''
+
+    @staticmethod
+    def check_plot(corrected_data, uncorrected_data, ax=None, f=None, points=None, show=True, title='', **kwargs):
+        """
+        Helper function for consistent check visualization
+
+        Parameters
+        ----------
+           uncorrected_data: RockPyData
+              the pre-correction data.
+        """
+        if not ax:
+            f, ax = plt.subplots()
+
+        ax.plot(uncorrected_data.index, uncorrected_data['M'], color='r', marker='o', ls='', mfc='none')
+        ax.plot(corrected_data.index, corrected_data['M'], color='g', marker='.')
+
+        if points:
+            points = np.array(points)
+            ax.plot(points[:, 0], points[:, 1], marker='o', **kwargs)
+
+        ax.set_ylabel('Moment')
+        ax.set_xlabel('Field')
+        ax.legend(['corrected / fitted', 'original'], loc='best')
+        ax.grid(zorder=1)
+        ax.set_title(title)
+        ax.axhline(color='k', zorder=1)
+        ax.axvline(color='k', zorder=1)
+        ax.set_xlim([min(corrected_data.index), max(corrected_data.index)])
+        plt.tight_layout()
+        return ax
 
 
 if __name__ == '__main__':
