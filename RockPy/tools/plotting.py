@@ -58,10 +58,10 @@ def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
                     arrowprops=dict(arrowstyle="-", shrinkA=shrink, shrinkB=0, **kwargs),
                     )
     else:
-        RockPy.log.error('%s not a valid direction: choose either \'up\' or \'down\'' % (direction))
+        RockPy.log.error('%s not a valid direction: choose either \'up\' or \'down\'' % direction)
 
 
-def get_unique_axis(fig):
+def get_unique_axis(fig: plt.Figure):
     """
     Returns the unique (untwinned) axes for a figure. Uniqueness is determined by the extent
     of the position of the axes.
@@ -94,7 +94,7 @@ def enumerate_figure(fig, positions=None, **kwargs):
     ----------
     fig: matplotlib.figure
     positions: list of tuples
-        list of tuples for the (x,y) positions of the text, realtive to the axes
+        list of tuples for the (x,y) positions of the text, relative to the axes
     kwargs: passed on to the text
 
     """
@@ -102,9 +102,9 @@ def enumerate_figure(fig, positions=None, **kwargs):
     axes = get_unique_axis(fig)
 
     if positions is None:
-        positions = [(0.05, 0.9) for i, ax in enumerate(axes)]
+        positions = [(0.05, 0.9) for _, _ in enumerate(axes)]
     if np.array(positions).shape == (2,):
-        positions = [positions for i, ax in enumerate(axes)]
+        positions = [positions for _, _ in enumerate(axes)]
 
     for i, ax in enumerate(axes):
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format('abcdefghijklmnopqrstuvwxyz'[i]),
@@ -115,7 +115,7 @@ def enumerate_figure(fig, positions=None, **kwargs):
                 color=kwargs.pop('color', 'k'), **kwargs)
 
 
-def add_twiny(ax, label, conversion=75.34):
+def add_twiny(label, ax=None, conversion=75.34):
     """
     Adds a second x axis on the top with a different scaling and label
 
@@ -130,8 +130,11 @@ def add_twiny(ax, label, conversion=75.34):
 
     Notes
     -----
-    Should be called at the end of a script, other wise ticklabels may be wrong #todo figure out how this can be fixed
+    Should be called at the end of a script, other wise tick-labels may be wrong #todo figure out how this can be fixed
     """
+
+    if ax is None:
+        ax = plt.gca()
     # twin ax
     ax2 = ax.twiny()
 
@@ -143,7 +146,7 @@ def add_twiny(ax, label, conversion=75.34):
     return ax2
 
 
-def add_log10_isolines(ax=None):
+def log10_isolines(ax=None, angle=45):
     if ax is None:
         ax = plt.gca()
 
@@ -153,28 +156,32 @@ def add_log10_isolines(ax=None):
     xmn, xmx = ax.get_xlim()
     ymn, ymx = ax.get_ylim()
 
-    # get line that halves the plot top to bottom
+    # get line that halves the plot top let to bottom right
     s0 = (ymn - ymx) / (xmx - xmn)
     int0 = ymx - s0 * xmn
-    # ax.plot(np.linspace(xmn,xmx), np.linspace(xmn,xmx)*s0+int0, color='r', ls='--')
 
-    for i, s in enumerate(np.arange(-10, 10, 1)):
+    # ax.plot(np.power(10, (np.array([20., -20.]) * s0 - int0)), np.power(10, (np.array([-20., 20.]) * s0 - int0)), '-r')#, scaley=False, scalex=False)
+
+
+
+    # plot iso lines
+    for i, s in enumerate(np.arange(-20, 20, 1)):
+        # for each power
         xnew = np.power(10, (np.array([-20., 20.]) - s / 2))
         ynew = np.power(10, (np.array([-20., 20.]) + s / 2))
 
         sn = (min(ynew) - max(ynew)) / (min(xnew) - max(xnew))
         intn = min(ynew) - sn * min(xnew)
 
-        # ax.plot(xnew, xnew*sn+intn, scaley=False, scalex=False, ls='--')
-
         ax.plot(xnew, ynew, scaley=False, scalex=False, color='0.5', ls='--')
 
-        rotation = ax.transData.transform_angles(np.array((45,)),
+        rotation = ax.transData.transform_angles(np.array((angle,)),
                                                  np.array([1, 1]).reshape((1, 2)))[0]
 
         tx = (intn - int0) / (s0 - sn)
         ty = s0 * tx + int0
-        ax.text(tx, ty,
+
+        ax.text(tx * 0.8, ty * 0.8,
                 '10$^{%i}$' % s,
                 verticalalignment='center', horizontalalignment='center', rotation=rotation,
                 bbox=dict(facecolor='w', alpha=0.8, edgecolor='none', pad=0),
@@ -198,6 +205,25 @@ def add_zerolines(ax=None, **kwargs):
     if ax is None:
         ax = plt.gca()
 
+    ax.axhline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
+    ax.axvline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
 
-    ax.axhline(0, color=kwargs.pop('color', 'k'), **kwargs)
-    ax.axvline(0, color=kwargs.pop('color', 'k'), **kwargs)
+
+def forceAspect(ax, aspect=1):
+    """
+    Changes the aspect of an axes to be `aspect`. Not by data
+    Parameters
+    ----------
+    ax: matplotlib.axes
+    aspect: float
+    """
+    # aspect is width/height
+    scale_str = ax.get_yaxis().get_scale()
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+
+    if scale_str == 'linear':
+        asp = abs((xmax - xmin) / (ymax - ymin)) / aspect
+    elif scale_str == 'log':
+        asp = abs((np.log10(xmax) - np.log10(xmin)) / (np.log10(ymax) - np.log10(ymin))) / aspect
+    ax.set_aspect(asp, adjustable='box')
