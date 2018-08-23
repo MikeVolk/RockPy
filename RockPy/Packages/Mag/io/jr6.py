@@ -6,14 +6,14 @@ import numpy as np
 import os
 
 
-class Jr6(RockPy.core.ftype.Ftype):
+class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
     pint_treatment_codes = ('LT-NO', 'LT-T-Z', 'LT-T-I', 'LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z')
 
     table = {'tdt': ['NRM', '0', '1', '2', '3', '4']}
     imported_files = dict()
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False, volume=10 ** -5):
-        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload )
         self.volume = volume
 
         xyz = ['magn_x', 'magn_y', 'magn_z']
@@ -30,11 +30,21 @@ class Jr6(RockPy.core.ftype.Ftype):
 
         # calculate Magnetic moment
         self.data['magn_moment'] = np.linalg.norm(self.data[xyz], axis=1)
-        self.data['level'] = [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in self.data['step']]
+        self.data['level'] = self.get_level()
         self.data['treat_temp'] = self.data['level'] + 273
         self.data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in self.data['step']]
         self.data = self.data.drop('step', 1)
         self.data = self.data.drop('exp', 1)
+
+    def get_level(self):
+
+        if self.dialect == 'tdt':
+            return [20 if i == 'NRM' else round(float(i.replace("T", ''))) for i in self.data['step']]
+
+        if self.dialect == 'af':
+            return [0 if i == 'NRM' else round(float(i.replace("A", ''))) for i in self.data['step']]
+
+
 
     def read_file(self):
         ''' 
@@ -82,6 +92,8 @@ class Jr6(RockPy.core.ftype.Ftype):
             idx = Jr6.table[self.dialect].index(split[1])
             out = Jr6.pint_treatment_codes[idx]
 
+        if self.dialect == 'af':
+            out = 'LT-AF-Z'
         return out
 
 
