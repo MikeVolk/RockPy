@@ -173,6 +173,7 @@ class Measurement(object):
                   fpath=None, ftype='generic',  # file path and file type
                   idx=None, sample_name=None,
                   series=None, dialect=None,
+                  reload=False,
                   **options
                   ):
         '''
@@ -209,7 +210,7 @@ class Measurement(object):
         # check if measurement is implemented
         if ftype in cls.implemented_ftypes():
             # read the ftype data from the file
-            ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name, dialect=dialect)
+            ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name, dialect=dialect, reload=reload)
         else:
             cls.log().error('CANNOT IMPORT ')
             cls.log().error('ftype not in implemented ftypes: %s '%', '.join(cls.implemented_ftypes().keys()))

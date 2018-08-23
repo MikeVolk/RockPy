@@ -239,6 +239,7 @@ class Sample(object):
             series=None,
             comment=None, additional=None,
             create_parameters=True,
+            reload=False,
             **kwargs):
 
         """
@@ -247,7 +248,6 @@ class Sample(object):
         Parameters
         ----------
         create_parameters
-        importinfos
         additional
         mtype: str
           the type of measurement
@@ -329,7 +329,7 @@ class Sample(object):
                     self.log().error('{} not implemented'.format(mtype))
                     continue
                 # create measurement object
-                mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self, **import_info)
+                mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self, reload=reload, **import_info)
 
         """ DATA import from MDATA """
         if all([mdata, mtype]):
