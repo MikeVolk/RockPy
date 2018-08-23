@@ -11,6 +11,7 @@ class Vsm(Ftype):
 
     mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),
                          'Direct moment vs. field; Initial magnetization; Hysteresis loop\n': ('hys',),
+                         'Direct moment vs. field; Multiple segments\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',),
                          'Remanence curves:  IRM + DCD\n':('irm','dcd'),
                          }
