@@ -19,7 +19,7 @@ def pressure(force, diameter):
 
     return pressure
 
-def overburden_pressure(thickness, density=3300):
+def overburden_pressure(thickness, density=2600):
     """
     Calculates the approximate pressure of a layer (thickness) of rock with density (density).
 
