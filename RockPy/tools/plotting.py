@@ -1,6 +1,8 @@
 # import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import colors as mcol
+
 import RockPy
 
 
@@ -227,3 +229,9 @@ def forceAspect(ax, aspect=1):
     elif scale_str == 'log':
         asp = abs((np.log10(xmax) - np.log10(xmin)) / (np.log10(ymax) - np.log10(ymin))) / aspect
     ax.set_aspect(asp, adjustable='box')
+
+
+def red_blue_colormap():
+    # Make a user-defined colormap.
+    cm1 = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
+    return cm1
