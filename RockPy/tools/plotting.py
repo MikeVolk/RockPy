@@ -257,3 +257,41 @@ def connect_ax_data(ax, **kwargs):
         y.extend(l.get_ydata())
 
     ax.plot(x, y, **kwargs)
+
+
+def label_line(line, label, x, y, color='0.5', size=12):
+    """Add a label to a line, at the proper angle.
+
+    Arguments
+    ---------
+    line : matplotlib.lines.Line2D object,
+    label : str
+    x : float
+        x-position to place center of text (in data coordinated
+    y : float
+        y-position to place center of text (in data coordinates)
+    color : str
+    size : float
+    """
+    xdata, ydata = line.get_data()
+    x1 = xdata[0]
+    x2 = xdata[-1]
+    y1 = ydata[0]
+    y2 = ydata[-1]
+
+    ax = line.axes
+    text = ax.annotate(label, xy=(x, y), xytext=(-10, 0),
+                       textcoords='offset points',
+                       size=size, color=color,
+                       horizontalalignment='left',
+                       verticalalignment='bottom')
+
+    sp1 = ax.transData.transform_point((x1, y1))
+    sp2 = ax.transData.transform_point((x2, y2))
+
+    rise = (sp2[1] - sp1[1])
+    run = (sp2[0] - sp1[0])
+
+    slope_degrees = np.degrees(np.arctan2(rise, run))
+    text.set_rotation(slope_degrees)
+    return text
