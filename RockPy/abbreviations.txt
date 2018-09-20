@@ -62,6 +62,14 @@ simulation: sim, simulation
 
 none: none
 
+#################################################################################
+# MPMS measurement types
+#################################################################################
+fc: fc, field cooling
+zfc-ltsirm: zfc-ltsirm
+fc-ltsirm: fc-ltsirm
+rtsirm: rtsirm
+
 # ftypes
 #cryomag: cryo
 cryomag: cry
