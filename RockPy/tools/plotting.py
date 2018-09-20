@@ -100,11 +100,10 @@ def enumerate_figure(fig, positions=None, **kwargs):
     kwargs: passed on to the text
 
     """
-
     axes = get_unique_axis(fig)
 
     if positions is None:
-        positions = [(0.05, 0.9) for _, _ in enumerate(axes)]
+        positions = [(0.05, 0.85) for _, _ in enumerate(axes)]
     if np.array(positions).shape == (2,):
         positions = [positions for _, _ in enumerate(axes)]
 
@@ -211,7 +210,7 @@ def add_zerolines(ax=None, **kwargs):
     ax.axvline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
 
 
-def forceAspect(ax, aspect=1):
+def forceAspect(ax=None, aspect=1):
     """
     Changes the aspect of an axes to be `aspect`. Not by data
     Parameters
@@ -219,6 +218,9 @@ def forceAspect(ax, aspect=1):
     ax: matplotlib.axes
     aspect: float
     """
+
+    if ax is None:
+        ax = plt.gca()
     # aspect is width/height
     scale_str = ax.get_yaxis().get_scale()
     xmin, xmax = ax.get_xlim()
@@ -235,3 +237,23 @@ def red_blue_colormap():
     # Make a user-defined colormap.
     cm1 = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
     return cm1
+
+
+def connect_ax_data(ax, **kwargs):
+    '''
+    Connects the data of all lines in an axes
+
+    Parameters
+    ----------
+    ax: matplotlib.axes
+    kwargs: dict
+        passed to plot
+
+    '''
+    x = []
+    y = []
+    for l in ax.lines:
+        x.extend(l.get_xdata())
+        y.extend(l.get_ydata())
+
+    ax.plot(x, y, **kwargs)
