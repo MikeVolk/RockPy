@@ -7,7 +7,7 @@ import RockPy.core
 import RockPy.core.utils
 import RockPy.core.result
 from RockPy.core.ftype import Ftype
-from RockPy.Packages.Generic.Measurement.Parameter import Parameter
+# from RockPy.Packages.Generic.Measurement.Parameter import Parameter
 from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 
 import numpy as np
@@ -408,7 +408,7 @@ class Measurement(object):
     @property
     def mass(self):
         mass = self.get_mtype_prior_to(mtype='mass')
-        return mass.data['data']['mass'].v[0] if mass else None
+        return mass.data['mass[kg]'].iloc[0] if mass else None
 
     def get_recipes(self, res):
         """
@@ -1148,14 +1148,13 @@ class Measurement(object):
            RockPy3.Measurement
         """
 
-        # measurements = self.sobj.get_measurement(mtype=mtype)
-        #
-        # if measurements:
-        #     out = [i for i in measurements if i.__idx <= self.__idx]
-        #     return out[-1]
-        #
-        # else:
-        return None
+        measurements = self.sobj.get_measurement(mtype=mtype)
+
+        if measurements:
+            out = [i for i in measurements if i.__idx <= self.__idx]
+            return out[-1]
+        else:
+            return None
 
     def set_calibration_measurement(self,
                                     fpath=None,  # file path
