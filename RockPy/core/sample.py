@@ -5,7 +5,7 @@ import RockPy
 import RockPy.core.study
 import RockPy.core.file_io
 import RockPy.core.utils
-from RockPy.core.utils import to_tuple, tuple2list_of_tuples
+from RockPy.core.utils import to_tuple
 
 import pandas as pd
 
@@ -208,7 +208,7 @@ class Sample(object):
         else:
             self.log().error(' << %s >> not implemented, yet' % mtype)
 
-    def add_parameter_measurements(self, **kwargs):
+    def add_parameter_measurements(self, fpath=None, **kwargs):
         '''
         Method adds parameter measurements (mass, height, diameter...) to the sample. The parameters are passed as kwargs
         
@@ -216,6 +216,16 @@ class Sample(object):
         ----------
         kwargs
         '''
+
+        # add parameter from fpath
+        if fpath is not None:
+            minfo = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
+            for sinfo in minfo.gen_sample_dict:
+                if sinfo['sname'] == self.name:
+                    for info in ['mass', 'massunit', 'diameter', 'height', 'lengthunit']:
+                        if not info in kwargs or kwargs[info] is None:
+                            kwargs[info] = sinfo[info]
+
         parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs if kwargs[i]]
 
         for mtype in parameters:
@@ -301,7 +311,7 @@ class Sample(object):
         """ DATA import from mass, height, diameter, len ... """
 
         if create_parameters:
-            self.add_parameter_measurements(**kwargs)
+            self.add_parameter_measurements(fpath, **kwargs)
 
         # create the import helper
         if fpath and not any((mtype, ftype)):
@@ -522,17 +532,17 @@ class Sample(object):
 
         Parameters
         ----------
-           mtypes: list, str
+           mtype: list, str
               mtypes to be returned
            series: list(tuple)
               list of tuples, to search for several sepcific series. e.g. [('mtime',4),('gc',2)] will only return
               mesurements that fulfill both criteria.
-           stypes: list, str
+           stype: list, str
               series type
            sval_range: list, str
               series range e.g. sval_range = [0,2] will give all from 0 to 2 including 0,2
               also '<2', '<=2', '>2', and '>=2' are allowed.
-           svals: float
+           sval: float
               series value to be searched for.
               caution:
                  will be overwritten when sval_range is given
@@ -582,7 +592,7 @@ class Sample(object):
             if not sval:
                 sval = sval_range
             else:
-                sval = to_tuple()
+                sval = to_tuple(())
                 sval += to_tuple(sval_range)
 
         if sval is not None:
@@ -598,7 +608,6 @@ class Sample(object):
         if invert:
              return [m for m in self.measurements if m not in mlist]
 
-        # mlist = list(mlist)
         return list(mlist)
 
     def _convert_sval_range(self, sval_range, mean):
@@ -641,6 +650,7 @@ class Sample(object):
 
         return sorted(out)
 
+    @property
     def mass(self, mid=None, mobj=None):
         """
         Returns the mass of that sample.
@@ -664,7 +674,7 @@ class Sample(object):
 
         mass_measurements = self.get_measurement(mtype='mass')
 
-        return mass_measurements[0].data['mass[kg]'].iloc[0]
+        return [m.data['mass[kg]'].iloc[0] for m in mass_measurements]
 
     def __repr__(self):
         return '<< RockPy3.Sample.{} >>'.format(self.name)
