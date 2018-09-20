@@ -1,5 +1,5 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, to_tuple, split_num_alph, tuple2str
+from RockPy.core.utils import extract_tuple, to_tuple, split_num_alph, tuple2str, tuple2list_of_tuples
 import os, re
 from copy import deepcopy
 import warnings
@@ -139,7 +139,7 @@ class ImportHelper(object):
         series = block.split('_')
 
         if not series:
-            self.series = None
+            series = None
 
         try:
             return [extract_series(s) for s in series if s]
@@ -166,7 +166,7 @@ class ImportHelper(object):
         parts = block.split(',')
         dialect = [p for p in parts if 'dialect' in p][0].replace('dialect=', '')
         parts = [p for p in parts if not 'dialect' in p]
-        return additional, dialect
+        return parts, dialect
 
     @classmethod
     def from_folder(cls, folder, filter=dict()):
@@ -237,9 +237,9 @@ class ImportHelper(object):
         sgroups, snames, mtypes, ftype = cls.extract_measurement_block(splits[0])
 
         # extract sample informations
+        (mass, massunit), (height, heightunit), (diameter, diameterunit) = (None,None),(None,None),(None,None)
         if len(splits) > 1:
             (mass, massunit), (height, heightunit), (diameter, diameterunit) = cls.extract_sample_block(splits[1])
-
         # extract series information
         try:
             series = cls.extract_series_block(splits[2])
@@ -319,12 +319,14 @@ class ImportHelper(object):
         self.sgroups = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(sgroups))
 
         self.mtypes = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(mtypes))
-        self.mtypes = [[RockPy.abbrev_to_classname[mt] for mt in mtypes] for mtypes in self.mtypes] #translate from abbrev to classname
+        self.mtypes = [[RockPy.abbrev_to_classname[mt.lower()] for mt in mtypes] for mtypes in self.mtypes] #translate from abbrev to classname
 
         self.ftype = RockPy.core.utils.to_list(RockPy.to_tuple(ftype))
         self.fpath = RockPy.core.utils.to_list(fpath)
         self.dialect = RockPy.core.utils.to_list(dialect)
 
+        #################################################################################
+        ''' PARAMETER '''
         self.mass = RockPy.core.utils.to_list(mass)
         self.massunit = RockPy.core.utils.to_list(massunit)
 
@@ -343,7 +345,12 @@ class ImportHelper(object):
         else:
             self.lengthunit = RockPy.core.utils.to_list(lengthunit)
 
+        if series is not None:
+            if len(series) == 3 and not len(series[0]) == 3:
+                series = tuple2list_of_tuples(to_tuple(series))
+
         self.series = RockPy.core.utils.to_list([series])
+
         self.comment = RockPy.core.utils.to_list(comment)
         self.additional = RockPy.core.utils.to_list(additional)
         self.suffix = RockPy.core.utils.to_list(suffix)
@@ -432,7 +439,7 @@ class ImportHelper(object):
         """
         if series:
             out = [RockPy.core.utils.tuple2str(b) for b in series]
-            return '_'.join(out)
+            return '_'.join(out).replace('\'','').replace(' ','')
         else:
             return ''
 
@@ -446,7 +453,7 @@ class ImportHelper(object):
     @property
     def new_filenames(self):
         for f in range(self.nfiles):
-            mblock = self.get_measurement_block(self.sgroups[f], self.snames[f], sorted(self.mtypes[f]), self.ftype[f])
+            mblock = self.get_measurement_block(self.sgroups[f], self.snames[f], self.mtypes[f], self.ftype[f])
             sblock = self.get_sample_block(self.mass[f], self.massunit[f],
                                            self.diameter[f], self.diameterunit[f],
                                            self.height[f], self.heightunit[f])
@@ -463,7 +470,15 @@ class ImportHelper(object):
                 else:
                     break
 
-            fname = '#'.join(map(str, out)) + '.' + str(self.suffix[f])
+            suffix = self.suffix[f]
+
+            if not suffix:
+                suffix = 0
+
+            if isinstance(suffix, (int, float)):
+                suffix = '%03.0f'%suffix
+            fname = '#'.join(map(str, out)) + '.%s'%suffix
+
             fname = fname.replace('None', '')
             yield fname
 
@@ -559,11 +574,11 @@ class ImportHelper(object):
                                                       'mass', 'massunit',
                                                       'height', 'diameter', 'lengthunit',
                                                       'sgroups')}
+
+
+def connect_to_IRMdb():
+    pass
+
 if __name__ == '__main__':
 
-    a = ImportHelper.from_folder('/Users/mike/Dropbox/github/collaborations/Cournede (IRM)/data/VSM')
-
-    for sample in a.gen_sample_dict:
-        for info in a.getImportHelper(snames=sample['sname']):
-            for minfo in info.gen_measurement_dict:
-                print(minfo)
+    connect_to_IRMdb()
