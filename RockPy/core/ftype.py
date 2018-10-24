@@ -48,7 +48,11 @@ class Ftype(object):
         """
         Constructor of the basic file type instance
         """
+
+        # set file ID
         self.fid = id(self)
+
+        # create sample name tuple
         self.snames = [str(i) for i in RockPy.core.utils.to_tuple(snames)] if snames else None
         self.dfile = dfile
         self.dialect = dialect
