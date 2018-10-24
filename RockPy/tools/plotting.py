@@ -4,6 +4,9 @@ import numpy as np
 from matplotlib import colors as mcol
 
 import RockPy
+import pandas as pd
+import os
+from copy import deepcopy
 
 
 def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
@@ -163,8 +166,6 @@ def log10_isolines(ax=None, angle=45):
 
     # ax.plot(np.power(10, (np.array([20., -20.]) * s0 - int0)), np.power(10, (np.array([-20., 20.]) * s0 - int0)), '-r')#, scaley=False, scalex=False)
 
-
-
     # plot iso lines
     for i, s in enumerate(np.arange(-20, 20, 1)):
         # for each power
@@ -295,3 +296,54 @@ def label_line(line, label, x, y, color='0.5', size=12):
     slope_degrees = np.degrees(np.arctan2(rise, run))
     text.set_rotation(slope_degrees)
     return text
+
+
+def plot_metamorphic_facies(ax=None, facies=None, text=None, **kwargs):
+    xls = pd.ExcelFile(os.path.join(RockPy.installation_directory, 'tools', 'data', 'mtemorphic-facies-Gillen1982.xls'))
+
+    if facies is None:
+        facies = xls.sheet_names
+
+    txtloc = {'limit metamorphism':(0,0),
+               'burial':(58,86),
+               'blueshist':(177,685),
+               'zeolite':(166,265),
+               'contact metamorphism':(525,39),
+               'greeschist':(0,0),
+               'amphibolite':(0,0),
+               'eclogite':(0,0),
+               'partial melting curve':(0,0),
+               'granulite':(0,0)}
+    txtrot = {'limit metamorphism':0,
+               'burial':0,
+               'blueshist':0,
+               'zeolite':0,
+               'contact metamorphism':0,
+               'greeschist':0,
+               'amphibolite':0,
+               'eclogite':0,
+               'partial melting curve':0,
+               'granulite':0}
+
+
+    for f in facies:
+        # create deepcopy for same colors
+        kwargscopy = deepcopy(kwargs)
+        fontdictcopy = deepcopy(kwargs)
+        if not f in xls.sheet_names:
+            continue  # todo add warning
+
+        data = pd.read_excel(xls, f).rolling(2).mean()
+
+        ax.plot(data['T [C]'], data['P [MPa]'],
+                color=kwargscopy.pop('color', 'k'),
+                ls=kwargscopy.pop('ls', '--'),
+                scalex=False, scaley=False,
+                **kwargscopy)
+
+        if text is not False and (text is None or f in text) :
+            ax.text(*txtloc[f], f,
+                    rotation = txtrot[f],
+                    verticalalignment='center', horizontalalignment='center',
+                    bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                    color='k', clip_on=True)
