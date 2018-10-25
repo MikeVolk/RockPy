@@ -2,15 +2,9 @@ __author__ = 'volk'
 import RockPy
 from RockPy.core.result import Result
 from RockPy.core.utils import lin_regress
-
-from copy import deepcopy
-from math import tanh, cosh
-
 import numpy as np
-import numpy.random
-import scipy as sp
-import os
 import matplotlib.pyplot as plt
+
 from scipy import stats
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
@@ -18,7 +12,7 @@ from scipy.interpolate import UnivariateSpline
 import matplotlib.dates
 import datetime
 
-from RockPy.Packages.Mag.Measurement.Simulation import paleointensity
+from RockPy.Packages.Mag.Measurement.Simulation import paleointensity as simulate
 
 from RockPy.core import measurement
 
@@ -51,10 +45,11 @@ class Paleointensity(measurement.Measurement):
         method = simparams.pop('method', 'fabian')
 
         if method == 'fabian':
-            simobj = paleointensity.Fabian2001(**simparams)
+            simobj = simulate.Fabian2001(**simparams)
+
         return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag),
                    series = series,
-                   ftype_data=simobj, ftype='simulation')
+                   ftype_data=None, simobj=simobj, ftype='simulation')
 
     @staticmethod
     def format_jr6(ftype_data, sobj_name=None):
@@ -249,6 +244,25 @@ class Paleointensity(measurement.Measurement):
         return if_steps
 
     ####################################################################################################################
+    """ fitting routines """
+    def create_model(self, ModelType='Fabian2001', **parameters):
+        """
+
+        Parameters
+        ----------
+        type
+
+        Returns
+        -------
+
+        """
+
+        if ModelType == 'Fabian2001':
+            self.model = simulate.Fabian2001(preset='Fabian5a', **parameters)
+
+
+    def fit_demag_data(self):
+        pass
 
     ####################################################################################################################
     """ RESULTS CALCULATED USING CALCULATE_SLOPE  METHODS """
