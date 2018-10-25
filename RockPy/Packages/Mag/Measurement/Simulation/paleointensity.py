@@ -17,7 +17,9 @@ import logging
 
 
 class Fabian2001(object):
-    presets = pd.read_csv(os.path.join(RockPy.installation_directory, 'Packages','Mag', 'Measurement', 'Simulation', 'paleointensity_presets.csv'), index_col=0)
+    presets = pd.read_csv(os.path.join(RockPy.installation_directory,
+                                       'Packages', 'Mag', 'Measurement', 'Simulation',
+                                       'paleointensity_presets.csv'), index_col=0)
 
     @classmethod
     def log(cls):
@@ -43,7 +45,8 @@ class Fabian2001(object):
         -----
             calls RockPy.Packages.Mag.Measurement.Simulation.utils.ThellierStepMaker
         """
-        out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every, ac_every=ac_every)
+        out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every,
+                                         ac_every=ac_every)
         return out
 
     def __init__(self, preset=None,
@@ -68,7 +71,7 @@ class Fabian2001(object):
                 A collection of models from the Fabian2001 and Leonhard2004 paper
 
             a11: float
-                costant part of the distribution
+                constant part of the distribution
             a12: float
                 if 0: unblocking temperature distribution has same width for all tau_b
             a1t: float
@@ -133,15 +136,15 @@ class Fabian2001(object):
 
         """
 
-        params = {'a11': a11, 'a12': a12, 'a13': a13, 'a1t': a1t,
-                  'a21': a21, 'a22': a22, 'a23': a23, 'a2t': a2t,
-                  'b1': b1, 'b2': b2, 'b3': b3, 'bt': bt,
-                  'd1':d1, 'd2':d2, 'd3': d3, 'dt': dt,
-                  'tc': tc, 'grid': grid,
-                  'hpal': hpal, 'hlab' : hlab,
-                  'ms': ms,
-                  'temp_steps': temp_steps,
-                  }
+        passed_params = {'a11': a11, 'a12': a12, 'a13': a13, 'a1t': a1t,
+                          'a21': a21, 'a22': a22, 'a23': a23, 'a2t': a2t,
+                          'b1': b1, 'b2': b2, 'b3': b3, 'bt': bt,
+                          'd1': d1, 'd2': d2, 'd3': d3, 'dt': dt,
+                          'tc': tc, 'grid': grid,
+                          'hpal': hpal, 'hlab': hlab,
+                          'ms': ms,
+                          'temp_steps': temp_steps,
+                          }
 
         if not isinstance(temp_steps, pd.DataFrame):
             self.steps = self.get_steps(temp_steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every, ac_every=ac_every)
@@ -157,24 +160,39 @@ class Fabian2001(object):
             print('using: Fabian Fig. 4a')
             preset = 'Fabian4a'
 
+        self.simparams = deepcopy(passed_params)
 
         # update the instance dictionary  with the preset
-        self.__dict__.update(self.presets.to_dict()[preset])
+        self.simparams.update(self.presets.to_dict()[preset])
 
         # update the instance dictionary  with the parameters, specified
-        self.__dict__.update({k: v for k, v in params.items() if v is not None or k in ('d3', 'dt', 'R')})
-
-        # create a dictionary with the simulation_parameters
-        self.simparams = {k: self.__dict__[k] for k in params.keys()}
-
-        # self.log().debug('Calculating simulation using these parameters:')
-        # self.log().debug('='*50)
-        # for k, v in self.simparams.items():
-        #     self.log().debug('\t%s: %s'%(k,v))
+        self.simparams.update({k: v for k, v in passed_params.items() if v is not None or k in ('d3', 'dt', 'R')})
 
         # create reduced blocking and unblocking temperatures
-        self.tau_b = np.arange(0, grid + 1, 1)/grid
+        self.tau_b = np.arange(0, grid + 1, 1) / grid
         self.tau_ub = self.tau_b
+
+        self.initialize_distributions()
+
+
+
+    @property
+    def nrm(self):
+        return self.moment(1, self.simparams['hpal'], pressure_demag=False)
+
+
+    def initialize_distributions(self):
+        """
+        calculates the distributions of lambda1, lambda2, beta, gamma and chi
+        Returns
+        -------
+
+        """
+
+        self.log().debug('Calculating simulation using these parameters:')
+        self.log().debug('='*50)
+        for k, v in self.simparams.items():
+            self.log().debug('\t%s: %s'%(k,v))
 
         # calculate lambda functions for each blocking temperature
         self.l1 = self.lambda1(self.tau_b)
@@ -189,15 +207,30 @@ class Fabian2001(object):
         # initiate dataframe for characteristic function
         self.chi = self.get_chi_grid()
 
-        # calculate the NRM (not pressure demagnetized)
-        self.nrm = self.moment(1, self.hpal, pressure_demag=False)
-
-        # if temp_steps is not None: #todo remove
-        #     self.steps = self.steps.fillna('-')
-
         # calculate demagnetization function
-        self.demag_dist = d1 + d2 * self.cauchy(self.tau_ub - dt, d3)
+        self.demag_dist = self.simparams['d1'] + self.simparams['d2'] * \
+                          self.cauchy(self.tau_ub - self.simparams['dt'], self.simparams['d3'])
         self.zf_steps = 1 - self.demag_dist
+
+    def change_simparams(self, **new_params):
+        """
+        Method to change the simulation parameters for the simulation.
+        Recalculates the differnet distributions from new parameters.
+
+        Parameters
+        ----------
+        new_params: dict
+            dict with new parameters
+
+        Returns
+        -------
+
+        """
+
+        for k,v in new_params.items():
+            self.simparams[k] = v
+
+        self.initialize_distributions()
 
     @classmethod
     def cauchy(cls, x, s):
@@ -206,7 +239,7 @@ class Fabian2001(object):
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
-        return (t - 20) / (self.tc - 20)
+        return (t - 20) / (self.simparams['tc'] - 20)
 
     def beta(self, tau):
         """
@@ -219,26 +252,29 @@ class Fabian2001(object):
         -------
             np.array
         """
-        return self.b1 + self.b2 * self.cauchy(tau - self.bt, self.b3)
+        return self.simparams['b1'] + self.simparams['b2'] * \
+               self.cauchy(tau - self.simparams['bt'], self.simparams['b3'])
 
     def lambda1(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub > tb
         '''
 
-        if self.a12 > 0:
-            return self.a11 + self.a12 * self.cauchy(tau - self.a1t, self.a13)
+        if self.simparams['a12'] > 0:
+            return self.simparams['a11'] + self.simparams['a12'] * \
+                   self.cauchy(tau - self.simparams['a1t'], self.simparams['a13'])
         else:
-            return np.ones(tau.shape) * self.a11
+            return np.ones(tau.shape) * self.simparams['a11']
 
     def lambda2(self, tau, call=''):
         '''
         controls the width of the width of the distribution chi(tb, ) for values of tub < tb
         '''
-        if self.a22 > 0:
-            return self.a21 + self.a22 * self.cauchy(tau - self.a2t, self.a23)
+        if self.simparams['a22'] > 0:
+            return self.simparams['a21'] + self.simparams['a22'] * \
+                   self.cauchy(tau - self.simparams['a2t'], self.simparams['a23'])
         else:
-            return np.ones(tau.shape) * self.a21
+            return np.ones(tau.shape) * self.simparams['a21']
 
     def gamma(self, tau_b):
         """
@@ -254,7 +290,7 @@ class Fabian2001(object):
         lambda2 = self.l2[idx]
 
         int1 = np.sum(self.cauchy(self.tau_b[idx:], lambda1))
-        int2 = np.sum(self.cauchy(self.tau_b[:idx+1], lambda2))
+        int2 = np.sum(self.cauchy(self.tau_b[:idx + 1], lambda2))
 
         return beta * 1 / (int1 + int2)  # as described by Fabian2001
 
@@ -281,20 +317,20 @@ class Fabian2001(object):
 
     def FieldMatrix(self, tau_i, hlab, pressure_demag=False):
 
-        data = np.ones((self.tau_ub.size, self.tau_b.size))*10
+        data = np.ones((self.tau_ub.size, self.tau_b.size)) * 10
 
         # the index is where ti == tau_b and tau_ub
         if tau_i == 0:
             idx = 0
         else:
-            idx = np.argmin(np.abs(self.tau_b-tau_i))+1
+            idx = np.argmin(np.abs(self.tau_b - tau_i)) + 1
 
         # self.log().debug('Tau_i = %.2f, idx = %i'%(tau_i, idx))
         data[:idx, :idx] = hlab
         # self.log().debug('hlab rectangle shape: (%s, %s)'%data[:idx, :idx].shape)
         data[:idx, idx:] = 0
         # self.log().debug('demag rectangle shape: (%s, %s)'%(data[:idx, idx:].shape))
-        data[idx:, :] = self.hpal
+        data[idx:, :] = self.simparams['hpal']
         # self.log().debug('paleomag rectangle shape: (%s, %s)'%data[idx:, :].shape)
 
         if pressure_demag:
@@ -302,13 +338,6 @@ class Fabian2001(object):
             data[idx:, :] = data[idx:, :] * pdem
 
         return data
-
-    # def get_H_matrix(self, tau_i,hlab, pressure_demag=False):
-    #
-    #     data = [self.H(tau_i, tau_b=tau_b, tau_ub=tau_ub, hlab=hlab, pressure_demag=pressure_demag)
-    #             for tau_ub in self.tau_ub for tau_b in self.tau_b]
-    #
-    #     return np.array(data).reshape(self.tau_b.size, self.tau_ub.size)
 
     def H(self, tau_i, tau_b, tau_ub, hlab, pressure_demag=False):
         """
@@ -324,26 +353,15 @@ class Fabian2001(object):
         -------
         """
 
-        # def LabMag(t, ttail):
-        #
-        #     if Tub > (t + ttail) and Tb <= t:
-        #         ExtFieldVec * KappaFunc[Tb, Tub]
-        #     elif (Tub > t and Tb > t) or (t == 0):
-        #         return ExtFieldVec * KappaFunc[Tb, Tub]
-        #     elif Tub <= (t + ttail) and Tb <= t and t > 0:
-        #         return LabFieldVec * (KappaFunc[Tb, Tub])
-        #     else
-        #         return 0, 0, 0
-
         if tau_i >= tau_ub and tau_i >= tau_b and tau_i > 0:
             return hlab
 
         elif tau_ub > tau_i or tau_i == 0:
             if pressure_demag:
                 idx = np.where(self.tau_ub == tau_b)[0][0]
-                return self.zf_steps[idx] * self.hpal
+                return self.zf_steps[idx] * self.simparams['hpal']
             else:
-                return self.hpal
+                return self.simparams['hpal']
 
         else:
             return 0
@@ -355,29 +373,103 @@ class Fabian2001(object):
         
         Returns
         -------
-            pandas DataFrame with chi values (columns = blocking temperatures, indices = unblocking temperatures)
+            numpy ndarray with chi values (columns = blocking temperatures, indices = unblocking temperatures)
         """
+
+        # initialize array
         data = np.zeros((len(self.tau_ub), len(self.tau_b)))
+
+        # cycle over tb values
         for col, tb in enumerate(self.tau_b):
+            # calculate chi for given tb
             data[:, col] = self.get_chi(tb)
+
         return data
 
-    def moment(self, tau_i, hlab=1, pressure_demag=False):
+    def moment(self, tau_i, applied_field=1, pressure_demag=False):
         """
 
         Parameters
         ----------
         tau_i: float
-        hlab : float
+        applied_field : float
         pressure_demag: bool
             default_recipe: False
             if True a cauchy distributed demagnetization of unblocking temperatures is calculated
         """
-        h = self.FieldMatrix(tau_i=tau_i, hlab=hlab, pressure_demag=pressure_demag)
+        h = self.FieldMatrix(tau_i=tau_i, hlab=applied_field, pressure_demag=pressure_demag)
         return (h * self.chi).sum().sum()
 
-    def get_data(self, steps=None, pressure_demag=False):
+    def get_zerofield_data(self, steps=None, pressure_demag=False, norm=False):
+        """
+        function calls Fabian2001.get_data and filters for TH ('LT-T-Z') steps and NRM ('LT-NO').
+        Parameters
+        ----------
+        steps
+        pressure_demag
+        norm
 
+        Returns
+        -------
+
+        """
+        data = self.get_data(steps=steps, pressure_demag=pressure_demag, norm=norm)
+        data = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])]
+        return data.set_index('ti')
+
+    def get_infield_data(self, steps=None, pressure_demag=False, norm=False):
+        """
+        function calls Fabian2001.get_data and filters for PT ('LT-T-I') steps and NRM ('LT-NO').
+
+        Parameters
+        ----------
+        steps
+        pressure_demag
+        norm
+
+        Returns
+        -------
+
+        """
+        data = self.get_data(steps=steps, pressure_demag=pressure_demag, norm=norm)
+        data = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])]
+        return data.set_index('ti')
+
+    def get_ptrm_data(self, steps=None, pressure_demag=False, norm=False):
+        """
+        function calls Fabian2001.get_data and filters for PT ('LT-T-I') steps and NRM ('LT-NO').
+
+        Parameters
+        ----------
+        steps
+        pressure_demag
+        norm
+
+        Returns
+        -------
+
+        """
+        data = self.get_data(steps=steps, pressure_demag=pressure_demag, norm=norm)
+        th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('ti')
+        pt = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])].set_index('ti')
+
+        ptrm = pt.copy()
+        ptrm[['x', 'y', 'z', 'm']] = pt[['x', 'y', 'z', 'm']] - th[['x', 'y', 'z', 'm']]
+        return ptrm
+
+    def get_data(self, steps=None, pressure_demag=False, norm=False):
+        """
+
+        Parameters
+        ----------
+        steps
+        pressure_demag
+        norm
+
+        Returns
+        -------
+
+        """
         # initiate data pd.DataFrame with LT_code and K ti,tj
         data = pd.DataFrame(index=('LT_code', 'x', 'y', 'z', 'm', 'level', 'ti', 'tj'))
 
@@ -393,19 +485,19 @@ class Fabian2001(object):
 
                 typ = steps.columns[column]
 
-
                 if np.isnan(t):
                     continue
 
                 tau = self.tau(t)
                 # self.log().debug('Calculating temperature %i (tau_i = %.2f)'%(t, tau))
 
-                if typ == 'LT-NO': #todo moment in x,y,z
-                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
+                if typ == 'LT-NO':  # todo moment in x,y,z
+                    m = self.moment(tau_i=tau, applied_field=0, pressure_demag=pressure_demag)
                 elif typ == 'LT-T-Z':
-                    m = self.moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
+                    m = self.moment(tau_i=tau, applied_field=0, pressure_demag=pressure_demag)
                 elif typ == 'LT-T-I':
-                    m = self.moment(tau_i=tau, hlab=self.hlab, pressure_demag=pressure_demag)
+                    m = self.moment(tau_i=tau, applied_field=self.simparams['hlab'], pressure_demag=pressure_demag)
+
                 # elif typ == 'LT-PTRM-I': #todo add AC, TR, CK steps
                 #     NRM_Tj = self.get_moment(tau_i=self.tau(prev), hlab=0, pressure_demag=pressure_demag)
                 #     pTRM_Ti = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
@@ -428,8 +520,13 @@ class Fabian2001(object):
                 #     data[i+1] = ['LT-T-I', 0, 0, m, m, t, t + 273, prev + 273]
                 if typ == 'LT-T-Z':
                     prev = t
-
-        return data.T
+        data = data.T
+        if norm:
+            data['x'] /= self.nrm
+            data['y'] /= self.nrm
+            data['z'] /= self.nrm
+            data['m'] /= self.nrm
+        return data
 
     ################################################################
     # PLOTTING
@@ -472,7 +569,8 @@ class Fabian2001(object):
         if ax is None:
             ax = plt.gca()
 
-        ax.set_title(kwargs.pop('title', None))
+        if 'title' in kwargs.keys():
+            ax.set_title(kwargs.pop('title', ''))
         im = ax.imshow(self.chi.astype(float) / self.chi.max().max(), aspect='equal', origin=(0, 0),
                        extent=(0, 1, 0, 1), **kwargs)
 
@@ -486,7 +584,6 @@ class Fabian2001(object):
 
     def plot_arai(self, steps=None, hlab=1, pressure_demag=False, norm=False, ax=None, **kwargs):
 
-
         if self.steps is None and steps is None:
             print('cant plot Arai diagram,')
             return
@@ -499,10 +596,9 @@ class Fabian2001(object):
         th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('ti')
         pt = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])].set_index('ti')
         ck = data[data['LT_code'] == 'LT-PTRM-I'].set_index('ti')
-        ax.set_title(kwargs.pop('title', None))
 
-
-
+        if 'title' in kwargs.keys():
+            ax.set_title(kwargs.pop('title', ''))
 
         if norm:
             ax.plot((pt['m'] - th['m']) / th['m'].max(), th['m'] / th['m'].max(), '.--', **kwargs)
@@ -541,40 +637,47 @@ class Fabian2001(object):
 
         ax.set_title(kwargs.pop('title', None))
 
-        ls = kwargs.pop('ls','-')
-        marker = kwargs.pop('marker','.')
+        ls = kwargs.pop('ls', '-')
+        marker = kwargs.pop('marker', '.')
 
         if norm:
-            for d in (th, pt):
-                d['m'] /= th['m'].max()
+            norm = th['m'].max()
+        else:
+            norm = 1
 
+        color = kwargs.pop('color', None)
         # pTRM plot
-        ax.plot(th.index, (pt['m'] - th['m']),
+        ax.plot(th.index, (pt['m'] - th['m'])/norm,
                 ls=ls,
                 marker=marker,
-                color=kwargs.pop('color','g'),
+                color='C0' if color is None else color,
                 **kwargs)
         # SUM plot
-        ax.plot(pt.index, pt['m'],
+        ax.plot(pt.index, pt['m']/norm,
                 ls=ls,
                 marker=marker,
-                color=kwargs.pop('color', 'b'), **kwargs)
+                color='C1' if color is None else color, **kwargs)
         # TH plot
-        ax.plot(th.index, th['m'],
+        ax.plot(th.index, th['m']/norm,
                 ls=ls,
                 marker=marker,
-                color=kwargs.pop('color','r'),**kwargs)
+                color='C2' if color is None else color, **kwargs)
 
         ax.legend(['pTRM acquisition', 'Thermal demag.', 'sum'])
         ax.set_xlabel('T [C]')
         ax.set_ylabel('M [arb. units]')
 
+
 if __name__ == '__main__':
-    # RockPy.log.setLevel('INFO')
+    RockPy.log.setLevel('INFO')
     s = RockPy.Sample('test')
-    mnp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=False)
-    mp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=True)
-    mp.calc_all()
-    mnp.calc_all()
-    print(mp.results)
-    print(mnp.results)
+    mnp = s.add_simulation('paleointensity', preset='Fabian4a', a11=1, a12=0, a13=1, a1t=1)
+    # mp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=True)
+    #
+    # mp.simobj.plot_arai()
+    mnp.simobj.change_simparams(a11=0)
+    mnp.simobj.plot_arai()
+    plt.show()
+    mnp.simobj.change_simparams(a11=1, a12=1, a1t=1)
+    mnp.simobj.plot_arai()
+    plt.show()
