@@ -283,7 +283,7 @@ class Measurement(object):
 
     def __init__(self, sobj,
                  fpath=None, ftype=None, mdata=None,
-                 ftype_data=None,
+                 ftype_data=None, simobj = None,
                  series=None,
                  idx=None,
                  **options
@@ -338,6 +338,12 @@ class Measurement(object):
         self.ftype = ftype
         self.fpath = fpath
         self.ftype_data = ftype_data
+
+        """ simulation and model """
+        # initialize simulation/model objects
+
+        self.simobj = simobj # for the case that the measurement is created from a simulation
+        self.model = None # for modeling of the data
 
         ''' initial state '''
         self.is_initial_state = False
