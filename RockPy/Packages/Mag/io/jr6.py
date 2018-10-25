@@ -45,7 +45,6 @@ class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
             return [0 if i == 'NRM' else round(float(i.replace("A", ''))) for i in self.data['step']]
 
 
-
     def read_file(self):
         ''' 
         Method that does the actual reading of the whole file. All specimens are in the file
@@ -94,6 +93,7 @@ class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
 
         if self.dialect == 'af':
             out = 'LT-AF-Z'
+
         return out
 
 

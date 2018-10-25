@@ -220,6 +220,11 @@ class Sample(object):
         # add parameter from fpath
         if fpath is not None:
             minfo = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
+
+            # if no parameter information in fpath
+            if minfo is None:
+                return
+
             for sinfo in minfo.gen_sample_dict:
                 if sinfo['sname'] == self.name:
                     for info in ['mass', 'massunit', 'diameter', 'height', 'lengthunit']:
@@ -682,7 +687,7 @@ class Sample(object):
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    s = S.add_sample('1a')
-    m = s.add_measurement(fpath='/Users/mike/Dropbox/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001',
-                          ftype='vsm',
-                          mtype='hys')
+    s = S.add_sample('62')
+    m = s.add_measurement(fpath='/Users/mike/Dropbox/github/2016-Pressure_cleaning/data/WP53/P0_pint.jr6',
+                          ftype='jr6',
+                          mtype='paleointensity',dialect='tdt')

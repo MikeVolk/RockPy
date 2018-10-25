@@ -232,8 +232,6 @@ class Paleointensity(measurement.Measurement):
         if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
         zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
 
-        # print(if_steps)
-        # print(zf_steps)
         try:
             if_steps.loc[:, ('x', 'y', 'z')] -= zf_steps.loc[:, ('x', 'y', 'z')]
         except ValueError:
