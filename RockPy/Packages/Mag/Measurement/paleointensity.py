@@ -3,6 +3,7 @@ import RockPy
 from RockPy.core.result import Result
 from RockPy.core.utils import lin_regress
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from scipy import stats
@@ -137,6 +138,40 @@ class Paleointensity(measurement.Measurement):
 
         return data
 
+    def extract_measurement_procedure(self):
+        """
+        Method extracts the measurement information from the data.
+        Can be used to create a model for the experiment using create model.
+
+        Returns
+        -------
+            pandas.dataframe
+                measurement procedure compatible with output from simulation.utils.ThellierMaker
+        """
+
+        procedure = pd.DataFrame(columns=['LT-NO', 'LT-T-Z', 'LT-PTRM-I', 'LT-T-I', 'LT-PTRM-Z', 'LT-PTRM-MD'])
+        aux = m.data[['level', 'LT_code']]
+        n = 0
+
+        for i in m.data.index:
+            level = aux.loc[i]['level']
+            lt_code = aux.loc[i]['LT_code']
+
+            procedure.loc[n, lt_code] = level
+
+            try:
+                next_step = aux.loc[i + 1]
+            except:
+                next_step = None
+
+            if next_step['LT_code'] == 'LT-T-Z':
+                n += 1
+
+        for i in procedure.index:
+            if i > 0 and not procedure['LT-T-Z'].loc[i] == procedure['LT-T-I'].loc[i]:
+                procedure = procedure.drop(i, axis=0)
+
+        return procedure
     @property
     def zf_steps(self):
         """
@@ -266,8 +301,6 @@ class Paleointensity(measurement.Measurement):
     """ RESULTS CALCULATED USING CALCULATE_SLOPE  METHODS """
 
     class slope(Result):
-        # __calculates__ = ['sigma', 'yint', 'xint', 'n']
-
         def vd(self, vmin, vmax,
                **unused_params):
             """
@@ -407,11 +440,6 @@ class Paleointensity(measurement.Measurement):
             self.set_result(yint, 'yint')
             self.set_result(xint, 'xint')
             self.set_result(len(acqu_data), 'n')
-            # self.mobj.sobj.results.loc[self.mobj.mid, 'slope'] = slope
-            # self.mobj.sobj.results.loc[self.mobj.mid, 'sigma'] = sigma
-            # self.mobj.sobj.results.loc[self.mobj.mid, 'yint'] = yint
-            # self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
-            # self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
     class sigma(slope): pass
 
