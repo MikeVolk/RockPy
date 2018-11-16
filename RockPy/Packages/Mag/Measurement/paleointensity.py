@@ -41,12 +41,32 @@ class Paleointensity(measurement.Measurement):
 
     @classmethod
     def from_simulation(cls, sobj, idx=0, series=None, **simparams):
+        """
+        Creates a plaeointensity dataset from a simulation
+
+        Parameters
+        ----------
+        sobj
+        idx
+        series
+        simparams
+
+        Returns
+        -------
+
+        """
+
+        simobj = None
 
         pressure_demag = simparams.pop('pressure_demag', False)
         method = simparams.pop('method', 'fabian')
 
         if method == 'fabian':
             simobj = simulate.Fabian2001(**simparams)
+
+        if simobj is None:
+            cls.log().error('Cant create simulation object')
+            return
 
         return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag),
                    series = series,
@@ -150,10 +170,10 @@ class Paleointensity(measurement.Measurement):
         """
 
         procedure = pd.DataFrame(columns=['LT-NO', 'LT-T-Z', 'LT-PTRM-I', 'LT-T-I', 'LT-PTRM-Z', 'LT-PTRM-MD'])
-        aux = m.data[['level', 'LT_code']]
+        aux = self.data[['level', 'LT_code']]
         n = 0
 
-        for i in m.data.index:
+        for i in self.data.index:
             level = aux.loc[i]['level']
             lt_code = aux.loc[i]['LT_code']
 
@@ -164,7 +184,7 @@ class Paleointensity(measurement.Measurement):
             except:
                 next_step = None
 
-            if next_step['LT_code'] == 'LT-T-Z':
+            if next_step is None or next_step['LT_code'] == 'LT-T-Z':
                 n += 1
 
         for i in procedure.index:
@@ -172,6 +192,7 @@ class Paleointensity(measurement.Measurement):
                 procedure = procedure.drop(i, axis=0)
 
         return procedure
+
     @property
     def zf_steps(self):
         """
@@ -221,7 +242,6 @@ class Paleointensity(measurement.Measurement):
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-I'].set_index('ti')
         d = d.groupby(d.index).first()
-        plt.Line2D
         return d
 
     @property
@@ -291,7 +311,9 @@ class Paleointensity(measurement.Measurement):
         """
 
         if ModelType == 'Fabian2001':
-            self.model = simulate.Fabian2001(preset='Fabian5a', **parameters)
+            self.model = simulate.Fabian2001(preset='Fabian5a',
+                                             temp_steps=self.extract_measurement_procedure(),
+                                             **parameters)
 
 
     def fit_demag_data(self):

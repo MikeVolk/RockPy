@@ -7,10 +7,8 @@ import RockPy
 import os
 import matplotlib.pylab as plt
 import RockPy.Packages.Mag.Measurement.Simulation.utils as SimUtils
+from mpl_toolkits.mplot3d import Axes3D #needed for surface plots
 
-# from pylatex import Document, Section, Subsection, Tabular, Math, TikZ, Axis, \
-#     Plot, Figure, Matrix, Package
-# from pylatex.utils import italic
 from copy import deepcopy
 
 import logging
@@ -122,43 +120,41 @@ class Fabian2001(object):
             
             # measurement simulation parameters e.g. how many points
             temp_steps: int, arraylike, pd.DataFrame
-                int will create an evenly spaced number of measurement temperatures up to tmax
-                a list of temperatuires will create these temperatures
-                - if a DataFrame is passed (mostly for fitting) no new DF will be generated
+                - int will create an evenly spaced number of measurement temperatures up to tmax
+                - a list of temperatuires will create these temperatures
+                - if a DataFrame is passed (mostly for fitting) no new DF will be generated,
+                  needs to be compatible to utils.ThellierStepMaker
+
             tmax: float
                 maximum temperature of the experiment
+                - not used if temp_steps ==  ThellierStepMaker compatible DataFrame
             ck_every: int
                 after how many thermal demag steps a pTRM check is done
+                - not used if temp_steps ==  ThellierStepMaker compatible DataFrame
             tr_every: int
                 after how many thermal demag steps a tail check is done
+                - not used if temp_steps ==  ThellierStepMaker compatible DataFrame
             ac_every: int                
                 after how many thermal demag steps a additivity check is done
+                - not used if temp_steps ==  ThellierStepMaker compatible DataFrame
 
         """
 
         passed_params = {'a11': a11, 'a12': a12, 'a13': a13, 'a1t': a1t,
-                          'a21': a21, 'a22': a22, 'a23': a23, 'a2t': a2t,
-                          'b1': b1, 'b2': b2, 'b3': b3, 'bt': bt,
-                          'd1': d1, 'd2': d2, 'd3': d3, 'dt': dt,
-                          'tc': tc, 'grid': grid,
-                          'hpal': hpal, 'hlab': hlab,
-                          'ms': ms,
-                          'temp_steps': temp_steps,
-                          }
+                         'a21': a21, 'a22': a22, 'a23': a23, 'a2t': a2t,
+                         'b1': b1, 'b2': b2, 'b3': b3, 'bt': bt,
+                         'd1': d1, 'd2': d2, 'd3': d3, 'dt': dt,
+                         'tc': tc, 'grid': grid,
+                         'hpal': hpal, 'hlab': hlab,
+                         'ms': ms,
+                         'temp_steps': temp_steps}
 
         if not isinstance(temp_steps, pd.DataFrame):
             self.steps = self.get_steps(temp_steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every, ac_every=ac_every)
         else:
             self.steps = temp_steps
 
-        if preset is None:
-            preset = 'Fabian4a'
-
-        if preset is not None and preset not in self.presets:
-            print('preset << %s >> not implemented, chose from:' % preset)
-            print(', '.join([i for i in self.presets]))
-            print('using: Fabian Fig. 4a')
-            preset = 'Fabian4a'
+        preset = self.set_preset(preset)
 
         self.simparams = deepcopy(passed_params)
 
@@ -174,12 +170,19 @@ class Fabian2001(object):
 
         self.initialize_distributions()
 
-
+    def set_preset(self, preset):
+        if preset is None:
+            preset = 'Fabian4a'
+        if preset is not None and preset not in self.presets:
+            print('preset << %s >> not implemented, chose from:' % preset)
+            print(', '.join([i for i in self.presets]))
+            print('using: Fabian Fig. 4a')
+            preset = 'Fabian4a'
+        return preset
 
     @property
     def nrm(self):
         return self.moment(1, self.simparams['hpal'], pressure_demag=False)
-
 
     def initialize_distributions(self):
         """
@@ -344,6 +347,7 @@ class Fabian2001(object):
         Calculates the potential field for a given tau_i and tau_b
         Parameters
         ----------
+        pressure_demag
         tau_i
         tau_b
         tau_ub
@@ -528,6 +532,7 @@ class Fabian2001(object):
             data['m'] /= self.nrm
         return data
 
+
     ################################################################
     # PLOTTING
 
@@ -544,11 +549,11 @@ class Fabian2001(object):
 
         if ax is None:
             fig = plt.figure(figsize=plt.figaspect(0.45))
-            ax = fig.add_subplot(111, projection='3d')
+            ax = fig.gca(projection='3d')
 
-        x, y = plt.meshgrid(self.chi.columns, self.chi.index)
+        x, y = plt.meshgrid(self.tau_ub, self.tau_b)
         ax.plot_surface(x, y, self.chi, color='w', alpha=1, antialiased=True, linewidth=0)
-        ax.plot_wireframe(x, y, self.chi.values, color='k', rcount=20, ccount=20,
+        ax.plot_wireframe(x, y, self.chi, color='k', rcount=20, ccount=20,
                           linewidth=0.2, antialiased=False)
 
         ax.set_xticks([])
@@ -668,16 +673,13 @@ class Fabian2001(object):
         ax.set_ylabel('M [arb. units]')
 
 
+from scipy.stats import beta
+class Paterson2015(object):
+
+    def __init__(self):
+
+
 if __name__ == '__main__':
-    RockPy.log.setLevel('INFO')
-    s = RockPy.Sample('test')
-    mnp = s.add_simulation('paleointensity', preset='Fabian4a', a11=1, a12=0, a13=1, a1t=1)
-    # mp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=True)
-    #
-    # mp.simobj.plot_arai()
-    mnp.simobj.change_simparams(a11=0)
-    mnp.simobj.plot_arai()
-    plt.show()
-    mnp.simobj.change_simparams(a11=1, a12=1, a1t=1)
-    mnp.simobj.plot_arai()
-    plt.show()
+    RockPy.log.setLevel('DEBUG')
+
+    simobj = Paterson2015()
