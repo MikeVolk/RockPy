@@ -17,7 +17,7 @@ from RockPy.core.sample import Sample
 from RockPy.core.utils import to_tuple
 
 ''' PLOTTING '''
-from RockPy.plotting_tools import colorpalettes, marker, ls
+from RockPy.tools.plotting import colorpalettes, ls, marker
 
 colors = colorpalettes['cat10']
 
