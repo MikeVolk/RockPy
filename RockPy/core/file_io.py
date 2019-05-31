@@ -575,10 +575,24 @@ class ImportHelper(object):
                                                       'height', 'diameter', 'lengthunit',
                                                       'sgroups')}
 
+    def return_sample_infos(self):
+        """
+        Returns a dictionary with the sample infos of the ImportHelper with the sname as keys.
+
+        Returns
+        -------
+        dict
+        """
+        out = {}
+        for i in self.gen_sample_dict:
+            out[i['sname']] = i
+
+        return out
 
 def connect_to_IRMdb():
     pass
 
 if __name__ == '__main__':
 
-    connect_to_IRMdb()
+    ih = ImportHelper.from_file('/Users/mike/Desktop/coercivities/MAN_0525_DCD_VSM#228.1mg#(at,20.0,C).001')
+    print(ih.return_sample_infos())
