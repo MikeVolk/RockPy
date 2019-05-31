@@ -1,6 +1,10 @@
 import logging
+import os
+from shutil import copy2
+
 import pandas as pd
 import RockPy.core.utils
+from RockPy.core.file_io import ImportHelper
 
 
 class Ftype(object):
@@ -20,29 +24,28 @@ class Ftype(object):
         # create and return a logger with the pattern RockPy.MTYPE
         return logging.getLogger('RockPy.%s' % cls.subclass_name().lower())
 
-    def split_tab(self, line):
+    @staticmethod
+    def split_tab(line):
         return line.split('\t')
 
     @classmethod
     def subclass_name(cls):
         return cls.__name__
 
-    def check_comments(self):
+    def get_comment_line_indices(self):
         """
-        Checks for commented lines
-
-        Parameters
-        ----------
-        dfile
+        Checks for commented lines in the file and returns the indices of those lines. Comments are '#'
 
         Returns
         -------
-
+            list
+                list of integer indices
         """
         with open(self.dfile) as f:
-            idx = [i for i,d in enumerate(f.readlines()) if d.startswith('#')]
+            idx = [i for i, d in enumerate(f.readlines()) if d.startswith('#')]
         if idx:
             self.log().info('FILE contains {} comments. Lines {} were not read'.format(len(idx), idx))
+        return idx
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
         """
@@ -57,17 +60,39 @@ class Ftype(object):
         self.dfile = dfile
         self.dialect = dialect
 
+        self.import_helper = ImportHelper.from_file(self.dfile)
+        self.file_infos = self.import_helper.return_sample_infos()
+
         if dfile not in self.__class__.imported_files or reload:
             self.log().info('IMPORTING << %s , %s >> file: << %s >>' % (self.snames,
                                                                         type(self).__name__, dfile))
             self.data = self.read_file()
             self.__class__.imported_files[dfile] = self.data.copy()
         else:
-            self.log().info('LOADING previously imported file << %s , %s >> file: << %s >>\n\t>>> USE reload option if you want to read files from HD' % (self.snames,
-                                                                        type(self).__name__, dfile))
+            self.log().info(
+                "LOADING previously imported file << {} , {} >> file: << {} >>\n\t>>> "
+                "USE reload option if you want to read files from HD".format(self.snames,
+                                                                             type(self).__name__, dfile))
 
             self.data = self.__class__.imported_files[dfile]
 
     def read_file(self):
-        ''' Method for actual import of the file '''
+        """
+        Method for actual import of the file. Needs to be written for each individual filetype.
+        """
         pass
+
+    def rename_file_using_RockPy_convention(self, backup=True):
+        """
+        Renames the file using the NEW RockPy naming convention.
+        By default it creates a copy of the original file, that is commented by using '#' in from of the name.
+        """
+
+        old_filename = os.path.basename(self.dfile)
+        new_filename = list(self.import_helper.new_filenames)[0]
+
+        if backup:
+            self.log().info('Creating a copy of file << %s >>' % old_filename)
+            copy2(self.dfile, self.dfile.replace(old_filename, '#' + old_filename))
+        self.log().info('Renaming file << %s >> to << %s >>' % (old_filename, new_filename))
+        os.rename(self.dfile, self.dfile.replace(old_filename, new_filename))
