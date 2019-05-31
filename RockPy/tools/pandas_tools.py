@@ -116,7 +116,7 @@ def cool(df, tcol='index'):
     return df
 
 
-def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm = False, **kwargs):
+def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm=False, **kwargs):
     """
     Calculates the derivative of the pandas dataframe. The xcolumn and ycolumn have to be specified.
     Rolling adds a rolling mean BEFORE differentiation is done. The kwargs can be used to change the rolling.
@@ -167,7 +167,6 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_orde
     if rolling:
         kwargs.setdefault('center', True)
 
-
         if isinstance(rolling, int):
             kwargs.setdefault('window', rolling)
 
@@ -185,7 +184,7 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_orde
     if norm:
         dy /= max(abs(dy))
 
-    col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1','d').replace(')1', ')')
+    col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1', 'd').replace(')1', ')')
 
     out = pd.DataFrame(data=np.array([x, dy]).T, columns=[xcol, col_name])
     out = out.set_index(xcol)
@@ -194,3 +193,67 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_orde
 
     def normalize(df):
         pass
+
+
+from scipy import stats
+
+
+def detect_outlier(pdd, column, threshold=3, order=4):
+    """
+    Detects Outliers by first fitting a polynomial p(x) of order <order. to the data. Then calculates the root mean
+    square error from the residuals. The data is then compared to the fit ± the threshold * RMSe.
+    All points that are outside this boundary, are considered an outlier.
+
+    Parameters
+    ----------
+    pdd: pandas.Dataframe
+    column: str
+        column to detect outliers in
+    threshold: int
+        default: 3
+        multiples of the RMSerror
+    order: int
+        default: 4
+        order of the polynomial
+
+    Returns
+    -------
+    list
+        list of indices
+    """
+    x, y = (pdd.index, pdd[column])
+    # fit data with polynomial
+    z, res, _, _, _ = np.polyfit(x, y, order, full=True)
+
+    rmse = np.sqrt(sum(res) / len(x)) # root mean squared error
+    p = np.poly1d(z) # polynomial p(x)
+
+    outliers = [i for i, v in enumerate(pdd[column]) if v < p(x[i]) - threshold * rmse] + \
+               [i for i, v in enumerate(pdd[column]) if v > p(x[i]) + threshold * rmse]
+
+    return outliers
+
+def remove_outliers(pdd, column, threshold=3, **kwargs):
+    """
+    Removes outliers from pandas.Dataframe using detect_outliers.
+
+    Parameters
+    ----------
+    pdd: pandas.Dataframe
+    column: str
+        column to detect outliers in
+    threshold: int
+        default: 3
+        multiples of the RMSerror
+
+    Returns
+    -------
+    Dataframe without outliers
+    """
+
+    order = kwargs.pop('order', 4)
+    outliers = detect_outlier(pdd, column, threshold, order)
+
+    pdd = pdd.drop(pdd.index[outliers])
+
+    return pdd
