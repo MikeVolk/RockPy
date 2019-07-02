@@ -1,5 +1,7 @@
 from unittest import TestCase
 import RockPy.core.utils as RPutils
+from RockPy.core.utils import tuple2str, extract_tuple
+from RockPy.core.utils import return_list_only_on_multiple
 
 
 class Test_to_tuple(TestCase):
@@ -23,5 +25,23 @@ class TestTuple2list_of_tuples(TestCase):
 
 class TestExtract_tuple(TestCase):
     def test_extract_tuple(self):
-        self.assertEqual(('a', 'b'), '(a,b)')
-        self.assertEqual(('a', 'b'), '[a,b]')
+        self.assertEqual(('a',), extract_tuple('a'))
+        self.assertEqual(('a', 'b'), extract_tuple('(a,b)'))
+        self.assertEqual(('a', 'b'), extract_tuple('[a,b]'))
+
+
+class TestTuple2str(TestCase):
+    def test_tuple2str(self):
+
+        self.assertEqual(tuple2str((2)), '2')
+        self.assertEqual(tuple2str((1,2)), '(1,2)')
+        self.assertEqual(tuple2str(('t', 2, 't')), '(t,2,t)')
+
+
+class TestReturn_list_only_on_multiple(TestCase):
+    def test_return_list_only_on_multiple(self):
+        self.assertEqual(return_list_only_on_multiple([[1, 2]]), [1, 2])
+        self.assertEqual(return_list_only_on_multiple([1, 2]), [1, 2])
+        self.assertEqual(return_list_only_on_multiple([[1]]), 1)
+        self.assertEqual(return_list_only_on_multiple([1]), 1)
+        self.assertEqual(return_list_only_on_multiple(1), 1)

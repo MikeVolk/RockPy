@@ -8,9 +8,6 @@ class TestMinfo(TestCase):
     def test_extract_series(self):
         self.fail()
 
-    def test_tuple2str(self):
-        self.fail()
-
     def test_measurement_block(self):
         self.fail()
 
