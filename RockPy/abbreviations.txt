@@ -69,6 +69,8 @@ fc: fc, field cooling
 zfc-ltsirm: zfc-ltsirm
 fc-ltsirm: fc-ltsirm
 rtsirm: rtsirm
+acsus: acsus, AC sus, X(AC)
+gtest: goet, goethite test, gtest
 
 # ftypes
 #cryomag: cryo

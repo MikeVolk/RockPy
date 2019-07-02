@@ -1,7 +1,9 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
+import RockPy
 
 def DIM2XYZ(df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
     """
@@ -182,7 +184,7 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_orde
         dy = np.gradient(dy, x, edge_order=edge_order)
 
     if norm:
-        dy /= max(abs(dy))
+        dy /= np.nanmax(abs(dy))
 
     col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1', 'd').replace(')1', ')')
 
@@ -190,12 +192,6 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_orde
     out = out.set_index(xcol)
 
     return out
-
-    def normalize(df):
-        pass
-
-
-from scipy import stats
 
 
 def detect_outlier(pdd, column, threshold=3, order=4):
@@ -225,21 +221,22 @@ def detect_outlier(pdd, column, threshold=3, order=4):
     # fit data with polynomial
     z, res, _, _, _ = np.polyfit(x, y, order, full=True)
 
-    rmse = np.sqrt(sum(res) / len(x)) # root mean squared error
-    p = np.poly1d(z) # polynomial p(x)
+    rmse = np.sqrt(sum(res) / len(x))  # root mean squared error
+    p = np.poly1d(z)  # polynomial p(x)
 
     outliers = [i for i, v in enumerate(pdd[column]) if v < p(x[i]) - threshold * rmse] + \
                [i for i, v in enumerate(pdd[column]) if v > p(x[i]) + threshold * rmse]
 
     return outliers
 
-def remove_outliers(pdd, column, threshold=3, **kwargs):
+
+def remove_outliers(pdd, column, threshold=3, order = 4, **kwargs):
     """
-    Removes outliers from pandas.Dataframe using detect_outliers.
+    Removes outliers from pandas.DataFrame using detect_outliers.
 
     Parameters
     ----------
-    pdd: pandas.Dataframe
+    pdd: pandas.DataFrame
     column: str
         column to detect outliers in
     threshold: int
@@ -248,12 +245,85 @@ def remove_outliers(pdd, column, threshold=3, **kwargs):
 
     Returns
     -------
-    Dataframe without outliers
+    DataFrame without outliers
     """
-
-    order = kwargs.pop('order', 4)
     outliers = detect_outlier(pdd, column, threshold, order)
+    RockPy.log.info("removing %i outliers that are exceed the %.2f standard deviation threshold"%(len(outliers), threshold))
 
     pdd = pdd.drop(pdd.index[outliers])
 
     return pdd
+
+
+def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False, **parameter):
+    """
+        Parameters
+    ----------
+
+       method: str
+          method with which the data is fitted between grid points.
+
+          first:
+              data is fitted using a first order polinomial :math:`M(B) = a_1 + a2*B`
+          second:
+              data is fitted using a second order polinomial :math:`M(B) = a_1 + a2*T +a3*B^2`
+
+       parameter: dict
+          Keyword arguments passed through
+
+    See Also
+    --------
+       get_grid
+    """
+
+    d = pdd
+    d = d.sort_index()
+
+    dmax = max(d.index)
+    dmin = min(d.index)
+
+    grid = np.arange(dmin, dmax + grid_spacing, grid_spacing)
+
+    if check:
+        uncorrected_data = d.copy()
+
+    # initialize DataFrame for gridded data
+    interp_data = pd.DataFrame(columns=pdd.columns)
+
+    if ommit_n_points > 0:
+        d = d.iloc[ommit_n_points:-ommit_n_points]
+
+    # cycle through gridpoints
+    for i, T in enumerate(grid):
+        for col in pdd.columns:
+            # set T to T column
+            interp_data.loc[i, pdd.index.name] = T
+
+            # indices of points within the grid points
+            if i == 0:
+                idx = [j for j, v in enumerate(d.index) if v <= grid[i]]
+            elif i == len(grid) - 1:
+                idx = [j for j, v in enumerate(d.index) if grid[i] <= v]
+            else:
+                idx = [j for j, v in enumerate(d.index) if grid[i - 1] <= v <= grid[i + 1]]
+
+            if len(idx) > 1:  # if no points between gridpoints -> no interpolation
+                data = d.iloc[idx]
+
+                # make fit object
+                fit = np.polyfit(data.index, data[col].values.astype(float), order)
+
+                # calculate Moment at grid point
+                dfit = np.poly1d(fit)(T)
+
+                interp_data.loc[i, col] = dfit
+
+            # set dtype to float -> calculations dont work -> pandas sets object
+            interp_data[col] = interp_data[col].astype(np.float)
+    interp_data = interp_data.set_index(pdd.index.name)
+
+    if check:
+        plt.plot(uncorrected_data, marker='.', mfc='none', color='k')
+        plt.plot(interp_data, '-', color='r')
+
+    return interp_data
