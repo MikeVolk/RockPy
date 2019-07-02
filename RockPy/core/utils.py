@@ -2,15 +2,18 @@ import os
 import decorator
 
 import RockPy
+import numpy
 import numpy as np
 import pandas as pd
 
 from contextlib import contextmanager
 
+from Cython.Includes import numpy
+
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
 
-def convert(value, unit, SIunit):
+def convert(value, unit, si_unit):
     """
     converts a value from a ``unit`` to a SIunit``
     
@@ -18,7 +21,7 @@ def convert(value, unit, SIunit):
     ----------
     value
     unit
-    SIunit
+    si_unit
 
     Returns
     -------
@@ -28,8 +31,10 @@ def convert(value, unit, SIunit):
     -----
         the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
     """
-    RockPy.log.debug('converting %.3e [%s] -> %.3e [%s]'%(value, unit, value*conversion_table[unit][SIunit], SIunit))
-    return value*conversion_table[unit][SIunit]
+    RockPy.log.debug(
+        'converting %.3e [%s] -> %.3e [%s]' % (value, unit, value * conversion_table[unit][si_unit], si_unit))
+    return value * conversion_table[unit][si_unit]
+
 
 @contextmanager
 def ignored(*exceptions):
@@ -47,6 +52,7 @@ def ignored(*exceptions):
     except exceptions:
         pass
 
+
 def mtype_implemented(mtype):
     """
     Function to check if mtype is implemented
@@ -61,6 +67,7 @@ def mtype_implemented(mtype):
         bool
     """
     return True if mtype in RockPy.implemented_measurements else False
+
 
 def tuple2list_of_tuples(item) -> list:
     """
@@ -91,6 +98,7 @@ def tuple2list_of_tuples(item) -> list:
 
     return item
 
+
 def to_tuple(oneormoreitems):
     """
     conversion_table argument to tuple of elements
@@ -106,6 +114,7 @@ def to_tuple(oneormoreitems):
     return tuple(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else (
         oneormoreitems,)
 
+
 def to_list(oneormoreitems):
     """
     conversion_table argument to tuple of elements
@@ -120,6 +129,7 @@ def to_list(oneormoreitems):
     """
     return list(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else [
         oneormoreitems]
+
 
 def extract_tuple(s: str) -> tuple:
     """
@@ -139,7 +149,9 @@ def extract_tuple(s: str) -> tuple:
     """
     s = s.translate(str.maketrans("", "", "(){}[]")).split(',')
     return tuple(s)
-
+#
+# if __name__ == '__main__':
+#     print(extract_tuple('(a,b)'))
 
 def tuple2str(tup):
     """
@@ -157,7 +169,7 @@ def tuple2str(tup):
 
 
 def split_num_alph(item):
-    '''
+    """
     splits a string with numeric and str values into a float and a string
 
     Parameters
@@ -168,13 +180,14 @@ def split_num_alph(item):
     Returns
     -------
         float, str
-    '''
+    """
     # replace german decimal comma
     item.replace(',', '.')
 
+    idx = None
     # cycle through all items in the string and stop at the first non numeric
     for i, v in enumerate(item):
-        if not v in ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.'):
+        if v not in ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.'):
             break
         else:
             idx = i
@@ -186,13 +199,19 @@ def split_num_alph(item):
 
 
 def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
-        """
+    """
         calculates a least squares linear regression for given x/y data
 
         Parameters
         ----------
-           column_name_x:
-           column_name_y:
+           pdd: pandas.DataFrame
+            input data
+           column_name_x: str
+            xcolumn name
+           column_name_y: str
+            ycolumn name
+           ypdd: pandas.DataFrame
+            input y-data. If not provided, it is asumed to be contained in pdd
         Returns
         -------
             slope
@@ -200,48 +219,49 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
             y_intercept
             x_intercept
         """
-        x = pdd[column_name_x].values
+    x = pdd[column_name_x].values
 
-        if ypdd is not None:
-            y = ypdd[column_name_y].values
-        else:
-            y = pdd[column_name_y].values
+    if ypdd is not None:
+        y = ypdd[column_name_y].values
+    else:
+        y = pdd[column_name_y].values
 
-        if len(x) < 2 or len(y) < 2:
-            return None
+    if len(x) < 2 or len(y) < 2:
+        return None
 
-        """ calculate averages """
-        x_mean = np.mean(x)
-        y_mean = np.mean(y)
+    """ calculate averages """
+    x_mean = np.mean(x)
+    y_mean = np.mean(y)
 
-        """ calculate differences """
-        x_diff = x - x_mean
-        y_diff = y - y_mean
+    """ calculate differences """
+    x_diff = x - x_mean
+    y_diff = y - y_mean
 
-        """ square differences """
-        x_diff_sq = x_diff ** 2
-        y_diff_sq = y_diff ** 2
+    """ square differences """
+    x_diff_sq = x_diff ** 2
+    y_diff_sq = y_diff ** 2
 
-        """ sum squared differences """
-        x_sum_diff_sq = np.sum(x_diff_sq)
-        y_sum_diff_sq = np.sum(y_diff_sq)
+    """ sum squared differences """
+    x_sum_diff_sq = np.sum(x_diff_sq)
+    y_sum_diff_sq = np.sum(y_diff_sq)
 
-        mixed_sum = np.sum(x_diff * y_diff)
+    mixed_sum = np.sum(x_diff * y_diff)
 
-        """ calculate slopes """
-        n = len(x)
+    """ calculate slopes """
+    n = len(x)
 
-        slope = np.sqrt(y_sum_diff_sq / x_sum_diff_sq) * np.sign(mixed_sum)
+    slope = np.sqrt(y_sum_diff_sq / x_sum_diff_sq) * np.sign(mixed_sum)
 
-        if n <= 2:  # stdev not valid for two points
-            sigma = np.nan
-        else:
-            sigma = np.sqrt((2 * y_sum_diff_sq - 2 * slope * mixed_sum) / ((n - 2) * x_sum_diff_sq))
+    if n <= 2:  # stdev not valid for two points
+        sigma = np.nan
+    else:
+        sigma = np.sqrt((2 * y_sum_diff_sq - 2 * slope * mixed_sum) / ((n - 2) * x_sum_diff_sq))
 
-        y_intercept = y_mean - (slope * x_mean)
-        x_intercept = - y_intercept / slope
+    y_intercept = y_mean - (slope * x_mean)
+    x_intercept = - y_intercept / slope
 
-        return slope, sigma, y_intercept, x_intercept
+    return slope, sigma, y_intercept, x_intercept
+
 
 def set_get_attr(obj, attr, value=None):
     """
@@ -251,6 +271,8 @@ def set_get_attr(obj, attr, value=None):
     ----------
         obj: object
         attr: str
+        value: (str, int, float)
+            default: None
 
     Returns
     -------
@@ -275,3 +297,39 @@ def correction(func, *args, **kwargs):
 
     self.correction.append(func.__name__)
     func(*args, **kwargs)
+
+
+def series_to_dict(series_tuple):
+    """
+    Converts a series tuple (stype, sval, sunit) to dictionary {stype: (sval, sunit)}
+
+    Parameters
+    ----------
+    series_tuple: tuple len(3)
+
+    Returns
+    -------
+
+    dict
+
+    """
+    return {series_tuple[0]:(series_tuple[1], series_tuple[2])}
+
+
+def list_or_item(item):
+    """
+    Takes a list and returns a list if there is more than one element else it returns only that element.
+
+    Parameters
+    ----------
+    item: List
+
+    Returns
+    -------
+        list or first element of list
+    """
+
+    if np.shape(item)[0] == 1:
+        return item[0]
+    else:
+        return item
