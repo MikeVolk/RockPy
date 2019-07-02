@@ -60,8 +60,13 @@ class Ftype(object):
         self.dfile = dfile
         self.dialect = dialect
 
-        self.import_helper = ImportHelper.from_file(self.dfile)
-        self.file_infos = self.import_helper.return_sample_infos()
+        try:
+            self.import_helper = ImportHelper.from_file(self.dfile)
+            self.file_infos = self.import_helper.return_file_infos()
+        except:
+            self.log().warning('Cant read file infos automatically. RockPy file naming scheme required')
+            self.import_helper = None
+            self.file_infos = None
 
         if dfile not in self.__class__.imported_files or reload:
             self.log().info('IMPORTING << %s , %s >> file: << %s >>' % (self.snames,
