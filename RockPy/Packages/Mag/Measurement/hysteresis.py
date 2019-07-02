@@ -56,6 +56,10 @@ class Hysteresis(Measurement):
         data = data.dropna(how='all')
         return data
 
+    @staticmethod
+    def format_agm(ftype_data, sobj_name = None):
+        return Hysteresis.format_vsm(ftype_data, sobj_name)
+
     ####################################################################################################################
     ''' BRANCHES '''
 

@@ -333,3 +333,22 @@ def list_or_item(item):
         return item[0]
     else:
         return item
+
+
+def extract_inheritors_from_cls(cls):
+        """
+        Method that gets all children and childrens-children ... from a class
+
+        Returns
+        -------
+           list
+        """
+        subclasses = set()
+        work = [cls]
+        while work:
+            parent = work.pop()
+            for child in parent.__subclasses__():
+                if child not in subclasses:
+                    subclasses.add(child)
+                    work.append(child)
+        return subclasses

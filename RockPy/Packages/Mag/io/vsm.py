@@ -87,6 +87,15 @@ class Vsm(Ftype):
         header = header.iloc[idx]
         header = header.replace('No', False)
         header = header.replace('Yes', True)
+
+        # make numerical entries to float
+        for i, v in enumerate(header.index):
+            try:
+                header.iloc[i] = float(header.iloc[i])
+            except:
+                pass
+
+        # add file location to header
         header.loc['fpath'] = dfile
         return header
 
