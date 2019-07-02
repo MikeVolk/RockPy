@@ -362,10 +362,7 @@ def connect_ax_data(ax, **kwargs):
 """ COLORS """
 
 
-def red_blue_colormap():
-    # Make a user-defined colormap.
-    cm1 = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
-    return cm1
+red_blue_colormap = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
 
 
 """ SPECIAL """
