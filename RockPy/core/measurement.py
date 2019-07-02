@@ -85,22 +85,7 @@ class Measurement(object):
 
     @classmethod
     def inheritors(cls):
-        """
-        Method that gets all children and childrens-children ... from a class
-
-        Returns
-        -------
-           list
-        """
-        subclasses = set()
-        work = [cls]
-        while work:
-            parent = work.pop()
-            for child in parent.__subclasses__():
-                if child not in subclasses:
-                    subclasses.add(child)
-                    work.append(child)
-        return subclasses
+        return RockPy.core.utils.extract_inheritors_from_cls(cls)
 
     ''' implemented dicts '''
 
@@ -121,7 +106,7 @@ class Measurement(object):
 
         dict: classname:
         """
-        implemented_ftypes = {cl.__name__.lower(): cl for cl in Ftype.__subclasses__()}
+        implemented_ftypes = {cl.__name__.lower(): cl for cl in Ftype.inheritors()}
         return implemented_ftypes
 
     @classmethod
@@ -210,6 +195,7 @@ class Measurement(object):
         # initialize ftype_data
         ftype_data = None
 
+        ftype = ftype.lower()
         # check if measurement is implemented
         if ftype in cls.implemented_ftypes():
             # read the ftype data from the file
@@ -218,7 +204,7 @@ class Measurement(object):
             cls.log().error('CANNOT IMPORT ')
             cls.log().error('ftype not in implemented ftypes: %s ' % ', '.join(cls.implemented_ftypes().keys()))
 
-        # check wether the formatter for the ftype is implemented
+        # check if the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():
             cls.log().debug('ftype_formatter << %s >> implemented' % ftype)
             mdata = cls.ftype_formatters()[ftype](ftype_data, sobj_name=sobj.name)

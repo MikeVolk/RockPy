@@ -63,7 +63,7 @@ class ImportHelper(object):
         sgroups = RockPy.core.utils.extract_tuple(sgroups)
         snames = RockPy.core.utils.extract_tuple(snames)
         mtypes = RockPy.core.utils.extract_tuple(mtypes)
-        ftype = RockPy.abbrev_to_classname[ftype.lower()]
+        ftype = ftype.upper()#RockPy.abbrev_to_classname[ftype.lower()]
 
         mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in RockPy.to_tuple(mtypes))
         return sgroups, snames, mtypes, ftype

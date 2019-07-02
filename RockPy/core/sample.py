@@ -688,6 +688,5 @@ class Sample(object):
 if __name__ == '__main__':
     S = RockPy.Study()
     s = S.add_sample('62')
-    m = s.add_measurement(fpath='/Users/mike/Dropbox/github/2016-Pressure_cleaning/data/WP53/P0_pint.jr6',
-                          ftype='jr6',
-                          mtype='paleointensity',dialect='tdt')
+    m = s.add_measurement(fpath='/Users/mike/Dropbox/science/_projects/Apollo15_kim/data/Apollo15_A15_hys_agm##(Bmax,500,mT)_(f,404,Hz)_(q,150.0,)#0.7(hr).012',
+                          )

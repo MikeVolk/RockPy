@@ -32,6 +32,10 @@ class Ftype(object):
     def subclass_name(cls):
         return cls.__name__
 
+    @classmethod
+    def inheritors(cls):
+        return RockPy.core.utils.extract_inheritors_from_cls(cls)
+
     def get_comment_line_indices(self):
         """
         Checks for commented lines in the file and returns the indices of those lines. Comments are '#'
