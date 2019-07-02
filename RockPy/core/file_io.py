@@ -1,9 +1,9 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, to_tuple, split_num_alph, tuple2str, tuple2list_of_tuples
+from RockPy.core.utils import extract_tuple, to_tuple, tuple2list_of_tuples, series_to_dict, tuple2str, list_or_item
 import os, re
-from copy import deepcopy
 import warnings
 import logging
+
 
 def read_abbreviations():
     """
@@ -16,26 +16,27 @@ def read_abbreviations():
         get_abbreviations: dict(list) (mtype/ftype:[abbreviation])
             a dictionary with a list of all possible abbreviations.txt
     """
-    RockPy.log.debug('READING FTYPE/MTYPE abbreviations.txt')
+    RockPy.log.debug("READING FTYPE/MTYPE abbreviations.txt")
 
     # open the file
-    with open(os.path.join(RockPy.installation_directory, 'abbreviations.txt')) as f:
+    with open(os.path.join(RockPy.installation_directory, "abbreviations.txt")) as f:
         get_abbreviations = f.readlines()
 
     # create the mtype:abbreviation dict
-    get_abbreviations = [tuple(i.rstrip().split(':')) for i in get_abbreviations if i.rstrip() if not i.startswith('#')]
-    get_abbreviations = dict((i[0], [j.lstrip() for j in i[1].split(',')]) for i in get_abbreviations)
+    get_abbreviations = [tuple(i.rstrip().split(":")) for i in get_abbreviations if i.rstrip() if not i.startswith("#")]
+    get_abbreviations = dict((i[0], [j.lstrip() for j in i[1].split(",")]) for i in get_abbreviations)
 
     # create inverse abbrev:mtype/ftype
     get_mtype_ftype = {i: k for k in get_abbreviations for i in get_abbreviations[k]}
     get_mtype_ftype.update({k: k for k in get_abbreviations})
     return get_mtype_ftype, get_abbreviations
 
+
 class ImportHelper(object):
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.ImportHelper
-        return logging.getLogger('RockPy.ImportHelper')
+        return logging.getLogger("RockPy.ImportHelper")
 
     @staticmethod
     def extract_measurement_block(block):
@@ -52,12 +53,12 @@ class ImportHelper(object):
         -------
 
         """
-        sgroups, snames, mtypes, ftype = block.split('_')
+        sgroups, snames, mtypes, ftype = block.split("_")
 
         # names with , need to be replaced
-        if '(' not in snames and ',' in snames:
-            snames = snames.replace(',', '.')
-            RockPy.log().warning('sample sname %s contains \',\' will be replaced with \'.\'' % snames)
+        if "(" not in snames and "," in snames:
+            snames = snames.replace(",", ".")
+            RockPy.log().warning("sample sname %s contains \",\" will be replaced with \".\"" % snames)
 
         sgroups = RockPy.core.utils.extract_tuple(sgroups)
         snames = RockPy.core.utils.extract_tuple(snames)
@@ -84,21 +85,21 @@ class ImportHelper(object):
         # has to be initialized
         out = [[None, None], [None, None], [None, None]]
 
-        if '_' in block:
-            warnings.warn('old style naming convention << 1,0[mg]_1,0[mm]_3,0[mm] >> use 1.0mg,2.0mm,3.0mm')
+        if "_" in block:
+            warnings.warn("old style naming convention << 1,0[mg]_1,0[mm]_3,0[mm] >> use 1.0mg,2.0mm,3.0mm")
             # old style infos
-            block = block.replace('[', '').replace(']', '')
-            block = block.replace(',', '.')
-            parts = block.split('_')
+            block = block.replace("[", "").replace("]", "")
+            block = block.replace(",", ".")
+            parts = block.split("_")
         else:
-            parts = block.split(',')
+            parts = block.split(",")
 
         # extract (mass, massunit), (height, heightunit), (diameter,diameterunit)) from the block
         for i in range(3):
             try:
                 p = parts[i]
                 val = float(re.findall(r"[-+]?\d*\.\d+|\d+", p)[0])
-                unit = ''.join([i for i in p if not i.isdigit()]).strip('.')
+                unit = "".join([i for i in p if not i.isdigit()]).strip(".")
             except IndexError:
                 val = None
                 unit = None
@@ -130,13 +131,13 @@ class ImportHelper(object):
 
         # translate oldstyle files
         # old style series block: e.g. mtime(h)_0,0_h;mtime(m)_0,0_min;speed_1100,0_rpm
-        if not any(s in block for s in ('(', ')')) or ';' in block:
+        if not any(s in block for s in ("(", ")")) or ";" in block:
             warnings.warn(
-                'old style series block: ''mtime(h)_0,0_h;height_10,0_m'' use: ''(mtime,0.0,h)_(height,10.0,m)'' ')
+                "old style series block: ""mtime(h)_0,0_h;height_10,0_m"" use: ""(mtime,0.0,h)_(height,10.0,m)"" ")
             block = block.translate(str.maketrans(",_;", ".,_", ""))
 
         # split block parts
-        series = block.split('_')
+        series = block.split("_")
 
         if not series:
             series = None
@@ -163,14 +164,16 @@ class ImportHelper(object):
             str, dialect
 
         """
-        parts = block.split(',')
-        dialect = [p for p in parts if 'dialect' in p][0].replace('dialect=', '')
-        parts = [p for p in parts if not 'dialect' in p]
+        if not 'dialect' in block:
+            return block, ''
+        parts = block.split(",")
+        dialect = [p for p in parts if "dialect" in p][0].replace("dialect=", "")
+        parts = [p for p in parts if "dialect" not in p]
         return parts, dialect
 
     @classmethod
-    def from_folder(cls, folder, filter=dict()):
-        '''
+    def from_folder(cls, folder, filter=None):
+        """
         Creates a minfo (measurement info) instance for all files in a given directory. 
         
         Parameters
@@ -183,9 +186,12 @@ class ImportHelper(object):
         Returns
         -------
             RockPy.minfo
-        '''
+        """
 
-        dfiles = [os.path.join(folder, i) for i in os.listdir(folder) if not i.startswith('#')]
+        if filter == None:
+            filter = dict()
+
+        dfiles = [os.path.join(folder, i) for i in os.listdir(folder) if not i.startswith("#")]
 
         minfo = None
         for f in dfiles:
@@ -193,7 +199,7 @@ class ImportHelper(object):
             finfo = cls.from_file(f)
 
             if finfo is None:
-                cls.log().warning('cant read file: %s' % os.path.basename(f))
+                cls.log().warning("cant read file: %s" % os.path.basename(f))
                 continue
 
             if minfo is None:
@@ -216,28 +222,30 @@ class ImportHelper(object):
         -------
 
         """
-        cls.log().info('reading file infos: %s'%fpath)
+        cls.log().info("reading file infos: %s" % fpath)
 
-        # get the directory
-        folder = os.path.dirname(fpath)
+        # # get the directory
+        # folder = os.path.dirname(fpath)
 
         # get the file sname and the suffix
         filename, suffix = os.path.splitext(os.path.basename(fpath))
 
         # remove . from suffix
-        suffix = suffix.strip('.')
+        suffix = suffix.strip(".")
 
-        splits = filename.split('#')
+        splits = filename.split("#")
 
         # check if RockPy compatible e.g. first part must be len(4)
-        if not len(splits[0].split('_')) == 4:
+        if not len(splits[0].split("_")) == 4:
+            cls.log().warning('filename << %s >> does not conform to the RockPy file naming scheme. At least 3 elements (sname, mtype, ftype) '
+                              'have to be given, separated by \'_\' '%filename)
             return
 
         # extract mesurement information
         sgroups, snames, mtypes, ftype = cls.extract_measurement_block(splits[0])
 
         # extract sample informations
-        (mass, massunit), (height, heightunit), (diameter, diameterunit) = (None,None),(None,None),(None,None)
+        (mass, massunit), (height, heightunit), (diameter, diameterunit) = (None, None), (None, None), (None, None)
         if len(splits) > 1:
             (mass, massunit), (height, heightunit), (diameter, diameterunit) = cls.extract_sample_block(splits[1])
         # extract series information
@@ -265,17 +273,18 @@ class ImportHelper(object):
 
         return cls(snames=snames, mtypes=mtypes, ftype=ftype, fpath=fpath, sgroups=sgroups,
                    dialect=dialect,
-                   mass=mass, massunit=massunit if massunit else 'kg',
-                   height=height, heightunit=heightunit if heightunit else 'm',
-                   diameter=diameter, diameterunit=diameterunit if diameterunit else 'm',
+                   mass=mass, massunit=massunit if massunit else "kg",
+                   height=height, heightunit=heightunit if heightunit else "m",
+                   diameter=diameter, diameterunit=diameterunit if diameterunit else "m",
                    series=series, comment=comment, additional=additional, suffix=suffix)
 
     @classmethod
     def from_dict(cls, **kwargs):
-        return cls(**{param: kwargs.get(param, None) for param in ('snames', 'mtypes', 'ftype', 'fpath', 'sgroups',
-                      'dialect',
-                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit', 'lengthunit',
-                      'series', 'comment', 'additional', 'suffix')})
+        return cls(**{param: kwargs.get(param, None) for param in ("snames", "mtypes", "ftype", "fpath", "sgroups",
+                                                                   "dialect",
+                                                                   "mass", "massunit", "height", "heightunit",
+                                                                   "diameter", "diameterunit", "lengthunit",
+                                                                   "series", "comment", "additional", "suffix")})
 
     def __add__(self, other):
         """
@@ -290,18 +299,18 @@ class ImportHelper(object):
 
         """
 
-        for param in ('snames', 'mtypes', 'ftype', 'fpath', 'sgroups',
-                      'dialect',
-                      'mass', 'massunit', 'height', 'heightunit', 'diameter', 'diameterunit', 'lengthunit',
-                      'series', 'comment', 'additional', 'suffix'):
+        for param in ("snames", "mtypes", "ftype", "fpath", "sgroups",
+                      "dialect",
+                      "mass", "massunit", "height", "heightunit", "diameter", "diameterunit", "lengthunit",
+                      "series", "comment", "additional", "suffix"):
             getattr(self, param).extend(getattr(other, param))
         return self
 
     def __init__(
             self,
             snames,
-            mtypes=None,
-            ftype=None, fpath=None,
+            mtypes,
+            ftype, fpath=None,
             sgroups=None,
             dialect=None,
             mass=None, massunit=None,
@@ -319,14 +328,16 @@ class ImportHelper(object):
         self.sgroups = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(sgroups))
 
         self.mtypes = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(mtypes))
-        self.mtypes = [[RockPy.abbrev_to_classname[mt.lower()] for mt in mtypes] for mtypes in self.mtypes] #translate from abbrev to classname
+        self.mtypes = [[RockPy.abbrev_to_classname[mt.lower()] for mt in mtypes] for mtypes in
+                       self.mtypes]  # translate from abbrev to classname
 
-        self.ftype = RockPy.core.utils.to_list(RockPy.to_tuple(ftype))
+        self.ftype = RockPy.core.utils.to_list(RockPy.to_tuple(ftype.lower()))
+
         self.fpath = RockPy.core.utils.to_list(fpath)
         self.dialect = RockPy.core.utils.to_list(dialect)
 
         #################################################################################
-        ''' PARAMETER '''
+        """ PARAMETER """
         self.mass = RockPy.core.utils.to_list(mass)
         self.massunit = RockPy.core.utils.to_list(massunit)
 
@@ -346,13 +357,14 @@ class ImportHelper(object):
             self.lengthunit = RockPy.core.utils.to_list(lengthunit)
 
         if series is not None:
+            # if only one series and not three
             if len(series) == 3 and not len(series[0]) == 3:
                 series = tuple2list_of_tuples(to_tuple(series))
 
-        self.series = RockPy.core.utils.to_list([series])
+        self.series = [series]
 
         self.comment = RockPy.core.utils.to_list(comment)
-        self.additional = RockPy.core.utils.to_list(additional)
+        self.additional = [to_tuple(additional)]
         self.suffix = RockPy.core.utils.to_list(suffix)
 
     @classmethod
@@ -374,8 +386,8 @@ class ImportHelper(object):
         mtypes = (RockPy.classname_to_abbrev[i][0] for i in mtypes)
         block = [sgroups, snames, mtypes, ftype]
         if not all(i for i in block):
-            raise ImportError('sname, mtype, ftype needed for minfo to be generated')
-        return '_'.join((RockPy.core.utils.tuple2str(b) for b in block))
+            raise ImportError("sname, mtype, ftype needed for minfo to be generated")
+        return "_".join((RockPy.core.utils.tuple2str(b) for b in block))
 
     @classmethod
     def get_sample_block(cls,
@@ -395,19 +407,19 @@ class ImportHelper(object):
 
         Examples
         --------
-
             (0.1mg)_(S1,S2)_(HYS,DCD)_VSM
         """
         out = []
         block = [[mass, massunit], [height, heightunit], [diameter, diameterunit]]
 
         if not any((all(b) for b in block)):
-            return ''
+            return ""
 
-        # get the point for wich there is still info
+        # get the point for which there is still info
         # 1.0mg -> n=1
         # 1.2mg,2.0mm ->n=3
         # XXmg,XXmm,1.2mm -> n=3
+        n = None
 
         for n, v in enumerate(block):
             if v[0] == v[1]:
@@ -417,12 +429,12 @@ class ImportHelper(object):
             b = block[i]
             if not all(j for j in b):
                 if i == 0:
-                    aux = 'XXmg'
+                    aux = "XXmg"
                 else:
-                    aux = 'XXmm'
+                    aux = "XXmm"
             else:
-                out.append(''.join(map(str, b)))
-        return ','.join(out)
+                out.append("".join(map(str, b)))
+        return ",".join(out)
 
     @classmethod
     def get_series_block(cls, series):
@@ -437,36 +449,40 @@ class ImportHelper(object):
             str
 
         """
+        import numpy as np
         if series:
-            out = [RockPy.core.utils.tuple2str(b) for b in series]
-            return '_'.join(out).replace('\'','').replace(' ','')
+            if np.array(series).shape == (3,):
+                out = [RockPy.core.utils.tuple2str(series)]
+
+            else:
+                out = [RockPy.core.utils.tuple2str(b) for b in series]
+            return "_".join(out).replace("\"", "").replace(" ", "")
         else:
-            return ''
+            return ""
 
     @classmethod
     def get_add_block(cls, additional):
-
         if additional:
-            out = tuple(''.join(map(str, a)) for a in additional)
-            return RockPy.core.utils.tuple2str(out)
+            return RockPy.core.utils.tuple2str(additional)
 
     @property
     def new_filenames(self):
+        out = []
         for f in range(self.nfiles):
-            mblock = self.get_measurement_block(self.sgroups[f], self.snames[f], self.mtypes[f], self.ftype[f])
-            sblock = self.get_sample_block(self.mass[f], self.massunit[f],
-                                           self.diameter[f], self.diameterunit[f],
-                                           self.height[f], self.heightunit[f])
-            seriesblock = self.get_series_block(self.series[f])
-            addblock = self.get_add_block(self.additional[f])
+            measurement_block = self.get_measurement_block(self.sgroups[f], self.snames[f], self.mtypes[f],
+                                                           self.ftype[f])
+            sample_block = self.get_sample_block(self.mass[f], self.massunit[f],
+                                                 self.diameter[f], self.diameterunit[f],
+                                                 self.height[f], self.heightunit[f])
+            series_block = self.get_series_block(self.series[f])
+            add_block = self.get_add_block(self.additional[f])  # todo implement
 
-            out = [mblock, sblock, seriesblock]
-
+            blocks = [measurement_block, sample_block, series_block, add_block]
             # work through blocks backwards throw out blocks that are empty,
             # if ones is not empty, stop.
-            for i, block in enumerate(out[::-1]):
+            for i, block in enumerate(blocks[::-1]):
                 if not block:
-                    out.pop()
+                    blocks.pop()
                 else:
                     break
 
@@ -476,11 +492,12 @@ class ImportHelper(object):
                 suffix = 0
 
             if isinstance(suffix, (int, float)):
-                suffix = '%03.0f'%suffix
-            fname = '#'.join(map(str, out)) + '.%s'%suffix
+                suffix = "%03.0f" % suffix
+            fname = "#".join(map(str, blocks)) + ".%s" % suffix
 
-            fname = fname.replace('None', '')
-            yield fname
+            fname = fname.replace("None", "")
+            out.append(fname)
+        return out
 
     def getImportHelper(self, snames=None, mtypes=None):
         """
@@ -504,13 +521,12 @@ class ImportHelper(object):
         mtypes = RockPy.to_tuple(mtypes)
 
         for ih in self._gen_dicts:
-            if all(i for i in snames) and ih['snames'] not in snames:
+            if all(i for i in snames) and ih["snames"] not in snames:
                 continue
-            if all(i for i in mtypes) and ih['mtypes'] not in mtypes:
+            if all(i for i in mtypes) and ih["mtypes"] not in mtypes:
                 continue
             a = self.__class__.from_dict(**ih)
             yield a
-
 
     @property
     def nsnames(self):
@@ -518,7 +534,7 @@ class ImportHelper(object):
 
     @property
     def nfiles(self):
-        return len(self.fpath)
+        return len(self.fpath) if self.fpath[0] != None else 1
 
     @property
     def _gen_dicts(self):
@@ -550,8 +566,8 @@ class ImportHelper(object):
     @property
     def gen_measurement_dict(self):
         for ih in self._gen_dicts:
-            ih['sname'] = ih.pop('snames')
-            ih['mtype'] = ih.pop('mtypes')
+            ih["sname"] = ih.pop("snames")
+            ih["mtype"] = ih.pop("mtypes")
             yield ih
 
     @property
@@ -564,18 +580,18 @@ class ImportHelper(object):
             generator: dict
         """
         generated = []
-        for ih in self. _gen_dicts:
-            if ih['snames'] in generated:
+        for ih in self._gen_dicts:
+            if ih["snames"] in generated:
                 continue
-            ih['sname'] = ih.pop('snames')
-            ih['mtype'] = ih.pop('mtypes')
-            generated.append(ih['sname'])
-            yield {k:v for k,v in ih.items() if k in ('sname',
-                                                      'mass', 'massunit',
-                                                      'height', 'diameter', 'lengthunit',
-                                                      'sgroups')}
+            ih["sname"] = ih.pop("snames")
+            ih["mtype"] = ih.pop("mtypes")
+            generated.append(ih["sname"])
+            yield {k: v for k, v in ih.items() if k in ("sname",
+                                                        "mass", "massunit",
+                                                        "height", "diameter", "lengthunit",
+                                                        "sgroups", "series")} #todo check if adding series here broke stuff
 
-    def return_sample_infos(self):
+    def return_file_infos(self):
         """
         Returns a dictionary with the sample infos of the ImportHelper with the sname as keys.
 
@@ -584,15 +600,35 @@ class ImportHelper(object):
         dict
         """
         out = {}
-        for i in self.gen_sample_dict:
-            out[i['sname']] = i
+
+        out['snames'] = list_or_item(self.snames[0])
+        out['sgroups'] = list_or_item(self.sgroups[0])
+        out['mtypes'] = list_or_item(self.mtypes[0])
+        out['ftype'] = self.ftype[0]
+        out['fpath'] = self.fpath[0]
+        out['dialect'] = self.dialect[0]
+
+        out['mass'] = self.mass[0]
+        out['mass_unit'] = self.massunit[0]
+
+        out['height'] = self.height[0]
+        out['height_unit'] = self.heightunit[0]
+
+        out['diameter'] = self.diameter[0]
+        out['diameter_unit'] = self.diameterunit[0]
+
+        out["series"] = {}
+
+        if self.series[0]:
+            for s in self.series[0]:
+                out["series"].update(series_to_dict(s))
+
+        out['comment'] = self.comment[0]
+        out['additional'] = self.additional[0]
+        out['suffix'] = self.suffix[0]
+
 
         return out
 
 def connect_to_IRMdb():
     pass
-
-if __name__ == '__main__':
-
-    ih = ImportHelper.from_file('/Users/mike/Desktop/coercivities/MAN_0525_DCD_VSM#228.1mg#(at,20.0,C).001')
-    print(ih.return_sample_infos())
