@@ -18,8 +18,8 @@ class Agm(Vsm):
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
         # get the file infos first -> line numbers needed ect.
-        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, self.file_length = self.read_basic_file_info(
-            dfile)
+        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, \
+        self.file_length = self.read_basic_file_info(dfile)
 
         self.mtype = self.mtype_translation[mtype]
         self.header = self.read_header(dfile, header_end)
