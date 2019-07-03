@@ -466,7 +466,8 @@ class Hysteresis(Measurement):
 
         def get_df_uf_plus_minus(self, saturation_percent, ommit_last_n):
             """
-            Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters the last :code:`ommit_last_n` and splits into pos and negative components
+            Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters
+            the last :code:`ommit_last_n` and splits into pos and negative components
             """
             # transform from percent value
             saturation_percent /= 100
@@ -509,8 +510,8 @@ class Hysteresis(Measurement):
                     self.log.warning('CANT calculate approach to saturation. Not enough points (<=2) in data. '
                                      'Consider using smaller <saturation_percent> value')
                     continue
-                popt, pcov = curve_fit(self.approach2sat_func, np.fabs(fields), np.fabs(moments),
-                                       p0=[max(abs(moments)), 0, 0])
+                popt, pcov = curve_fit(self.approach2sat_func, np.fabs(fields), moments*np.sign(np.mean(fields)),
+                                       p0=[max(abs(moments))/2, 0, 0])
 
                 ms.append(popt[0])
                 slope.append(popt[1])
@@ -524,15 +525,15 @@ class Hysteresis(Measurement):
 
                 for i, d in enumerate([df_pos, df_neg, uf_pos, uf_neg]):
                     fields = np.abs(d.index)
-                    moments = np.abs(d['M'].values)
+                    moments = d['M'].values
 
                     # calculate for raw data plot
                     raw_d = self.get_df_uf_plus_minus(saturation_percent=0, ommit_last_n=ommit_last_n)
                     # plot all data
-                    plt.plot(np.abs(raw_d[i].index), np.abs(raw_d[i]['M']), '.', mfc='w',
+                    plt.plot(np.abs(raw_d[i].index), raw_d[i]['M']*np.sign(np.mean(raw_d[i]['M'].index)), '.', mfc='w',
                              color=RockPy.colors[i], alpha=0.5, label='')
                     # plot data used for fit
-                    plt.plot(fields, moments, '.', color=RockPy.colors[i],
+                    plt.plot(fields, moments*np.sign(np.mean(raw_d[i]['M'].index)), '.', color=RockPy.colors[i],
                              label=['upper +', 'upper -', 'lower +', 'lower -'][i] + '(data)')
                     # plot app2sat function
                     plt.plot(np.linspace(0.1, max(fields)),
@@ -542,9 +543,11 @@ class Hysteresis(Measurement):
                     plt.plot(np.linspace(0, max(fields)), slope[i] * np.linspace(0, max(fields)) + ms[i], '-',
                              color=RockPy.colors[i])
 
+                plt.errorbar(0, np.mean(ms), yerr=2*np.std(ms),color='k', marker='.', label='mean Ms (2$\sigma$)', zorder=100, )
                 plt.legend()
-                plt.xlim(0, max(fields))
-                plt.ylim(0, max(ms) * 1.1)
+                plt.xlim(-0.01, max(fields))
+
+                # plt.ylim(0, max(ms) * 1.1)
                 plt.xlabel('B [T]')
                 plt.ylabel('M [Am$^2$]')
                 plt.show()
@@ -586,32 +589,33 @@ class Hysteresis(Measurement):
             # calculate for each branch for positive and negative fields
             for i, dir in enumerate([df_plus, df_minus, uf_plus, uf_minus]):
                 slope, intercept, r_value, p_value, std_err = stats.linregress(dir.index, dir['M'])
-                hf_sus_result.append(abs(slope))
-                ms_result.append(abs(intercept))
+                hf_sus_result.append(slope)
+                ms_result.append(intercept)
 
                 # check plot
                 if check:
                     d0 = self.get_df_uf_plus_minus(0, 0)
                     x = np.linspace(0, self.mobj.max_field)
                     y_new = slope * x + abs(intercept)
-                    l, = plt.plot(abs(d0[i].index), d0[i]['M'].abs(), '.', mfc='w', label='data',
+                    l, = plt.plot(abs(d0[i].index), d0[i]['M']*np.sign(np.mean(d0[i].index)), '.', mfc='w',
+                                  label=['df+','df-','uf+','uf-'][i],
                                   color=RockPy.colors[i])
                     plt.plot(x, y_new, '--', color=l.get_color())
 
             # check plot
             if check:
                 # plt.plot([0,0,0,0], np.abs(ms_result), 'ko', label='Ms (branch)', mfc='none', mew=0.5)
-                plt.errorbar([0], np.mean(np.abs(ms_result)), yerr=2 * np.std(np.abs(ms_result)),
-                             color='k', marker='.', label='mean Ms', zorder=100, )
+                plt.errorbar([0], np.mean(np.abs(ms_result)), yerr= 2 * np.std(np.abs(ms_result)),
+                             color='k', marker='.', label='mean Ms (2$\sigma$)', zorder=100, )
                 plt.axvline(self.mobj.max_field * saturation_percent / 100, ls='--', color='grey')
                 plt.xlabel('B [T]')
-                plt.ylabel('M [Am$^2}')
+                plt.ylabel('M [Am$^2$}')
                 plt.xlim([-self.mobj.max_field * 0.01, self.mobj.max_field])
-
+                plt.legend()
                 plt.grid()
                 plt.show()
 
-            self.mobj.sobj.results.loc[self.mobj.mid, 'Hf_sus'] = np.nanmean(np.abs(hf_sus_result))
+            self.mobj.sobj.results.loc[self.mobj.mid, 'Hf_sus'] = np.nanmean(hf_sus_result)
             self.mobj.sobj.results.loc[self.mobj.mid, 'Ms'] = np.nanmean(np.abs(ms_result))
 
     class Hf_sus(Ms):
@@ -853,8 +857,8 @@ class Hysteresis(Measurement):
 
 if __name__ == '__main__':
     s = RockPy.Sample('test')
-    m = s.add_measurement(mtype='hys', ftype='vsm',
-                          fpath='/Users/mike/Dropbox/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
+    m = s.add_measurement(
+                          fpath='/Users/mike/Dropbox/science/_projects/Apollo15_kim/data/Apollo15_A15_hys_agm##(Bmax,500,mT)_(f,404,Hz)_(q,150.0,)#0.7(hr).012')
 
     # import matplotlib.pyplot as plt
     # plt.plot(m.upfield['M'], color='r')
@@ -872,6 +876,7 @@ if __name__ == '__main__':
     # print(m.result_bc(recipe='nonlinear', npoints=10, check=True))
     # print(m.result_ms(ommit_last_n=4, check=True, saturation_percent=90))
     # print(m.Ms(check=True, recipe='simple'))
-    print(m.Ms(check=False, saturation_percent=50, recipe='default'))
+    print(m.Hf_sus(check=True, saturation_percent=80, recipe='app2sat'))
+
 
     # print(m.results)
