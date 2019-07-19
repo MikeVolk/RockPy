@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 import RockPy
 
+
 def DIM2XYZ(df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
     """
     adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
@@ -230,7 +231,7 @@ def detect_outlier(pdd, column, threshold=3, order=4):
     return outliers
 
 
-def remove_outliers(pdd, column, threshold=3, order = 4, **kwargs):
+def remove_outliers(pdd, column, threshold=3, order=4, **kwargs):
     """
     Removes outliers from pandas.DataFrame using detect_outliers.
 
@@ -248,7 +249,8 @@ def remove_outliers(pdd, column, threshold=3, order = 4, **kwargs):
     DataFrame without outliers
     """
     outliers = detect_outlier(pdd, column, threshold, order)
-    RockPy.log.info("removing %i outliers that are exceed the %.2f standard deviation threshold"%(len(outliers), threshold))
+    RockPy.log.info(
+        "removing %i outliers that are exceed the %.2f standard deviation threshold" % (len(outliers), threshold))
 
     pdd = pdd.drop(pdd.index[outliers])
 
@@ -327,3 +329,49 @@ def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False,
         plt.plot(interp_data, '-', color='r')
 
     return interp_data
+
+
+def rotate(xyz, axis='x', deg=0):  # todo make rotation axis arbitrary
+    """
+    Rotates a vector by 'a' degrees around 'x','y', or 'z' axis.
+
+    Parameters
+    ----------
+    df
+    colX
+    colY
+    colZ
+    axis
+    deg
+    """
+
+    a = np.radians(deg)
+
+    RX = [[1, 0, 0],
+          [0, np.cos(a), -np.sin(a)],
+          [0, np.sin(a), np.cos(a)]]
+
+    RY = [[np.cos(a), 0, np.sin(a)],
+          [0, 1, 0],
+          [-np.sin(a), 0, np.cos(a)]]
+
+    RZ = [[np.cos(a), -np.sin(a), 0],
+          [np.sin(a), np.cos(a), 0],
+          [0, 0, 1]]
+
+    if axis.lower() == 'x':
+        out = np.dot(xyz, RX)
+    if axis.lower() == 'y':
+        out = np.dot(xyz, RY)
+    if axis.lower() == 'z':
+        out = np.dot(xyz, RZ)
+
+    return out
+
+
+if __name__ == '__main__':
+    import pandas as pd
+
+    test = pd.DataFrame(columns=['x', 'y', 'z'], data=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    print(test)
+    print(rotate(test, axis='Z', deg=90))
