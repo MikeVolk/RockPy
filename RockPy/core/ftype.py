@@ -51,9 +51,28 @@ class Ftype(object):
             self.log().info('FILE contains {} comments. Lines {} were not read'.format(len(idx), idx))
         return idx
 
-    def __init__(self, dfile, snames=None, dialect=None, reload=False):
+    def __init__(self, dfile, snames=None, dialect=None, reload=False, mdata=None, **kwargs):
         """
         Constructor of the basic file type instance
+
+        Parameters
+        ----------
+        dfile: str
+            path to the file
+        snames: list
+            name(s) of the sample(s)
+        dialect: str
+            used if a specific file was modified from version to version. Specifies the particular version of the file.
+        reload: bool
+            default: False
+            Specifies if the file should be loaded from the HD again.
+            If False, the file will not be loaded for each sample if there are more than one.
+            If True, data will be reloaded (e.g. when using ipython Notebooks)
+        mdata: pd.DataFrame
+            formatted the same way as self.data. This should passed from cls.from_XXX methods to the cls constructor
+        kwargs
+            additional infos (e.g. header) passed to the constructor from cls.from_XXX methods
+
         """
 
         # set file ID
@@ -63,7 +82,7 @@ class Ftype(object):
         self.snames = [str(i) for i in RockPy.core.utils.to_tuple(snames)] if snames else None
         self.dfile = dfile
         self.dialect = dialect
-
+        self.header = kwargs.pop('header', None)
         try:
             self.import_helper = ImportHelper.from_file(self.dfile)
             self.file_infos = self.import_helper.return_file_infos()
@@ -72,7 +91,11 @@ class Ftype(object):
             self.import_helper = None
             self.file_infos = None
 
-        if dfile not in self.__class__.imported_files or reload:
+        if mdata is not None:
+            self.data = mdata
+            self.__class__.imported_files[dfile] = self.data.copy()
+
+        elif dfile not in self.__class__.imported_files or reload:
             self.log().info('IMPORTING << %s , %s >> file: << %s >>' % (self.snames,
                                                                         type(self).__name__, dfile))
             self.data = self.read_file()
