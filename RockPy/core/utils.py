@@ -289,6 +289,9 @@ def correction(func, *args, **kwargs):
     automatically adds the called correction_function to self._correct
     """
     self = args[0]
+
+    set_get_attr(self, 'correction')
+
     if func.__name__ in self._correction:
         self.log().warning('CORRECTION {} has already been applied'.format(func.__name__))
         return
@@ -334,6 +337,13 @@ def list_or_item(item):
     else:
         return item
 
+def rotmat(dec, inc):
+    inc = np.radians(inc)
+    dec = np.radians(dec)
+    a = [[np.cos(inc)*np.cos(dec), -np.sin(dec), -np.sin(inc)*np.cos(dec)],
+         [np.cos(inc)*np.sin(dec), np.cos(dec), -np.sin(inc)*np.sin(dec)],
+         [np.sin(inc), 0 , np.cos(inc)]]
+    return a
 
 def extract_inheritors_from_cls(cls):
         """
