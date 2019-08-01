@@ -1,8 +1,8 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import RockPy
+from RockPy.tools.compute import rotate
 
 
 def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
@@ -39,21 +39,6 @@ def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     df[colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
     df[colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
     return df
-
-
-def convert_to_cart(D, I, M):
-    M = 1 if M is None else M
-    x = np.cos(np.radians(I)) * np.cos(np.radians(D)) * M
-    y = np.cos(np.radians(I)) * np.sin(np.radians(D)) * M
-    z = np.cos(np.radians(I)) * np.tan(np.radians(I)) * M
-    return np.array([x, y, z])
-
-
-def convert_to_DIM(x, y, z):
-    M = np.linalg.norm([x, y, z], axis=0)  # calculate total moment for all rows
-    D = np.degrees(np.arctan2(y, x)) % 360  # calculate D and map to 0-360 degree range
-    I = np.degrees(np.arcsin(z / M))  # calculate I
-    return np.array([D, I, M])
 
 
 def XYZ2DIM(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
@@ -140,9 +125,11 @@ def cool(df, tcol='index'):
         df = df[np.gradient(df[tcol]) < 0]
     return df
 
+
 def gradient(*args, **kwargs):
     print('depricated, please change to derivative')
     return gradient(*args, **kwargs)
+
 
 def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm=False, **kwargs):
     """
@@ -222,7 +209,7 @@ def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_or
     return out
 
 
-def detect_outlier(pdd, column, threshold=3, order=4):
+def detect_outlier(df, column, threshold=3, order=4):
     """
     Detects Outliers by first fitting a polynomial p(x) of order <order. to the data. Then calculates the root mean
     square error from the residuals. The data is then compared to the fit ± the threshold * RMSe.
@@ -230,7 +217,7 @@ def detect_outlier(pdd, column, threshold=3, order=4):
 
     Parameters
     ----------
-    pdd: pandas.Dataframe
+    df: pandas.Dataframe
     column: str
         column to detect outliers in
     threshold: int
@@ -245,26 +232,26 @@ def detect_outlier(pdd, column, threshold=3, order=4):
     list
         list of indices
     """
-    x, y = (pdd.index, pdd[column])
+    x, y = (df.index, df[column])
     # fit data with polynomial
     z, res, _, _, _ = np.polyfit(x, y, order, full=True)
 
     rmse = np.sqrt(sum(res) / len(x))  # root mean squared error
     p = np.poly1d(z)  # polynomial p(x)
 
-    outliers = [i for i, v in enumerate(pdd[column]) if v < p(x[i]) - threshold * rmse] + \
-               [i for i, v in enumerate(pdd[column]) if v > p(x[i]) + threshold * rmse]
+    outliers = [i for i, v in enumerate(df[column]) if v < p(x[i]) - threshold * rmse] + \
+               [i for i, v in enumerate(df[column]) if v > p(x[i]) + threshold * rmse]
 
     return outliers
 
 
-def remove_outliers(pdd, column, threshold=3, order=4, **kwargs):
+def remove_outliers(df, column, threshold=3, order=4, **kwargs):
     """
     Removes outliers from pandas.DataFrame using detect_outliers.
 
     Parameters
     ----------
-    pdd: pandas.DataFrame
+    df: pandas.DataFrame
     column: str
         column to detect outliers in
     threshold: int
@@ -275,16 +262,16 @@ def remove_outliers(pdd, column, threshold=3, order=4, **kwargs):
     -------
     DataFrame without outliers
     """
-    outliers = detect_outlier(pdd, column, threshold, order)
+    outliers = detect_outlier(df, column, threshold, order)
     RockPy.log.info(
         "removing %i outliers that are exceed the %.2f standard deviation threshold" % (len(outliers), threshold))
 
-    pdd = pdd.drop(pdd.index[outliers])
+    df = df.drop(df.index[outliers])
 
-    return pdd
+    return df
 
 
-def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False, **parameter):
+def regularize_data(df, order=2, grid_spacing=2, ommit_n_points=0, check=False, **parameter):
     """
         Parameters
     ----------
@@ -305,7 +292,7 @@ def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False,
        get_grid
     """
 
-    d = pdd
+    d = df
     d = d.sort_index()
 
     dmax = max(d.index)
@@ -317,16 +304,16 @@ def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False,
         uncorrected_data = d.copy()
 
     # initialize DataFrame for gridded data
-    interp_data = pd.DataFrame(columns=pdd.columns)
+    interp_data = pd.DataFrame(columns=df.columns)
 
     if ommit_n_points > 0:
         d = d.iloc[ommit_n_points:-ommit_n_points]
 
     # cycle through gridpoints
     for i, T in enumerate(grid):
-        for col in pdd.columns:
+        for col in df.columns:
             # set T to T column
-            interp_data.loc[i, pdd.index.name] = T
+            interp_data.loc[i, df.index.name] = T
 
             # indices of points within the grid points
             if i == 0:
@@ -349,7 +336,7 @@ def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False,
 
             # set dtype to float -> calculations dont work -> pandas sets object
             interp_data[col] = interp_data[col].astype(np.float)
-    interp_data = interp_data.set_index(pdd.index.name)
+    interp_data = interp_data.set_index(df.index.name)
 
     if check:
         plt.plot(uncorrected_data, marker='.', mfc='none', color='k')
@@ -357,8 +344,8 @@ def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False,
 
     return interp_data
 
-def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
 
+def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
     df = df.copy()
     DI = df[[colD, colI]]
     DI = DIM2XYZ(DI, colI=colI, colD=colD, colM=None)
@@ -374,43 +361,6 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
     df[newI] = corrected[newI]
     df[newD] = corrected[newD]
     return df
-
-def rotate(xyz, axis='x', deg=0):  # todo make rotation axis arbitrary
-    """
-    Rotates a vector by 'a' degrees around 'x','y', or 'z' axis.
-
-    Parameters
-    ----------
-    df
-    colX
-    colY
-    colZ
-    axis
-    deg
-    """
-
-    a = np.radians(deg)
-
-    RX = [[1, 0, 0],
-          [0, np.cos(a), -np.sin(a)],
-          [0, np.sin(a), np.cos(a)]]
-
-    RY = [[np.cos(a), 0, np.sin(a)],
-          [0, 1, 0],
-          [-np.sin(a), 0, np.cos(a)]]
-
-    RZ = [[np.cos(a), -np.sin(a), 0],
-          [np.sin(a), np.cos(a), 0],
-          [0, 0, 1]]
-
-    if axis.lower() == 'x':
-        out = np.dot(xyz, RX)
-    if axis.lower() == 'y':
-        out = np.dot(xyz, RY)
-    if axis.lower() == 'z':
-        out = np.dot(xyz, RZ)
-
-    return out
 
 
 if __name__ == '__main__':
