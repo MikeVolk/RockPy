@@ -2,11 +2,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 import RockPy
 
 
-def DIM2XYZ(df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
+def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     """
     adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
 
@@ -31,15 +30,33 @@ def DIM2XYZ(df, colD='D', colI='I', colM=None, colX='x', colY='y', colZ='z'):
     -------
 
     """
+    df = df.copy()
     M = 1 if colM is None else df[colM]
+    col_i = df[colI].values.astype(float)
+    col_d = df[colD].values.astype(float)
 
-    df[colX] = np.cos(np.radians(df[colI])) * np.cos(np.radians(df[colD])) * M
-    df[colY] = np.cos(np.radians(df[colI])) * np.sin(np.radians(df[colD])) * M
-    df[colZ] = np.cos(np.radians(df[colI])) * np.tan(np.radians(df[colI])) * M
+    df[colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
+    df[colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
+    df[colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
     return df
 
 
-def XYZ2DIM(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
+def convert_to_cart(D, I, M):
+    M = 1 if M is None else M
+    x = np.cos(np.radians(I)) * np.cos(np.radians(D)) * M
+    y = np.cos(np.radians(I)) * np.sin(np.radians(D)) * M
+    z = np.cos(np.radians(I)) * np.tan(np.radians(I)) * M
+    return np.array([x, y, z])
+
+
+def convert_to_DIM(x, y, z):
+    M = np.linalg.norm([x, y, z], axis=0)  # calculate total moment for all rows
+    D = np.degrees(np.arctan2(y, x)) % 360  # calculate D and map to 0-360 degree range
+    I = np.degrees(np.arcsin(z / M))  # calculate I
+    return np.array([D, I, M])
+
+
+def XYZ2DIM(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
     """
     adds D,I,(M) columns to pandas dataframe calculated from x,y,z columns
 
@@ -64,12 +81,17 @@ def XYZ2DIM(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM=None):
     -------
 
     """
+    df = df.copy()
 
-    M = np.linalg.norm([df[colX], df[colY], df[colZ]], axis=0)  # calculate total moment for all rows
-    df[colD] = np.degrees(np.arctan2(df[colY], df[colX])) % 360  # calculate D and map to 0-360 degree range
-    df[colI] = np.degrees(np.arcsin(df[colZ] / M))  # calculate I
+    col_y_ = df[colY].values
+    col_x_ = df[colX].values
+    col_z_ = df[colZ].values
+
+    M = np.linalg.norm([col_x_, col_y_, col_z_], axis=0)  # calculate total moment for all rows
+    df.loc[:, colD] = np.degrees(np.arctan2(col_y_, col_x_)) % 360  # calculate D and map to 0-360 degree range
+    df.loc[:, colI] = np.degrees(np.arcsin(col_z_ / M))  # calculate I
     if colM is not None:
-        df[colM] = M  # set M
+        df.loc[:, colM] = M  # set M
     return df
 
 
@@ -118,8 +140,11 @@ def cool(df, tcol='index'):
         df = df[np.gradient(df[tcol]) < 0]
     return df
 
+def gradient(*args, **kwargs):
+    print('depricated, please change to derivative')
+    return gradient(*args, **kwargs)
 
-def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm=False, **kwargs):
+def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm=False, **kwargs):
     """
     Calculates the derivative of the pandas dataframe. The xcolumn and ycolumn have to be specified.
     Rolling adds a rolling mean BEFORE differentiation is done. The kwargs can be used to change the rolling.
@@ -192,6 +217,8 @@ def gradient(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_orde
     out = pd.DataFrame(data=np.array([x, dy]).T, columns=[xcol, col_name])
     out = out.set_index(xcol)
 
+    if append:
+        out = pd.concat([df, out])
     return out
 
 
@@ -330,6 +357,23 @@ def regularize_data(pdd, order=2, grid_spacing=2, ommit_n_points=0, check=False,
 
     return interp_data
 
+def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
+
+    df = df.copy()
+    DI = df[[colD, colI]]
+    DI = DIM2XYZ(DI, colI=colI, colD=colD, colM=None)
+
+    xyz = DI[['x', 'y', 'z']]
+
+    xyz = rotate(xyz, axis='y', deg=-dip)
+    xyz = rotate(xyz, axis='z', deg=-strike)
+
+    corrected = XYZ2DIM(pd.DataFrame(columns=['x', 'y', 'z'], data=xyz, index=DI.index),
+                        colI=newI, colD=newD)
+
+    df[newI] = corrected[newI]
+    df[newD] = corrected[newD]
+    return df
 
 def rotate(xyz, axis='x', deg=0):  # todo make rotation axis arbitrary
     """
