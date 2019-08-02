@@ -352,8 +352,8 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
 
     xyz = DI[['x', 'y', 'z']]
 
-    xyz = rotate(xyz, axis='y', deg=-dip)
-    xyz = rotate(xyz, axis='z', deg=-strike)
+    xyz = rotate(xyz, axis='y', theta=-dip)
+    xyz = rotate(xyz, axis='z', theta=-strike)
 
     corrected = XYZ2DIM(pd.DataFrame(columns=['x', 'y', 'z'], data=xyz, index=DI.index),
                         colI=newI, colD=newD)
@@ -368,4 +368,4 @@ if __name__ == '__main__':
 
     test = pd.DataFrame(columns=['x', 'y', 'z'], data=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     print(test)
-    print(rotate(test, axis='Z', deg=90))
+    print(rotate(test, axis='Z', theta=90))
