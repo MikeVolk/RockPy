@@ -10,6 +10,8 @@ from matplotlib import colors as mcol
 from matplotlib.collections import LineCollection
 import matplotlib.colors as colors
 
+from RockPy.tools.compute import convert_to_equal_area
+
 colorpalettes = {
     'cat10': ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
               '#17becf'],
@@ -134,6 +136,74 @@ def add_twiny(label, ax=None, conversion=75.34):
     ax2.set_xlabel(label)
 
     return ax2
+
+
+def max_zorder(ax):
+    return max(_.zorder for _ in ax.get_children())
+
+
+""" Stereonet and other projections"""
+
+
+def setup_stereonet(ax=None, grid=True, rtickwidth=1):
+    if ax is None:
+        ax = plt.gca()
+
+    ax.grid(grid)
+
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    ticks = ax.set_rticks(np.arange(0, 1, 1 / 9))  # Less radial ticks
+    for t in ticks:
+        t.set_alpha(0)
+    ax.set_yticklabels([])  # Less radial ticks
+
+    maxz = max_zorder(ax)
+    ## plot the grids
+    for t in np.deg2rad(np.arange(0, 360, 5)):
+        ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=maxz + 2)
+
+    for d in [0, 90, 180, 270]:
+        ax.plot(np.ones(10) * np.radians(d), np.linspace(0, 1, 10), 'k+', zorder=maxz + 2)
+
+    ax.set_rmax(1)
+
+
+def plot_equal(xyz, ax=None, dim=False, **kwargs):
+    """
+
+    Parameters
+    ----------
+    xyz
+    ax
+    dim
+    kwargs
+
+    Returns
+    -------
+
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    pol = convert_to_equal_area(xyz, dim=dim)
+    neg_inc = pol[:, 2].astype(bool)
+    down = pol[neg_inc]
+    up = pol[~neg_inc]
+
+    marker = kwargs.pop('marker', 'o')
+    color = kwargs.pop('color', 'k')
+    linecolor = kwargs.pop('linecolor', color)
+
+    ls = kwargs.pop('ls', '')
+
+    ax.plot(np.radians(down[:, 0]), down[:, 1], marker=marker, color=color, mfc='none', ls='', **kwargs)
+    ax.plot(np.radians(up[:, 0]), up[:, 1], marker=marker, color=color, ls='', **kwargs)
+
+    if ls:
+        ax.plot(np.radians(pol[:, 0]), pol[:, 1], marker='', color=linecolor, ls=ls, **kwargs)
+
+    return ax
 
 
 """ LINES """
@@ -362,8 +432,8 @@ def connect_ax_data(ax, **kwargs):
 
 """ COLORS """
 
-
 red_blue_colormap = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
+
 
 # set the colormap and centre the colorbar
 class MidpointNormalize(colors.Normalize):
@@ -372,6 +442,7 @@ class MidpointNormalize(colors.Normalize):
 
     e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
     """
+
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
         self.midpoint = midpoint
         colors.Normalize.__init__(self, vmin, vmax, clip)
@@ -400,7 +471,8 @@ def plot_metamorphic_facies(ax=None, facies_list=None, text=None, **kwargs):
     -------
 
     """
-    xls = pd.ExcelFile(os.path.join(RockPy.installation_directory, 'tools', 'data', 'mtemorphic-facies_list-Gillen1982.xls'))
+    xls = pd.ExcelFile(
+        os.path.join(RockPy.installation_directory, 'tools', 'data', 'mtemorphic-facies_list-Gillen1982.xls'))
 
     if facies_list is None:
         facies_list = xls.sheet_names
