@@ -1,7 +1,9 @@
 import numpy as np
 
 
-def rotate_around_axis(xyz, axis_unit_vector, theta, reshape=False):
+### ROTATIONS
+
+def rotate_around_axis(xyz, axis_unit_vector, theta, axis_di=False, dim=False, reshape=False):
     """
     Rotates a vector [x,y,z] or array of vectors around an arbitrary axis.
      
@@ -13,6 +15,12 @@ def rotate_around_axis(xyz, axis_unit_vector, theta, reshape=False):
         axis around which the rotation is supposed to happen
     theta float
         angle of rotation
+    dim: bool
+        default: False
+        if True the xyz array contains declination and inclination values
+    axis_di: bool
+        default: False
+        if True the axis_unit_vector array contains declination and inclination values
     reshape: bool
         default: False
         changes the used input and output array shape from (n,3) if False to (3,n) 
@@ -20,10 +28,18 @@ def rotate_around_axis(xyz, axis_unit_vector, theta, reshape=False):
     Returns
     -------
     np.array
+        if dim = True will return DIM values
         if reshape = False: [[x1,y1,z1], [x2,y2,z2]]
         if reshape = True: [[x1,x1], [y2,y2], [z1,z2]]
     """
-    xyz = maintain_shape(np.array(xyz))
+    xyz = maintain_shape(xyz)
+
+    if dim:
+        xyz = convert_to_xyz(xyz, reshape=reshape)
+
+    if axis_di:
+        axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
+        axis_unit_vector = convert_to_xyz(axis_unit_vector)[0]
 
     if not reshape:
         xyz = xyz.T
@@ -39,33 +55,60 @@ def rotate_around_axis(xyz, axis_unit_vector, theta, reshape=False):
          [uy * ux * (1 - cost) + uz * sint, cost + uy ** 2 * (1 - cost), uy * uz * (1 - cost) - ux * sint],
          [uz * ux * (1 - cost) - uy * sint, uz * uy * (1 - cost) + ux * sint, cost + uz ** 2 * (1 - cost)]]
 
-    out = np.dot(R, xyz)
+    out = np.dot(R, xyz).T
+
+    if dim:
+        out = convert_to_dim(out, reshape = reshape)
+
     out = handle_near_zero(out)
 
     if reshape:
-        return out
-    else:
         return out.T
+    else:
+        return out
 
 
-def rotate_arbitrary(xyz, alpha, beta, gamma, reshape = False):
+def rotate_arbitrary(xyz, alpha, beta, gamma, dim = False, reshape=False):
+    """
 
-    xyz = maintain_shape(np.array(xyz))
+    Parameters
+    ----------
+    xyz
+    alpha
+    beta
+    gamma
+    reshape
+
+    Returns
+    -------
+    np.array
+        if dim = True will return DIM values
+
+    """
+    xyz = maintain_shape(xyz)
+
+    if dim:
+        xyz = convert_to_xyz(xyz, reshape=reshape)
 
     alpha, beta, gamma = np.radians([alpha, beta, gamma])
+
     if not reshape:
         xyz = xyz.T
 
     R = np.dot(np.dot(RZ(alpha), RY(beta)), RX(gamma))
 
-    out = np.dot(R, xyz)
+    out = np.dot(R, xyz).T
+
+    if dim:
+        out = convert_to_dim(out, reshape = reshape)
 
     out = handle_near_zero(out)
 
     if reshape:
-        return out
-    else:
         return out.T
+    else:
+        return out
+
 
 def RX(angle):
     """
@@ -151,10 +194,12 @@ def rotate(xyz, axis='x', theta=0, reshape=False):
     out = handle_near_zero(out)
 
     if reshape:
-        return out
-    else:
         return out.T
+    else:
+        return out
 
+
+### CONVERSIONS
 
 def convert_to_xyz(dim, reshape=False):
     """
@@ -189,13 +234,13 @@ def convert_to_xyz(dim, reshape=False):
     y = np.cos(np.radians(I)) * np.sin(np.radians(D)) * M
     z = np.cos(np.radians(I)) * np.tan(np.radians(I)) * M
 
-    out = np.array([x, y, z])
+    out = np.array([x, y, z]).T
     out = handle_near_zero(out)
 
     if reshape:
-        return out
-    else:
         return out.T
+    else:
+        return out
 
 
 def convert_to_dim(xyz, reshape=False):
@@ -217,8 +262,7 @@ def convert_to_dim(xyz, reshape=False):
         if reshape = False: [[d1,i1,m1], [d2,i2,m2]]
         if reshape = True: [[d1,d1], [i2,i2], [m1,m2]]
     """
-
-    xyz = maintain_shape(np.array(xyz))
+    xyz = maintain_shape(xyz)
 
     if reshape:
         xyz = xyz.T
@@ -231,13 +275,13 @@ def convert_to_dim(xyz, reshape=False):
     D = np.degrees(np.arctan2(y, x)) % 360  # calculate D and map to 0-360 degree range
     I = np.degrees(np.arcsin(z / M))  # calculate I
 
-    out = np.array([D, I, M])
+    out = np.array([D, I, M]).T
     out = handle_near_zero(out)
 
     if reshape:
-        return out
-    else:
         return out.T
+    else:
+        return out
 
 
 def convert_to_stereographic(xyz, dim=False, reshape=False):
@@ -279,15 +323,21 @@ def convert_to_stereographic(xyz, dim=False, reshape=False):
     if not dim:
         dim = convert_to_dim(xyz, reshape=reshape)
 
+    if reshape:
+        dim = dim.T
+
     d = dim[:, 0]
     i = np.radians(dim[:, 1])
     neg = i < 0
 
-    # r =  1 - (1-np.tan((np.pi/4)-(i/2)))
-    r = 1 - (1 - np.sqrt(1 - np.sin(i)))
-    # r = np.sqrt(1 - abs(z)) / (np.sqrt(x ** 2 + y ** 2))
-    #     XY = np.array([y * R, x * R])
-    return np.array([d, r, neg]).T
+    r = 1 - (1 - np.tan((np.pi / 4) - (abs(i) / 2)))
+
+    out =  np.array([d, r, neg]).T
+
+    if reshape:
+        return out.T
+    else:
+        return out
 
 
 def convert_to_equal_area(xyz, dim=False, reshape=False):
@@ -324,21 +374,46 @@ def convert_to_equal_area(xyz, dim=False, reshape=False):
     convert_to_dim, convert_to_xyz, convert_to_stereographic
     """
 
-    xyz = maintain_shape(np.array(xyz))
+    xyz = maintain_shape(xyz)
 
     if not dim:
         dim = convert_to_dim(xyz, reshape=reshape)
+    else:
+        dim = xyz
+
+    if reshape:
+        dim = dim.T
 
     d = dim[:, 0]
-    i = np.radians(dim[:, 1])
+    i = dim[:, 1]
     neg = i < 0
 
-    r = 1 - (1 - np.tan((np.pi / 4) - (i / 2)))
+    r = 1 - np.abs(i) / 90
+    # i = np.radians(np.abs(i))
+    # r = np.sqrt((1 - np.sin(i)) ** 2 + np.cos(i) ** 2) / np.sqrt(2) ?? why is this wrong???
+    out =  np.array([d, r, neg]).T
 
-    return np.array([d, r, neg]).T
+    if reshape:
+        return out.T
+    else:
+        return out
 
+def convert_to_hvl(data, dim=False): #todo make consistent with other convert
+    if not dim:
+        data = convert_to_dim(data)
+    D = data[:, 0]
+    I = data[:, 1]
+    M = data[:, 2]
+
+    h = M * np.cos(np.radians(I))
+    v = M * np.sin(np.radians(I))
+
+    return array([h, v, M]).T
 
 def maintain_shape(d):
+    if isinstance(d, (list, tuple)):
+        d = np.array(d)
+
     if len(d.shape) == 1:
         return np.array([d])
     else:
