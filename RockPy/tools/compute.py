@@ -41,6 +41,7 @@ def rotate_around_axis(xyz, axis_unit_vector, theta, axis_di=False, dim=False, r
         axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
         axis_unit_vector = convert_to_xyz(axis_unit_vector)[0]
 
+    # computation done with (3,n) shape
     if not reshape:
         xyz = xyz.T
 
@@ -51,24 +52,27 @@ def rotate_around_axis(xyz, axis_unit_vector, theta, axis_di=False, dim=False, r
     cost = np.cos(theta)
     sint = np.sin(theta)
 
-    R = [[cost + ux ** 2 * (1 - cost), ux * uy * (1 - cost) - uz * (sint), ux * uz * (1 - cost) + uy * (sint)],
-         [uy * ux * (1 - cost) + uz * sint, cost + uy ** 2 * (1 - cost), uy * uz * (1 - cost) - ux * sint],
-         [uz * ux * (1 - cost) - uy * sint, uz * uy * (1 - cost) + ux * sint, cost + uz ** 2 * (1 - cost)]]
+    R = np.array([[cost + ux ** 2 * (1 - cost), ux * uy * (1 - cost) - uz * (sint), ux * uz * (1 - cost) + uy * (sint)],
+                  [uy * ux * (1 - cost) + uz * sint, cost + uy ** 2 * (1 - cost), uy * uz * (1 - cost) - ux * sint],
+                  [uz * ux * (1 - cost) - uy * sint, uz * uy * (1 - cost) + ux * sint, cost + uz ** 2 * (1 - cost)]])
 
-    out = np.dot(R, xyz).T
+    out = np.dot(R, xyz)
 
     if dim:
-        out = convert_to_dim(out, reshape = reshape)
+        # here reshape = True because shape is (3,n)
+        out = convert_to_dim(out, reshape=True)
 
     out = handle_near_zero(out)
 
+    # no need to convert to (3,n) for reshape = True
     if reshape:
-        return out.T
-    else:
         return out
+    # need to convert to (n,3) for reshape = False
+    else:
+        return out.T
 
 
-def rotate_arbitrary(xyz, alpha, beta, gamma, dim = False, reshape=False):
+def rotate_arbitrary(xyz, alpha, beta, gamma, dim=False, reshape=False):
     """
 
     Parameters
@@ -90,17 +94,17 @@ def rotate_arbitrary(xyz, alpha, beta, gamma, dim = False, reshape=False):
     if dim:
         xyz = convert_to_xyz(xyz, reshape=reshape)
 
-    alpha, beta, gamma = np.radians([alpha, beta, gamma])
-
-    if not reshape:
+    if reshape:
         xyz = xyz.T
+
+    alpha, beta, gamma = np.radians([alpha, beta, gamma])
 
     R = np.dot(np.dot(RZ(alpha), RY(beta)), RX(gamma))
 
-    out = np.dot(R, xyz).T
+    out = np.dot(R, xyz.T).T
 
     if dim:
-        out = convert_to_dim(out, reshape = reshape)
+        out = convert_to_dim(out, reshape=False)
 
     out = handle_near_zero(out)
 
@@ -318,7 +322,7 @@ def convert_to_stereographic(xyz, dim=False, reshape=False):
     convert_to_dim, convert_to_xyz, convert_to_equal_area
     """
 
-    xyz = maintain_shape(np.array(xyz))
+    xyz = maintain_shape(xyz)
 
     if not dim:
         dim = convert_to_dim(xyz, reshape=reshape)
@@ -332,7 +336,7 @@ def convert_to_stereographic(xyz, dim=False, reshape=False):
 
     r = 1 - (1 - np.tan((np.pi / 4) - (abs(i) / 2)))
 
-    out =  np.array([d, r, neg]).T
+    out = np.array([d, r, neg]).T
 
     if reshape:
         return out.T
@@ -391,14 +395,15 @@ def convert_to_equal_area(xyz, dim=False, reshape=False):
     r = 1 - np.abs(i) / 90
     # i = np.radians(np.abs(i))
     # r = np.sqrt((1 - np.sin(i)) ** 2 + np.cos(i) ** 2) / np.sqrt(2) ?? why is this wrong???
-    out =  np.array([d, r, neg]).T
+    out = np.array([d, r, neg]).T
 
     if reshape:
         return out.T
     else:
         return out
 
-def convert_to_hvl(data, dim=False): #todo make consistent with other convert
+
+def convert_to_hvl(data, dim=False):  # todo make consistent with other convert
     if not dim:
         data = convert_to_dim(data)
     D = data[:, 0]
@@ -408,7 +413,8 @@ def convert_to_hvl(data, dim=False): #todo make consistent with other convert
     h = M * np.cos(np.radians(I))
     v = M * np.sin(np.radians(I))
 
-    return array([h, v, M]).T
+    return np.array([h, v, M]).T
+
 
 def maintain_shape(d):
     if isinstance(d, (list, tuple)):
@@ -423,3 +429,9 @@ def maintain_shape(d):
 def handle_near_zero(d):
     d[np.isclose(d, 0)] = 0
     return d
+
+
+if __name__ == '__main__':
+    print(
+        rotate_arbitrary([[30, 40, 50, 40, 12], [0, 0, 10, 20, 1], [0.1, 1, 3, 1, 1]], 0, 0, 0, dim=True, reshape=True))
+    # print(rotate_arbitrary(np.array([[30, 40, 50, 40], [0, 0, 10, 20], [0.1, 1, 1, 1]]).T, 0, 0, 0, dim=True))
