@@ -9,6 +9,7 @@ import pandas as pd
 from contextlib import contextmanager
 
 from Cython.Includes import numpy
+import inspect
 
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
@@ -167,6 +168,15 @@ def tuple2str(tup):
     else:
         return str(tup).replace('\'', ' ').replace(' ', '')
 
+
+def get_default_args(func):
+    signature = inspect.signature(func)
+
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
 
 def split_num_alph(item):
     """
