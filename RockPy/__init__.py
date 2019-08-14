@@ -29,7 +29,7 @@ logging.config.fileConfig(os.path.join(installation_directory, 'logging.conf'))
 log = logging.getLogger('RockPy')
 
 log.info('This is RockPy')
-log.info('Installation dr: %s'%installation_directory)
+log.info('Installation dir: %s'%installation_directory)
 
 # import matplotlib
 # matplotlib.use('Qt5Agg')

@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 from matplotlib import colors as mcol
 from matplotlib.collections import LineCollection
 import matplotlib.colors as colors
+from matplotlib.legend_handler import HandlerTuple
 
-from RockPy.tools.compute import convert_to_equal_area
+from RockPy.tools.compute import convert_to_equal_area, maintain_n3_shape
 
 colorpalettes = {
     'cat10': ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
@@ -168,8 +169,7 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
 
     ax.set_rmax(1)
 
-
-def plot_equal(xyz, ax=None, dim=False, **kwargs):
+def plot_equal(xyz, ax=None, input='xyz', **kwargs):
     """
 
     Parameters
@@ -181,12 +181,19 @@ def plot_equal(xyz, ax=None, dim=False, **kwargs):
 
     Returns
     -------
-
+    ax
+    down points
+    up points
     """
+
     if ax is None:
         ax = plt.gca()
+    xyz = maintain_n3_shape(xyz)
+    pol = convert_to_equal_area(xyz, input=input)
 
-    pol = convert_to_equal_area(xyz, dim=dim)
+    if len(pol.shape) == 1:
+        pol = pol.reshape((1,3))
+
     neg_inc = pol[:, 2].astype(bool)
     down = pol[neg_inc]
     up = pol[~neg_inc]
@@ -197,17 +204,22 @@ def plot_equal(xyz, ax=None, dim=False, **kwargs):
 
     ls = kwargs.pop('ls', '')
 
-    ax.plot(np.radians(down[:, 0]), down[:, 1], marker=marker, color=color, mfc='none', ls='', **kwargs)
-    ax.plot(np.radians(up[:, 0]), up[:, 1], marker=marker, color=color, ls='', **kwargs)
+    p1 = ax.plot(np.radians(down[:, 0]), down[:, 1], marker=marker, color=color, mfc='none', ls='', **kwargs)
+    p2 = ax.plot(np.radians(up[:, 0]), up[:, 1], marker=marker, color=color, ls='', **kwargs)
 
     if ls:
         ax.plot(np.radians(pol[:, 0]), pol[:, 1], marker='', color=linecolor, ls=ls, **kwargs)
 
-    return ax
+    return ax, p1, p2
 
 
 """ LINES """
 
+def combined_label_legend(ax, pad=-1, bbox_to_anchor=[1, 1]):
+    h, l = ax.get_legend_handles_labels()
+    labels = sorted(set(l))
+    handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
+    ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor, handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)})
 
 def log10_isolines(ax=None, angle=45):
     if ax is None:
@@ -235,7 +247,7 @@ def log10_isolines(ax=None, angle=45):
         sn = (min(ynew) - max(ynew)) / (min(xnew) - max(xnew))
         intn = min(ynew) - sn * min(xnew)
 
-        ax.plot(xnew, ynew, scaley=False, scalex=False, color='0.5', ls='--')
+        ax.plot(xnew, ynew, scaley=False, scalex=False, color='0.5', ls='--', zorder=0)
 
         rotation = ax.transData.transform_angles(np.array((angle,)),
                                                  np.array([1, 1]).reshape((1, 2)))[0]
@@ -247,7 +259,7 @@ def log10_isolines(ax=None, angle=45):
                 '10$^{%i}$' % s,
                 verticalalignment='center', horizontalalignment='center', rotation=rotation,
                 bbox=dict(facecolor='w', alpha=0.8, edgecolor='none', pad=0),
-                color='k', clip_on=True)
+                color='k', clip_on=True, zorder=0.1)
 
 
 def line_through_points(p1, p2, x_extent=None, ax=None, **kwargs):

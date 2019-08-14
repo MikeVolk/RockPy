@@ -1,5 +1,6 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import RockPy
 from RockPy.tools.compute import rotate
@@ -35,9 +36,9 @@ def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     col_i = df[colI].values.astype(float)
     col_d = df[colD].values.astype(float)
 
-    df[colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
-    df[colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
-    df[colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
+    df.loc[:,colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
+    df.loc[:,colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
+    df.loc[:,colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
     return df
 
 
