@@ -13,6 +13,25 @@ class Cif(RockPy.core.ftype.Ftype):
     datacolumns = ['mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time']
 
+    corrections = {"TW": [0, 0],
+                   "TN": [90, 0],
+                   "TE": [180, 0],  #
+                   "TS": [270, 0],
+                   "ET": [0, 90],
+                   "ST": [90, 90],
+                   "WT": [180, 90],
+                   "NT": [270, 90],
+                   "BE": [0, 180],  #
+                   "BS": [90, 180],
+                   "BW": [180, 180],
+                   "BN": [270, 180],
+                   ####
+                   "WB": [0, 270],
+                   "NB": [90, 270],
+                   "EB": [180, 270],
+                   "WS": [270, 270],
+                   }
+
     def __init__(self, dfile, snames=None, reload=False, mdata=None, **kwargs):
         super().__init__(dfile, snames=snames, dialect=None, reload=reload, mdata=mdata, **kwargs)
 
@@ -40,6 +59,8 @@ class Cif(RockPy.core.ftype.Ftype):
 
         new_levels = old_levels
         for idx, level in enumerate(new_levels):
+            # if 'ARM'  in data['mtype'].iloc[idx]:
+            #     level = 0
             if 'UAFX' in data['mtype'].iloc[idx]:
                 prev_AF_idx = max(i for i, v in AF_index if i < idx)
                 level = data['level'].iloc[prev_AF_idx]
@@ -93,28 +114,29 @@ class Cif(RockPy.core.ftype.Ftype):
 
         # moment is stored in 10^-5 emu -> 1E-5 * 1E-3 -> Am^2
         data['intensity'] *= 1e5
-        data[['std_x', 'std_y','std_z','intensity']] *= 1e-3
+        data.loc[:, ['std_x', 'std_y', 'std_z', 'intensity']] *= 1e-3
 
         data = DIM2XYZ(data, colD='plate_dec', colI='plate_inc', colM='intensity')
-        data['datetime'] = pd.to_datetime(data['date'] + ' ' + data['time'])
+        data.loc[:, 'datetime'] = pd.to_datetime(data['date'] + ' ' + data['time'])
         data = data.set_index('datetime')
         return data
 
     @classmethod
     def read_UP_file(cls, dfile, sample_id, reload=False):
-
         if not dfile in cls.imported_files or reload:
             with open(dfile) as raw_data:
                 raw_data = raw_data.readlines()
 
             header = raw_data[0]
             raw_data = [n.rstrip().replace(',', '|') for n in raw_data]
+
+            # in case of weird double <CR> symbols
+            raw_data = [i for i in raw_data if i]
             raw_data = [n.split('|') for n in raw_data]
 
             header = header.rstrip().replace(',', '|')
             header = header.split('|')
             header.append('datetime')
-
             raw_data = [[n[0], n[1], int(n[2]), n[3], int(n[4]), int(n[5]), float(n[6]), float(n[7]), float(n[8]),
                          pd.to_datetime(n[9])] for n in raw_data[1:]]
             cls.imported_files[dfile] = pd.DataFrame(columns=header, data=raw_data)
@@ -126,51 +148,63 @@ class Cif(RockPy.core.ftype.Ftype):
                              'Please check correct spelling'.format(sample_id, os.path.basename(dfile)))
             return
 
-        out = out[out['Sample'].values == sample_id]
+        sdata = out.loc[out.Sample == sample_id].copy()
 
         # convert from emu to Am^2
-        out[['X', 'Y', 'Z']] *= 1e-3
+        sdata.loc[:,['X', 'Y', 'Z']] *= 1e-3
 
-        out = out.rename(columns={"X": "X_", "Y": "Y_", "Z": "Z_"})
-        out['z'] = out['Z_']
+        sdata = sdata.rename(columns={"X": "X_", "Y": "Y_", "Z": "Z_"})
+        sdata.loc[:,'z'] = sdata['Z_']
+
         # rotate measurements into sample coordinates
-        for idx, v in out.iterrows():
+        for idx, v in sdata.iterrows():
             x, y = v[['X_', 'Y_']].values
 
             if v['MsmtNum'] == 1:
-                out.loc[idx, 'x'] = x
-                out.loc[idx, 'y'] = y
+                sdata.loc[idx, 'x'] = x
+                sdata.loc[idx, 'y'] = y
             elif v['MsmtNum'] == 2:
-                out.loc[idx, 'x'] = y
-                out.loc[idx, 'y'] = -x
+                sdata.loc[idx, 'x'] = y
+                sdata.loc[idx, 'y'] = -x
             elif v['MsmtNum'] == 3:
-                out.loc[idx, 'x'] = -x
-                out.loc[idx, 'y'] = -y
+                sdata.loc[idx, 'x'] = -x
+                sdata.loc[idx, 'y'] = -y
             elif v['MsmtNum'] == 4:
-                out.loc[idx, 'x'] = -y
-                out.loc[idx, 'y'] = x
+                sdata.loc[idx, 'x'] = -y
+                sdata.loc[idx, 'y'] = x
+
+            sdata.loc[idx, 'y'] *= -1
 
             if v['Direction'] == 'D':
-                out.loc[idx, 'z'] *= -1
-            else:
-                out.loc[idx, 'y'] *= -1
+                sdata.loc[idx, 'y'] *= -1
+                sdata.loc[idx, 'z'] *= -1
 
-        # print(out[['X_','Y_','x','y','z']])
-        out = XYZ2DIM(out, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
+        sdata = XYZ2DIM(sdata, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
 
-        out = out.set_index('datetime')
+        sdata = sdata.set_index('datetime')
         dfile = os.path.basename(dfile)
-        out['dfile'] = dfile
-        out['mtype'] = ''.join([n for n in dfile.split('.')[0] if not n.isnumeric()]).rstrip()
-        out['level'] = ''.join([n for n in dfile.split('.')[0] if n.isnumeric() if n])
-        out['level'] = [int(i) if i else 0 for i in out['level']]
-        return out
+        sdata.loc[:, 'dfile'] = dfile
+
+        mtype = ''.join([n for n in dfile.split('.')[0] if not n.isnumeric()]).rstrip()
+        level = ''.join([n for n in dfile.split('.')[0] if n.isnumeric() if n])
+
+        if 'UAFX' in mtype:
+            mtype += level[0]
+            level = level[1:]
+        if mtype == 'NRM':
+            level = 0
+
+        sdata.loc[:, 'mtype'] = mtype
+        sdata.loc[:, 'level'] = int(level)
+        return sdata
 
     @staticmethod
     def separate_row(raw_data):
         rows = []
         header_rows = []
         for idx, row in enumerate(raw_data):
+            if row.startswith('#'):
+                continue
             # data rows start at idx 2
             if idx > 1:
                 # index of first number
@@ -294,16 +328,16 @@ class Cif(RockPy.core.ftype.Ftype):
         data = data.sort_index()
         data.index.name = 'datetime'
 
-        data['user'] = user[:8]
-        data['date'] = data.index.strftime('%Y-%m-%d')
-        data['time'] = data.index.strftime('%H:%M:%S')
+        data.loc[:,'user'] = user[:8]
+        data.loc[:,'date'] = data.index.strftime('%Y-%m-%d')
+        data.loc[:,'time'] = data.index.strftime('%H:%M:%S')
 
-        data['core_dip'] = core_dip
-        data['core_strike'] = core_strike
-        data['bedding_dip'] = bedding_dip
-        data['bedding_strike'] = bedding_strike
+        data.loc[:,'core_dip'] = core_dip
+        data.loc[:,'core_strike'] = core_strike
+        data.loc[:,'bedding_dip'] = bedding_dip
+        data.loc[:,'bedding_strike'] = bedding_strike
 
-        data = cls._correct_core(data, core_dip, core_strike - 90)
+        data = cls._correct_core(data, core_dip, core_strike)
 
         data = cls._correct_strat(data, bedding_dip, bedding_strike)
 
@@ -314,6 +348,85 @@ class Cif(RockPy.core.ftype.Ftype):
                                         stratigraphic_level=stratigraphic_level, comment=comment)
         header = cls.read_header(header_rows=header_lines)
         return cls(dfile='from .UP files', mdata=data, header=header)
+    
+    """ properties """
+    @property
+    def geo_dim(self):
+        return self.data[['geo_dec','geo_inc','intensity']]
+    @property
+    def plate_dim(self):
+        return self.data[['plate_dec','plate_inc','intensity']]
+    @property
+    def plate_xyz(self):
+        return self.data[['x','y','z']]\
+    @property
+    def geo_xyz(self):
+        return DIM2XYZ(self.geo_dim, colD='geo_dec', colI='geo_inc',colM='intensity')
+    
+    def mean_levels(self):
+        """
+        Calculates the average for (AF, UAFX1, UAFX2, ...) of the same level and recalcuates the plate, core and strat
+        declination and inclinations.
+
+        Notes
+        -----
+        `_mean_levels' can be used for testing purposes. This does not reset self.data with the means but returns a
+        copy of the Dataframe.
+
+        Returns
+        -------
+            self.data
+        """
+        core_dip = self.header['core_dip']
+        core_strike = self.header['core_strike']
+        strat_dip = self.header['bedding_dip']
+        strat_strike = self.header['bedding_strike']
+
+        self.data = self._mean_levels(self.data,
+                                      core_dip=core_dip, core_strike=core_strike,
+                                      strat_dip=strat_dip, strat_strike=strat_strike)
+        return self.data
+
+    @classmethod
+    def _mean_levels(self, df, core_dip, core_strike, strat_dip, strat_strike):
+        """
+        Calculates the average for (AF, UAFX1, UAFX2, ...) of the same level and recalcuates the plate, core and strat
+        declination and inclinations.
+
+        Notes
+        -----
+        Is called by `mean_levels' resets self.data with the means.
+
+        Returns
+        -------
+        pd.DataFrame
+            averaged data
+        """
+        df = df.copy()
+        index_name = df.index.name
+        # make sure the index is datetime
+        df = df.reset_index()
+        df = df.set_index('level')
+
+        # make sure the data is sorted
+        df = df.sort_values('datetime')
+
+        out = df.loc[~np.in1d(df['mtype'], ['UAFX1', 'UAFX2', 'UAFX3'])].copy()
+        mean = df.groupby('level').mean()
+
+        out.loc[:, 'x'] = mean.loc[:, 'x']
+        out.loc[:, 'y'] = mean.loc[:, 'y']
+        out.loc[:, 'z'] = mean.loc[:, 'z']
+
+        out = self._recalc_plate(out)
+        out = self._correct_core(out, core_dip, core_strike)
+        out = self._correct_strat(out, strat_dip, strat_strike)
+
+        # reset df to initial index
+        out = out.reset_index()
+        out = out.set_index(index_name)
+
+        return out
 
     def reset_plate(self):
         self.data = self._recalc_plate(self.data)
@@ -328,9 +441,11 @@ class Cif(RockPy.core.ftype.Ftype):
         if dip is None:
             dip = self.header['core_dip']
         if strike is None:
-            dip = self.header['core_strike']
+            strike = self.header['core_strike']
 
         self.data = self._correct_core(self.data, dip, strike)
+        self.header['core_dip'] = dip
+        self.header['core_strike'] = strike
 
     @classmethod
     def _correct_core(cls, df, dip, strike):
@@ -348,7 +463,7 @@ class Cif(RockPy.core.ftype.Ftype):
         """
         cls.log().info(f'Correcting data for core dip ({dip}) and strike ({strike})')
 
-        return correct_dec_inc(df=df, dip=dip, strike=strike,
+        return correct_dec_inc(df=df, dip=dip, strike=(strike - 90),
                                colI='plate_inc', colD='plate_dec',
                                newD='geo_dec', newI='geo_inc')
 
@@ -363,11 +478,10 @@ class Cif(RockPy.core.ftype.Ftype):
             strike of strat
         """
 
-
         if dip is None:
             dip = self.header['strat_dip']
         if strike is None:
-            dip = self.header['strat_strike']
+            strike = self.header['strat_strike']
 
         self.data = self._correct_strat(self.data, dip, strike)
 
@@ -414,8 +528,8 @@ class Cif(RockPy.core.ftype.Ftype):
         df['y'] *= -1
 
         df = cls._recalc_plate(df)
-        df = cls._correct_core(df = df, dip = core_dip, strike = (core_strike - 90))
-        df = cls._correct_strat(df = df, dip = bedding_dip, strike = bedding_strike)
+        df = cls._correct_core(df=df, dip=core_dip, strike=core_strike)
+        df = cls._correct_strat(df=df, dip=bedding_dip, strike=bedding_strike)
 
         return df
 
@@ -474,7 +588,7 @@ class Cif(RockPy.core.ftype.Ftype):
         corrected = sample_means - holder_means
         return corrected
 
-    def export(self, fname, sample_id=None):
+    def export(self, fname, sample_id=None, **kwargs):
         """
         Exports a cif file from the data
         Parameters
@@ -485,19 +599,25 @@ class Cif(RockPy.core.ftype.Ftype):
         """
 
         header = self.header.reset_index().iloc[0].to_dict()
-
+        header.update(kwargs)
         if sample_id is not None:
             header['sample_id'] = sample_id
+
+        data = self.data.copy()
+
+        data = data.reset_index()
 
         with open(fname, 'w+') as f:
             header = self.write_header(**header)
             f.writelines(header)
-            for row in self.data.iterrows():
+            for row in data.iterrows():
                 row = self.write_cif_line(row)
                 f.write(row + '\n')
 
     @classmethod
-    def write_header(cls, bedding_dip, bedding_strike, core_dip, core_strike, sample_id,
+    def write_header(cls, core_strike, core_dip,
+                     bedding_strike, bedding_dip,
+                     sample_id,
                      core_volume_or_mass=1, locality_id='', stratigraphic_level='', comment=''):
         """
         Returns a list of strings with the correct Cit formatting. Line 1 = locality and sample info,
@@ -519,6 +639,10 @@ class Cif(RockPy.core.ftype.Ftype):
         -------
 
         """
+        if np.isnan(stratigraphic_level):
+            stratigraphic_level = ''
+        comment += f' >> RockPy exported {datetime.now().strftime("%Y-%m-%d %H:%M")}'
+
         out = ['{:<4}{:<9}{}\n'.format(locality_id, sample_id, comment[:255]),
                ' {:>6} {:>5} {:>5} {:>5} {:>5} {:>5}\n'.format(stratigraphic_level, core_strike, core_dip,
                                                                bedding_strike, bedding_dip, core_volume_or_mass),
@@ -527,11 +651,27 @@ class Cif(RockPy.core.ftype.Ftype):
 
     @staticmethod
     def write_cif_line(series):
+        """
+        Writes one cit foramatted line
 
-        level = int(series[0] * 10000)
-        series = series[1]
+        Parameters
+        ----------
+        series: pd.Series
+            The line, as a pandas Series from the data Dataframe.
+
+        Returns
+        -------
+        str
+            string formatted to cit format
+        """
+
+        series = series[1].copy()
+        level = int(series['level'] * 10000)
+        series[['std_x', 'std_y', 'std_z', 'intensity']] *= 1e3  # to emu
+        series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu
 
         mtype = series['mtype']
+
         timedate = pd.to_datetime(series['date'] + ' ' + series['time'])
 
         columns = ['geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
@@ -548,7 +688,7 @@ class Cif(RockPy.core.ftype.Ftype):
             level = ''
 
         if "UAFX" in mtype:
-            formats['mtype'] = "{:<4}"
+            formats['mtype'] = "{:<5}"
             formats['level'] = '{:>1}'
             level = str(level)[-1]
 
@@ -561,5 +701,12 @@ class Cif(RockPy.core.ftype.Ftype):
 
 
 if __name__ == '__main__':
-    cif1 = Cif('/Users/mike/Dropbox/science/harvard/2G_data/mike/HAAL/HAAL1d')
-    cif1.correct_wrong_direction()
+    from RockPy.tools.pandas_tools import DIM2XYZ
+
+    NRM_MIL14 = Cif('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM/MIL13', reload=True)
+    # print(NRM_MIL14.data[['x', 'y', 'z']].iloc[0])
+    # print(DIM2XYZ(NRM_MIL14.data[['geo_dec', 'geo_inc', 'intensity']], colD='geo_dec', colI='geo_inc',
+    #               colM='intensity').iloc[0])
+    # NRM_MIL14.reset_geo(dip=90, strike=90)
+    # print(DIM2XYZ(NRM_MIL14.data[['geo_dec', 'geo_inc', 'intensity']], colD='geo_dec', colI='geo_inc',
+    #               colM='intensity').iloc[0])
