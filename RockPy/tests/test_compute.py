@@ -70,37 +70,61 @@ class TestCompute(TestCase):
     def test_convert_to_xyz(self):
         true = self.xyz
         testing.assert_array_almost_equal(true, convert_to_xyz(self.dim))
-        testing.assert_array_almost_equal(true.T, convert_to_xyz(self.dim.T, reshape=True))
-
+        testing.assert_array_almost_equal(true.T, convert_to_xyz(self.dim.T))
+        self.assertEqual(np.shape([1,2,3]), convert_to_xyz([1,2,3]).shape)
+        self.assertEqual(self.dim.shape, convert_to_xyz(self.dim).shape)
+        self.assertEqual(self.dim.T.shape, convert_to_xyz(self.dim.T).shape)
+        
     def test_convert_to_dim(self):
         true = self.dim
         testing.assert_array_almost_equal(true, convert_to_dim(self.xyz))
-        testing.assert_array_almost_equal(true.T, convert_to_dim(self.xyz.T, reshape=True))
+        testing.assert_array_almost_equal(true.T, convert_to_dim(self.xyz.T))
 
+        self.assertEqual(np.shape([1,2,3]), convert_to_dim([1,2,3]).shape)
+        self.assertEqual(self.xyz.shape, convert_to_dim(self.xyz).shape)
+        self.assertEqual(self.xyz.T.shape, convert_to_dim(self.xyz.T).shape)
+        
     def test_rotate_around_axis(self):
-
         # test the shape of input and output array
         self.assertEqual(self.xyz.shape, rotate_around_axis(self.xyz, [1, 1, 1], theta=0).shape)
-        self.assertEqual(self.xyz.T.shape, rotate_around_axis(self.xyz.T, [1, 1, 1], theta=0, reshape=True).shape)
+        self.assertEqual(self.xyz.T.shape, rotate_around_axis(self.xyz.T, [1, 1, 1], theta=0).shape)
 
         # test for theta = 0
         testing.assert_array_equal(self.xyz, rotate_around_axis(self.xyz, [1, 1, 1], theta=0))
-        testing.assert_array_equal(self.xyz.T, rotate_around_axis(self.xyz.T, [1, 1, 1], theta=0, reshape=True))
+        testing.assert_array_equal(self.xyz.T, rotate_around_axis(self.xyz.T, [1, 1, 1], theta=0))
 
-        testing.assert_array_almost_equal(self.dim, rotate_around_axis(self.dim, [1, 1, 1], dim = True ,theta=0))
-        testing.assert_array_almost_equal(self.dim.T, rotate_around_axis(self.dim.T, [1, 1, 1], dim = True, theta=0, reshape=True))
+        testing.assert_array_almost_equal(self.dim, rotate_around_axis(self.dim, [1, 1, 1], input='dim', theta=0))
+        testing.assert_array_almost_equal(self.dim.T, rotate_around_axis(self.dim.T, [1, 1, 1], input='dim', theta=0))
 
     def test_rotate_arbitrary(self):
-
         # test the shape of input and output array
         self.assertEqual(self.xyz.shape, rotate_arbitrary(self.xyz, 1, 1, 1).shape)
-        self.assertEqual(self.xyz.T.shape, rotate_arbitrary(self.xyz.T, 1, 1, 1, reshape=True).shape)
-        self.assertEqual(self.dim.shape, rotate_arbitrary(self.dim, 1, 1, 1, dim = True).shape)
-        self.assertEqual(self.dim.T.shape, rotate_arbitrary(self.dim.T, 1, 1, 1, dim = True, reshape=True).shape)
+        self.assertEqual(self.xyz.T.shape, rotate_arbitrary(self.xyz.T, 1, 1, 1).shape)
+        self.assertEqual(self.dim.shape, rotate_arbitrary(self.dim, 1, 1, 1, input='dim').shape)
+        self.assertEqual(self.dim.T.shape, rotate_arbitrary(self.dim.T, 1, 1, 1, input='dim').shape)
 
         # test for theta = 0
-        testing.assert_array_equal(self.xyz, rotate_arbitrary(self.xyz, 0,0,0))
-        testing.assert_array_equal(self.xyz.T, rotate_arbitrary(self.xyz.T, 0,0,0, reshape=True))
+        testing.assert_array_equal(self.xyz, rotate_arbitrary(self.xyz, 0, 0, 0))
+        testing.assert_array_equal(self.xyz.T, rotate_arbitrary(self.xyz.T, 0, 0, 0))
 
-        testing.assert_array_almost_equal(self.dim, rotate_arbitrary(self.dim, 0,0,0, dim = True))
-        testing.assert_array_almost_equal(self.dim.T, rotate_arbitrary(self.dim.T, 0,0,0, dim = True, reshape=True))
+        testing.assert_array_almost_equal(self.dim, rotate_arbitrary(self.dim, 0, 0, 0, input='dim'))
+        testing.assert_array_almost_equal(self.dim.T, rotate_arbitrary(self.dim.T, 0, 0, 0, input='dim'))
+
+        # test for theta = 360
+        testing.assert_array_almost_equal(self.xyz, rotate_arbitrary(self.xyz, 360, 0, 0))
+        testing.assert_array_almost_equal(self.xyz.T, rotate_arbitrary(self.xyz.T, 360, 0, 0))
+
+        testing.assert_array_almost_equal(self.dim, rotate_arbitrary(self.dim, 360, 0, 0, input='dim'))
+        testing.assert_array_almost_equal(self.dim.T, rotate_arbitrary(self.dim.T, 360, 0, 0, input='dim'))
+
+        testing.assert_array_almost_equal(self.xyz, rotate_arbitrary(self.xyz, 0, 360, 0))
+        testing.assert_array_almost_equal(self.xyz.T, rotate_arbitrary(self.xyz.T, 0, 360, 0))
+
+        testing.assert_array_almost_equal(self.dim, rotate_arbitrary(self.dim, 0, 360, 0, input='dim'))
+        testing.assert_array_almost_equal(self.dim.T, rotate_arbitrary(self.dim.T, 0, 360, 0, input='dim'))
+
+        testing.assert_array_almost_equal(self.xyz, rotate_arbitrary(self.xyz, 0, 0, 360))
+        testing.assert_array_almost_equal(self.xyz.T, rotate_arbitrary(self.xyz.T, 0, 0, 360))
+
+        testing.assert_array_almost_equal(self.dim, rotate_arbitrary(self.dim, 0, 0, 360, input='dim'))
+        testing.assert_array_almost_equal(self.dim.T, rotate_arbitrary(self.dim.T, 0, 0, 360, input='dim'))

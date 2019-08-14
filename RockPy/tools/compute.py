@@ -1,119 +1,120 @@
 import numpy as np
+from functools import wraps, partial
+import RockPy
+from RockPy.core.utils import get_default_args
 
 
-### ROTATIONS
-
-def rotate_around_axis(xyz, axis_unit_vector, theta, axis_di=False, dim=False, reshape=False):
+def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
     """
-    Rotates a vector [x,y,z] or array of vectors around an arbitrary axis.
-     
+    Decorator that transforms the input into an `XYZ` array of (n,3) shape. If keyword 'dim' id provided,
+    the data will first be converted to xyz values. Returns an array in its original form and coordinates.
+    Parameters
+    ----------
+    func wrapped function
+    internal_dtype: str
+        default: 'xyz'
+        tells the decorator what input data type is given
+    transform_output: bool
+        default: True
+        transforms the data type back to the original imput dtype
+        if False, calculated dtype will be returned
+    Returns
+    -------
+    np.array
+        maintains shape and coordinates
+    """
+    if func is None:
+        return partial(handle_shape_dtype, internal_dtype=internal_dtype, transform_output=transform_output)
+
+    @wraps(func)
+    def conversion(*args, **kwargs):
+
+        # get defaults for the kwd args
+        defaults = get_default_args(func)
+        defaults.update(kwargs)
+        kwargs = defaults
+
+        xyz = args[0]
+        ## maintain vector shape part
+        s = np.array(xyz).shape
+
+        xyz = maintain_n3_shape(xyz)
+
+        # handle input data
+        # if the input data is dim it needs to be converted for functions, where internal dtype == 'xyz'
+        if internal_dtype == 'dim':
+            # if input data dtype == 'xyz' (i.e. input = 'xyz')
+            if 'input' in kwargs and kwargs['input'] == 'xyz':
+                RockPy.log.debug(f'{func.__qualname__} uses \'dim\' for internal calculations: converting xyz -> dim')
+                xyz = convert_to_dim(xyz)
+        # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
+        elif internal_dtype == 'xyz':
+            # if input data dtype == 'xyz' (i.e. input = 'xyz')
+            if 'input' in kwargs and kwargs['input'] == 'dim':
+                RockPy.log.debug(f'{func.__qualname__} uses \'xyz\' for internal calculations: converting dim -> xyz')
+                xyz = convert_to_xyz(xyz)
+
+        # calculate function
+        xyz = func(xyz, *args[1:], **kwargs)
+
+        if transform_output:
+            # return the same data type and shape as input
+            # for internal dtype == dim, the data up to here is dim. Needs to be converted, if input was xyz.
+            if internal_dtype == 'dim':
+                # if input data dtype == 'xyz' (i.e. input = 'xyz')
+                if 'input' in kwargs and kwargs['input'] == 'xyz':
+                    xyz = convert_to_xyz(xyz)
+
+            # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
+            elif internal_dtype == 'xyz':
+                # if input data dtype == 'xyz' (i.e. input = 'xyz')
+                if 'input' in kwargs and kwargs['input'] == 'dim':
+                    xyz = convert_to_dim(xyz)
+
+        # xyz = handle_near_zero(xyz)
+        if np.shape(xyz) != s:
+            if len(s) == 1:
+                return xyz[0]
+            else:
+                return xyz.T
+        return xyz
+
+    return conversion
+
+
+def maintain_n3_shape(xyz):
+    """
+    Takes vector of (3,), (n,3) and (3,n) shape and transforms it into (n,3) shape used for ALL compute calculations.
+
     Parameters
     ----------
     xyz array like
-        data that shall get rotated
-    axis_unit_vector array like
-        axis around which the rotation is supposed to happen
-    theta float
-        angle of rotation
-    dim: bool
-        default: False
-        if True the xyz array contains declination and inclination values
-    axis_di: bool
-        default: False
-        if True the axis_unit_vector array contains declination and inclination values
-    reshape: bool
-        default: False
-        changes the used input and output array shape from (n,3) if False to (3,n) 
-        
-    Returns
-    -------
-    np.array
-        if dim = True will return DIM values
-        if reshape = False: [[x1,y1,z1], [x2,y2,z2]]
-        if reshape = True: [[x1,x1], [y2,y2], [z1,z2]]
-    """
-    xyz = maintain_shape(xyz)
-
-    if dim:
-        xyz = convert_to_xyz(xyz, reshape=reshape)
-
-    if axis_di:
-        axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
-        axis_unit_vector = convert_to_xyz(axis_unit_vector)[0]
-
-    # computation done with (3,n) shape
-    if not reshape:
-        xyz = xyz.T
-
-    axis_unit_vector = axis_unit_vector / np.linalg.norm(axis_unit_vector)
-    ux, uy, uz = axis_unit_vector
-
-    theta = np.radians(theta)
-    cost = np.cos(theta)
-    sint = np.sin(theta)
-
-    R = np.array([[cost + ux ** 2 * (1 - cost), ux * uy * (1 - cost) - uz * (sint), ux * uz * (1 - cost) + uy * (sint)],
-                  [uy * ux * (1 - cost) + uz * sint, cost + uy ** 2 * (1 - cost), uy * uz * (1 - cost) - ux * sint],
-                  [uz * ux * (1 - cost) - uy * sint, uz * uy * (1 - cost) + ux * sint, cost + uz ** 2 * (1 - cost)]])
-
-    out = np.dot(R, xyz)
-
-    if dim:
-        # here reshape = True because shape is (3,n)
-        out = convert_to_dim(out, reshape=True)
-
-    out = handle_near_zero(out)
-
-    # no need to convert to (3,n) for reshape = True
-    if reshape:
-        return out
-    # need to convert to (n,3) for reshape = False
-    else:
-        return out.T
-
-
-def rotate_arbitrary(xyz, alpha, beta, gamma, dim=False, reshape=False):
-    """
-
-    Parameters
-    ----------
-    xyz
-    alpha
-    beta
-    gamma
-    reshape
+        data to be returned
 
     Returns
     -------
-    np.array
-        if dim = True will return DIM values
-
+        array like
+        in the shape of (n,3)
     """
-    xyz = maintain_shape(xyz)
-
-    if dim:
-        xyz = convert_to_xyz(xyz, reshape=reshape)
-
-    if reshape:
-        xyz = xyz.T
-
-    alpha, beta, gamma = np.radians([alpha, beta, gamma])
-
-    R = np.dot(np.dot(RZ(alpha), RY(beta)), RX(gamma))
-
-    out = np.dot(R, xyz.T).T
-
-    if dim:
-        out = convert_to_dim(out, reshape=False)
-
-    out = handle_near_zero(out)
-
-    if reshape:
-        return out.T
+    ## maintain vector shape part
+    s = np.array(xyz).shape
+    # for [x,y,z] or [d,i,m]
+    if s == (3,):
+        xyz = np.array(xyz).reshape((1, 3))
+    # for array like [[x],[y],
+    elif s[0] == 3 and s[1] != 3:
+        xyz = np.array(xyz).T
+    elif s[1] == 3 and s[0] != 3:
+        xyz = np.array(xyz)
     else:
-        return out
+        RockPy.log.warning('Input cannot be interpreted, due to ambiguous shape. '
+                           'Input could be [[x1,x2,x3],[y1,y2,y3],[z1,z2,z3]] or [[x1,y1,z1],[x2,y2,z2],[x3,y3,z3]].'
+                           'Returning original shape')
+        xyz = np.array(xyz)
+    return xyz
 
 
+### ROTATIONS
 def RX(angle):
     """
     Rotation matrix around X axis
@@ -174,19 +175,113 @@ def RZ(angle):
     return RZ
 
 
-def rotate(xyz, axis='x', theta=0, reshape=False):
+@handle_shape_dtype
+def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, input='xyz'):
+    """
+    Rotates a vector [x,y,z] or array of vectors around an arbitrary axis.
+     
+    Parameters
+    ----------
+    xyz array like
+        data that shall get rotated
+    axis_unit_vector array like
+        axis around which the rotation is supposed to happen
+    theta float
+        angle of rotation
+    dim: bool
+        default: False
+        if True the xyz array contains declination and inclination values
+    axis_di: bool
+        default: False
+        if True the axis_unit_vector array contains declination and inclination values
+    reshape: bool
+        default: False
+        changes the used input and output array shape from (n,3) if False to (3,n) 
+        
+    Returns
+    -------
+    np.array
+        if dim = True will return DIM values
+        if reshape = False: [[x1,y1,z1], [x2,y2,z2]]
+        if reshape = True: [[x1,x1], [y2,y2], [z1,z2]]
+    """
+
+    if axis_di:
+        axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
+        axis_unit_vector = convert_to_xyz(axis_unit_vector)
+    # ensure the length of unit vector is 1
+    axis_unit_vector = axis_unit_vector / np.linalg.norm(axis_unit_vector)
+
+    ux, uy, uz = axis_unit_vector
+
+    theta = np.radians(theta)
+    cost = np.cos(theta)
+    sint = np.sin(theta)
+
+    R = np.array([[cost + ux ** 2 * (1 - cost), ux * uy * (1 - cost) - uz * (sint), ux * uz * (1 - cost) + uy * (sint)],
+                  [uy * ux * (1 - cost) + uz * sint, cost + uy ** 2 * (1 - cost), uy * uz * (1 - cost) - ux * sint],
+                  [uz * ux * (1 - cost) - uy * sint, uz * uy * (1 - cost) + ux * sint, cost + uz ** 2 * (1 - cost)]])
+
+    out = np.dot(R, xyz.T).T
+
+    return out
+
+
+@handle_shape_dtype
+def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, input='xyz'):
+    """
+
+    Parameters
+    ----------
+    xyz
+    alpha
+    beta
+    gamma
+    reshape
+
+    Returns
+    -------
+    np.array
+        if dim = True will return DIM values
+
+    """
+
+    alpha, beta, gamma = np.radians([alpha, beta, gamma])
+
+    R = np.dot(np.dot(RZ(alpha), RY(beta)), RX(gamma))
+
+    out = np.dot(R, xyz.T).T
+    out = handle_near_zero(out)
+
+    return out
+
+
+@handle_shape_dtype
+def rotate(xyz, *, axis='x', theta=0, input='xyz'):
     """
     Rotates the vector 'xyz' by 'theta' degrees around 'x','y', or 'z' axis.
 
     Parameters
     ----------
+    xyz array like
+    axis: str
+        default: 'x'
+        axis of rotation
+    theta: float
+        angle of rotation
+
+    input str, optional
+        default 'xyz''
+        if 'xyz' input data contains [x,y,z] values
+        if 'dim' input data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
+
+    Returns
+    -------
+        np.array
+        The output array is in the same shape and type as the input array
     """
-    xyz = maintain_shape(np.array(xyz))
 
-    if reshape:
-        xyz = xyz.T
-
-    theta = np.radians(-theta)
+    theta = np.radians(theta)
 
     if axis.lower() == 'x':
         out = np.dot(xyz, RX(theta))
@@ -194,44 +289,42 @@ def rotate(xyz, axis='x', theta=0, reshape=False):
         out = np.dot(xyz, RY(theta))
     if axis.lower() == 'z':
         out = np.dot(xyz, RZ(theta))
-
-    out = handle_near_zero(out)
-
-    if reshape:
-        return out.T
-    else:
-        return out
+    return out
 
 
 ### CONVERSIONS
+"""
+NOTE: conversion functions generally transform data from one coordinate system into a different one.
+Therefor, the 'transform_output' value in the decorator has to be set to False, otherwise RockPy tries to 
+bring the coordinates "back" into the original coordinate system, which will not work and give wrong values
+"""
 
-def convert_to_xyz(dim, reshape=False):
+
+@handle_shape_dtype(transform_output=False)
+def convert_to_xyz(dim, *, M=True):
     """
     Converts a numpy array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an numpy array with [[d1,i1,m1], [d2,i2,m2]].
     Reshape allows to pass an [[x1,x2],[y1,y2],[z1,z2]] array instead.
+    Internally the data is handled in  the (n,3) format.
 
     Parameters
     ----------
     dim: np.array, list
         data either shape(n,3) of shape(3,n)
-    reshape: bool
-        default: False
-        changes the used input and output array shape from (n,3) if False to (3,n) 
 
     Returns
     -------
         np.array
-        if reshape = False: [[x1,y1,z1], [x2,y2,z2]]
-        if reshape = True: [[x1,x1], [y2,y2], [z1,z2]]
+        The output array is in the same shape and type as the input array
     """
-    dim = maintain_shape(np.array(dim))
-
-    if reshape:
-        dim = dim.T
 
     D = dim[:, 0]
     I = dim[:, 1]
-    M = dim[:, 2]
+
+    if M:
+        M = dim[:, 2]
+    else:
+        M = np.ones(len(D))
 
     M = 1 if M is None else M
     x = np.cos(np.radians(I)) * np.cos(np.radians(D)) * M
@@ -241,35 +334,26 @@ def convert_to_xyz(dim, reshape=False):
     out = np.array([x, y, z]).T
     out = handle_near_zero(out)
 
-    if reshape:
-        return out.T
-    else:
-        return out
+    return out
 
 
-def convert_to_dim(xyz, reshape=False):
+
+
+@handle_shape_dtype(transform_output=False)
+def convert_to_dim(xyz):
     """
     Converts a numpy array of [d,i,m] values (i.e. [[d1,i1,m1], [d2,i2,m2]]) into an numpy array with [[x1,y1,z1], [x2,y2,z2]]
     Reshape allows to pass an [[d1,d2],[i1,i2],[m1,m2]] array instead.
 
     Parameters
     ----------
-    xyz: np.array, list
-        data either shape(n,3) of shape(3,n)
-    reshape: bool
-        default: False
-        changes the used input and output array shape from (n,3) if False to (3,n) 
+    xyz array like
 
     Returns
     -------
         np.array
-        if reshape = False: [[d1,i1,m1], [d2,i2,m2]]
-        if reshape = True: [[d1,d1], [i2,i2], [m1,m2]]
+        The output array is in the same shape and type as the input array
     """
-    xyz = maintain_shape(xyz)
-
-    if reshape:
-        xyz = xyz.T
 
     x = xyz[:, 0]
     y = xyz[:, 1]
@@ -282,13 +366,11 @@ def convert_to_dim(xyz, reshape=False):
     out = np.array([D, I, M]).T
     out = handle_near_zero(out)
 
-    if reshape:
-        return out.T
-    else:
-        return out
+    return out
 
 
-def convert_to_stereographic(xyz, dim=False, reshape=False):
+@handle_shape_dtype(internal_dtype='dim', transform_output=False)
+def convert_to_stereographic(xyz, input='dim'):
     """
     Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an
     numpy array with [d,r,neg], where:
@@ -303,32 +385,23 @@ def convert_to_stereographic(xyz, dim=False, reshape=False):
     Parameters
     ----------
     xyz array like
-    dim bool, optional
-        default False
-        if True the xyz array does not contain [x,y,z] values but [d,i,m],
-            where d = declination, i = inclination, and m = moment
-    reshape: bool, optional
-        default: False
-        changes the used input and output array shape from (n,3) if False to (3,n)
+    input str, optional
+        default 'xyz''
+        if 'xyz' input data contains [x,y,z] values
+        if 'dim' input data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
 
     Returns
     -------
         np.array
-        if reshape = False: [[d1,i1,neg], [d2,i2,neg2]]
-        if reshape = True: [[d1,d1], [i2,i2], [neg1,neg2]]
+        The output array is in the same shape and type as the input array
 
     See Also
     --------
     convert_to_dim, convert_to_xyz, convert_to_equal_area
     """
 
-    xyz = maintain_shape(xyz)
-
-    if not dim:
-        dim = convert_to_dim(xyz, reshape=reshape)
-
-    if reshape:
-        dim = dim.T
+    # transformed by wrapper into DIM
+    dim = xyz
 
     d = dim[:, 0]
     i = np.radians(dim[:, 1])
@@ -338,13 +411,11 @@ def convert_to_stereographic(xyz, dim=False, reshape=False):
 
     out = np.array([d, r, neg]).T
 
-    if reshape:
-        return out.T
-    else:
-        return out
+    return out
 
 
-def convert_to_equal_area(xyz, dim=False, reshape=False):
+@handle_shape_dtype(internal_dtype='xyz', transform_output=False)
+def convert_to_equal_area(xyz, input='xyz'):
     """
     Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an
     numpy array with [d,r,neg], where:
@@ -359,34 +430,23 @@ def convert_to_equal_area(xyz, dim=False, reshape=False):
     Parameters
     ----------
     xyz array like
-    dim bool, optional
-        default False
-        if True the xyz array does not contain [x,y,z] values but [d,i,m],
-            where d = declination, i = inclination, and m = moment
-    reshape: bool, optional
-        default: False
-        changes the used input and output array shape from (n,3) if False to (3,n)
+    input str, optional
+        default 'xyz''
+        if 'xyz' input data contains [x,y,z] values
+        if 'dim' input data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
 
     Returns
     -------
         np.array
-        if reshape = False: [[d1,i1,neg1], [d2,i2,neg2]]
-        if reshape = True: [[d1,d1], [i2,i2], [neg1,neg2]]
+        The output array is in the same shape and type as the input array
 
     See Also
     --------
     convert_to_dim, convert_to_xyz, convert_to_stereographic
     """
 
-    xyz = maintain_shape(xyz)
-
-    if not dim:
-        dim = convert_to_dim(xyz, reshape=reshape)
-    else:
-        dim = xyz
-
-    if reshape:
-        dim = dim.T
+    # transformed by wrapper into DIM
+    dim = convert_to_dim(xyz)
 
     d = dim[:, 0]
     i = dim[:, 1]
@@ -395,20 +455,48 @@ def convert_to_equal_area(xyz, dim=False, reshape=False):
     r = 1 - np.abs(i) / 90
     # i = np.radians(np.abs(i))
     # r = np.sqrt((1 - np.sin(i)) ** 2 + np.cos(i) ** 2) / np.sqrt(2) ?? why is this wrong???
+    L0 = 1 / np.linalg.norm(xyz[:, [1, 2]])
     out = np.array([d, r, neg]).T
-
-    if reshape:
-        return out.T
-    else:
-        return out
+    return out
 
 
-def convert_to_hvl(data, dim=False):  # todo make consistent with other convert
-    if not dim:
-        data = convert_to_dim(data)
-    D = data[:, 0]
-    I = data[:, 1]
-    M = data[:, 2]
+@handle_shape_dtype(internal_dtype='dim', transform_output=False)
+def convert_to_hvl(xyz, input='xyz'):
+    """
+    Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an
+    numpy array with [h,v,M], where:
+     h = horizontal moment,
+     v = vertical moment, and
+     M = total moment
+
+    h, v are calculated by
+    .. math:
+        H = M * cos(I)
+        V = M * sin(I)
+
+    Parameters
+    ----------
+    xyz array like
+    input str, optional
+        default 'xyz''
+        if 'xyz' input data contains [x,y,z] values
+        if 'dim' input data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
+
+    Returns
+    -------
+        np.array
+        The output array is in the same shape and type as the input array
+
+    See Also
+    --------
+    convert_to_dim, convert_to_xyz, convert_to_stereographic
+    """
+
+    # transformed by wrapper into DIM
+    dim = xyz
+
+    I = dim[:, 1]
+    M = dim[:, 2]
 
     h = M * np.cos(np.radians(I))
     v = M * np.sin(np.radians(I))
@@ -416,22 +504,24 @@ def convert_to_hvl(data, dim=False):  # todo make consistent with other convert
     return np.array([h, v, M]).T
 
 
-def maintain_shape(d):
-    if isinstance(d, (list, tuple)):
-        d = np.array(d)
-
-    if len(d.shape) == 1:
-        return np.array([d])
-    else:
-        return d
-
-
 def handle_near_zero(d):
-    d[np.isclose(d, 0)] = 0
+    d[np.isclose(d, 0, atol=1e-15)] = 0
     return d
 
-
-if __name__ == '__main__':
-    print(
-        rotate_arbitrary([[30, 40, 50, 40, 12], [0, 0, 10, 20, 1], [0.1, 1, 3, 1, 1]], 0, 0, 0, dim=True, reshape=True))
-    # print(rotate_arbitrary(np.array([[30, 40, 50, 40], [0, 0, 10, 20], [0.1, 1, 1, 1]]).T, 0, 0, 0, dim=True))
+# if __name__ == '__main__':
+#     from RockPy.tools.plotting import *
+#
+#     lst = [90, 90, 1]
+#     lstlst = [lst, lst]
+#     lstarr = [[lst[0], lst[0]], [lst[1], lst[1]], [lst[2], lst[2]]]
+#
+#     # res = convert_to_equal_area(lst)
+#     for d in [lst, lstlst, lstarr]:
+#         res = convert_to_equal_area(d)
+#         # res = rotate_around_axis(d, axis_unit_vector=[135, 5], axis_di=True, theta=5)
+#         print(np.shape(d), np.shape(res))
+#         print(res)
+#         print('-' * 30)
+#     plot_equal(d, color='g', markersize=4, marker='o', ls='--', linecolor='k')
+#
+#     print(rotate_arbitrary(np.array([[30, 40, 50, 40], [0, 0, 10, 20], [0.1, 1, 1, 1]]), 0, 0, 0, dim=True))
