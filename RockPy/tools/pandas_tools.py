@@ -178,7 +178,8 @@ def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_or
         xcol = df.index.name
 
     df_copy = df.copy()
-
+    df_copy = df_copy.reset_index()
+    df_copy = df_copy[[xcol, ycol]]
     # calculate the rolling mean before differentiation
     if rolling:
         kwargs.setdefault('center', True)
@@ -189,9 +190,9 @@ def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_or
         df_copy = df_copy.rolling(**kwargs).mean()
 
     # reset index, so that the index col can be accessed
-    df_copy = df_copy.reset_index()
-    x = df_copy[xcol]
-    y = df_copy[ycol]
+    x = df_copy[xcol].astype(float)
+    y = df_copy[ycol].astype(float)
+    # print(x, y)
     dy = np.gradient(y, x, edge_order=edge_order)
 
     if n == 2:
@@ -347,6 +348,36 @@ def regularize_data(df, order=2, grid_spacing=2, ommit_n_points=0, check=False, 
 
 
 def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
+    """
+    Function that corrects the Dec and Inc values of a DataFrame by dip/strike
+
+    1. rotates aroud y-axis by -dip (i.e. counter clockwise)
+    2. rotates around z axis by -strike (i.e. counter clockwise)
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+    dip: float
+        dip of the 'core', 'plate'...
+    strike: float
+        strike of the 'core', 'plate' ...
+    newI: str
+        default 'I_'
+        name of the corrected inclination column
+    newD: str
+        default 'D_'
+        name of the corrected inclination column
+    colI: str
+        default 'I'
+        name of the uncorrected inclination column
+    colD: str
+        default 'D'
+        name of the uncorrected inclination column
+
+    Returns
+    -------
+
+    """
     df = df.copy()
     DI = df[[colD, colI]]
     DI = DIM2XYZ(DI, colI=colI, colD=colD, colM=None)

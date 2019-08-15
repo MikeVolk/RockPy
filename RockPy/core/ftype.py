@@ -51,7 +51,9 @@ class Ftype(object):
             self.log().info('FILE contains {} comments. Lines {} were not read'.format(len(idx), idx))
         return idx
 
-    def __init__(self, dfile, snames=None, dialect=None, reload=False, mdata=None, **kwargs):
+    def __init__(self, dfile, snames=None, dialect=None,
+                 reload=False, mdata=None, create_minfo=True,
+                 **kwargs):
         """
         Constructor of the basic file type instance
 
@@ -83,21 +85,23 @@ class Ftype(object):
         self.dfile = dfile
         self.dialect = dialect
         self.header = kwargs.pop('header', None)
-        try:
-            self.import_helper = ImportHelper.from_file(self.dfile)
-            self.file_infos = self.import_helper.return_file_infos()
-        except:
-            self.log().warning('Cant read file infos automatically. RockPy file naming scheme required')
-            self.import_helper = None
-            self.file_infos = None
+
+        if create_minfo:
+            try:
+                self.import_helper = ImportHelper.from_file(self.dfile)
+                self.file_infos = self.import_helper.return_file_infos()
+            except:
+                self.__class__.log().warning('Cant read file infos automatically. RockPy file naming scheme required')
+                self.import_helper = None
+                self.file_infos = None
 
         if mdata is not None:
             self.data = mdata
             self.__class__.imported_files[dfile] = self.data.copy()
 
         elif dfile not in self.__class__.imported_files or reload:
-            self.log().info('IMPORTING << %s , %s >> file: << %s >>' % (self.snames,
-                                                                        type(self).__name__, dfile))
+            self.log().info('IMPORTING << %s , %s >> file: << ... %s >>' % (self.snames,
+                                                                        type(self).__name__, dfile[-20:]))
             self.data = self.read_file()
             self.__class__.imported_files[dfile] = self.data.copy()
         else:

@@ -169,6 +169,7 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
 
     ax.set_rmax(1)
 
+
 def plot_equal(xyz, ax=None, input='xyz', **kwargs):
     """
 
@@ -187,12 +188,13 @@ def plot_equal(xyz, ax=None, input='xyz', **kwargs):
     """
 
     if ax is None:
-        ax = plt.gca()
+        ax = plt.subplot(111, projection='polar')
+
     xyz = maintain_n3_shape(xyz)
     pol = convert_to_equal_area(xyz, input=input)
 
     if len(pol.shape) == 1:
-        pol = pol.reshape((1,3))
+        pol = pol.reshape((1, 3))
 
     neg_inc = pol[:, 2].astype(bool)
     down = pol[neg_inc]
@@ -210,16 +212,18 @@ def plot_equal(xyz, ax=None, input='xyz', **kwargs):
     if ls:
         ax.plot(np.radians(pol[:, 0]), pol[:, 1], marker='', color=linecolor, ls=ls, **kwargs)
 
-    return ax, p1, p2
+    return ax
 
 
 """ LINES """
+
 
 def combined_label_legend(ax, pad=-1, bbox_to_anchor=[1, 1]):
     h, l = ax.get_legend_handles_labels()
     labels = sorted(set(l))
     handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
     ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor, handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)})
+
 
 def log10_isolines(ax=None, angle=45):
     if ax is None:
