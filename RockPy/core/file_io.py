@@ -58,7 +58,7 @@ class ImportHelper(object):
         # names with , need to be replaced
         if "(" not in snames and "," in snames:
             snames = snames.replace(",", ".")
-            RockPy.log().warning("sample sname %s contains \",\" will be replaced with \".\"" % snames)
+            RockPy.log().debug("sample sname %s contains \",\" will be replaced with \".\"" % snames)
 
         sgroups = RockPy.core.utils.extract_tuple(sgroups)
         snames = RockPy.core.utils.extract_tuple(snames)
@@ -199,7 +199,7 @@ class ImportHelper(object):
             finfo = cls.from_file(f)
 
             if finfo is None:
-                cls.log().warning("cant read file: %s" % os.path.basename(f))
+                cls.log().debug("cant read file: %s" % os.path.basename(f))
                 continue
 
             if minfo is None:
@@ -222,7 +222,7 @@ class ImportHelper(object):
         -------
 
         """
-        cls.log().info("reading file infos: %s" % fpath)
+        cls.log().info("reading file infos: ... %s" % fpath[-30:])
 
         # # get the directory
         # folder = os.path.dirname(fpath)
@@ -237,7 +237,7 @@ class ImportHelper(object):
 
         # check if RockPy compatible e.g. first part must be len(4)
         if not len(splits[0].split("_")) == 4:
-            cls.log().warning('filename << %s >> does not conform to the RockPy file naming scheme. At least 3 elements (sname, mtype, ftype) '
+            cls.log().debug('filename << %s >> does not conform to the RockPy file naming scheme. At least 3 elements (sname, mtype, ftype) '
                               'have to be given, separated by \'_\' '%filename)
             return
 
@@ -320,7 +320,8 @@ class ImportHelper(object):
             series=None,
             comment=None,
             additional=None,
-            suffix=None, ):
+            suffix=None,
+            ):
         """
         constructor
         """
@@ -346,7 +347,7 @@ class ImportHelper(object):
         self.diameter = RockPy.core.utils.to_list(diameter)
         self.diameterunit = RockPy.core.utils.to_list(diameterunit)
 
-        # in case of different units
+        # in case of different units convert them to the same
         if self.heightunit != self.diameterunit:
             self.height *= RockPy.core.utils.convert(self.height, self.heightunit, self.diameterunit)
             self.heightunit = self.diameterunit
