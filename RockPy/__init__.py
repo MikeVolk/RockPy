@@ -7,6 +7,13 @@ import RockPy
 installation_directory = os.path.dirname(RockPy.__file__)
 test_data_path = os.path.join(installation_directory, 'tests', 'test_data')
 
+# unit handling
+import pint
+ureg = pint.UnitRegistry()
+# add additional units
+ureg.load_definitions(os.path.join(installation_directory,'unit_definitions.txt')) # doctest: +SKIP
+
+
 import RockPy.core.measurement as measurement
 import RockPy.core.file_io
 

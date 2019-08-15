@@ -8,11 +8,10 @@ import pandas as pd
 
 from contextlib import contextmanager
 
-from Cython.Includes import numpy
 import inspect
 import logging
 
-from RockPy import installation_directory
+from RockPy import installation_directory, ureg
 
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
@@ -21,6 +20,36 @@ def create_logger(debug):
         logging.config.fileConfig(os.path.join(RockPy.installation_directory, 'logging_debug.conf'))
     else:
         logging.config.fileConfig(os.path.join(RockPy.installation_directory, 'logging.conf'))
+
+
+def convert_units(values, in_unit, out_unit):
+    """
+    converts a value from a ``unit`` to a SIunit``
+
+    Parameters
+    ----------
+    value
+    unit
+    si_unit
+
+    Returns
+    -------
+        float
+
+    Notes
+    -----
+        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
+    """
+    values = as_array(values)
+    in_unit = values * ureg(in_unit)
+    out_unit = in_unit.to(out_unit)
+    return out_unit.magnitude
+
+def as_array(df):
+    if isinstance(df, (pd.Series, pd.DataFrame)):
+        return df.values
+    if isinstance(df, (np.array, list, tuple, set)):
+        return df
 
 def convert(value, unit, si_unit):
     """
