@@ -5,7 +5,7 @@ from copy import deepcopy
 import RockPy
 import numpy as np
 import pandas as pd
-from RockPy.Packages.Magnetism import utils as SimUtils
+from RockPy.Packages.Magnetism import tools as SimUtils
 from matplotlib import pylab as plt
 
 

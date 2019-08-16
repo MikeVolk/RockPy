@@ -9,8 +9,9 @@ from scipy.optimize import curve_fit
 
 from RockPy.core.measurement import Measurement
 from RockPy.core.result import Result
-from RockPy.core.utils import correction, lin_regress
-import RockPy.Packages.Magnetism.simulation
+from RockPy.core.utils import correction
+from RockPy.tools.compute import lin_regress
+import RockPy.Packages.Magnetism.simulations
 
 
 class Hysteresis(Measurement):
@@ -887,7 +888,7 @@ class Paleointensity(Measurement):
         method = simparams.pop('method', 'fabian')
 
         if method == 'fabian':
-            simobj = RockPy.Packages.Magnetism.simulation.Fabian2001(**simparams)
+            simobj = RockPy.Packages.Magnetism.simulations.Fabian2001(**simparams)
 
         return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag),
                    series = series,
@@ -1098,7 +1099,7 @@ class Paleointensity(Measurement):
         """
 
         if ModelType == 'Fabian2001':
-            self.model = RockPy.Packages.Magnetism.simulation.Fabian2001(preset='Fabian5a', **parameters)
+            self.model = RockPy.Packages.Magnetism.simulations.Fabian2001(preset='Fabian5a', **parameters)
 
 
     def fit_demag_data(self):

@@ -1,8 +1,8 @@
 import os
 import decorator
-
+import importlib
+import pkgutil
 import RockPy
-import numpy
 import numpy as np
 import pandas as pd
 
@@ -15,11 +15,48 @@ from RockPy import installation_directory, ureg
 
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
+
+def welcome_message():
+    print('-' * 75)
+    print(''.join(['|', 'This is RockPy'.center(73), '|']))
+    print('-' * 75)
+    print('Installation dir: %s' % installation_directory)
+    print()
+    print('IMPLEMENTED MEASUREMENT TYPES     : \tFTYPES')
+    print('-' * 75)
+    print('\n'.join(['\t{:<26}: \t{}'.format(m, ', '.join(obj.ftype_formatters().keys()))
+                     for m, obj in sorted(RockPy.implemented_measurements.items())]))
+    print()
+
+
 def create_logger(debug):
     if debug:
         logging.config.fileConfig(os.path.join(RockPy.installation_directory, 'logging_debug.conf'))
     else:
         logging.config.fileConfig(os.path.join(RockPy.installation_directory, 'logging.conf'))
+
+
+def convert(value, unit, si_unit):
+    """
+    converts a value from a ``unit`` to a SIunit``
+    
+    Parameters
+    ----------
+    value
+    unit
+    si_unit
+
+    Returns
+    -------
+        float
+        
+    Notes
+    -----
+        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
+    """
+    RockPy.log.debug(
+        'converting %.3e [%s] -> %.3e [%s]' % (value, unit, value * conversion_table[unit][si_unit], si_unit))
+    return value * conversion_table[unit][si_unit]
 
 
 def convert_units(values, in_unit, out_unit):
@@ -44,34 +81,6 @@ def convert_units(values, in_unit, out_unit):
     in_unit = values * ureg(in_unit)
     out_unit = in_unit.to(out_unit)
     return out_unit.magnitude
-
-def as_array(df):
-    if isinstance(df, (pd.Series, pd.DataFrame)):
-        return df.values
-    if isinstance(df, (np.array, list, tuple, set)):
-        return df
-
-def convert(value, unit, si_unit):
-    """
-    converts a value from a ``unit`` to a SIunit``
-    
-    Parameters
-    ----------
-    value
-    unit
-    si_unit
-
-    Returns
-    -------
-        float
-        
-    Notes
-    -----
-        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
-    """
-    RockPy.log.debug(
-        'converting %.3e [%s] -> %.3e [%s]' % (value, unit, value * conversion_table[unit][si_unit], si_unit))
-    return value * conversion_table[unit][si_unit]
 
 
 @contextmanager
@@ -105,6 +114,16 @@ def mtype_implemented(mtype):
         bool
     """
     return True if mtype in RockPy.implemented_measurements else False
+
+
+''' ARRAY related '''
+
+
+def as_array(df):
+    if isinstance(df, (pd.Series, pd.DataFrame)):
+        return df.values
+    if isinstance(df, (np.array, list, tuple, set)):
+        return df
 
 
 def tuple2list_of_tuples(item) -> list:
@@ -187,9 +206,7 @@ def extract_tuple(s: str) -> tuple:
     """
     s = s.translate(str.maketrans("", "", "(){}[]")).split(',')
     return tuple(s)
-#
-# if __name__ == '__main__':
-#     print(extract_tuple('(a,b)'))
+
 
 def tuple2str(tup):
     """
@@ -205,15 +222,6 @@ def tuple2str(tup):
     else:
         return str(tup).replace('\'', ' ').replace(' ', '')
 
-
-def get_default_args(func):
-    signature = inspect.signature(func)
-
-    return {
-        k: v.default
-        for k, v in signature.parameters.items()
-        if v.default is not inspect.Parameter.empty
-    }
 
 def split_num_alph(item):
     """
@@ -245,90 +253,23 @@ def split_num_alph(item):
         return float(item), None
 
 
-def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
+def list_or_item(item):
     """
-        calculates a least squares linear regression for given x/y data
-
-        Parameters
-        ----------
-           pdd: pandas.DataFrame
-            input data
-           column_name_x: str
-            xcolumn name
-           column_name_y: str
-            ycolumn name
-           ypdd: pandas.DataFrame
-            input y-data. If not provided, it is asumed to be contained in pdd
-        Returns
-        -------
-            slope
-            sigma
-            y_intercept
-            x_intercept
-        """
-    x = pdd[column_name_x].values
-
-    if ypdd is not None:
-        y = ypdd[column_name_y].values
-    else:
-        y = pdd[column_name_y].values
-
-    if len(x) < 2 or len(y) < 2:
-        return None
-
-    """ calculate averages """
-    x_mean = np.mean(x)
-    y_mean = np.mean(y)
-
-    """ calculate differences """
-    x_diff = x - x_mean
-    y_diff = y - y_mean
-
-    """ square differences """
-    x_diff_sq = x_diff ** 2
-    y_diff_sq = y_diff ** 2
-
-    """ sum squared differences """
-    x_sum_diff_sq = np.sum(x_diff_sq)
-    y_sum_diff_sq = np.sum(y_diff_sq)
-
-    mixed_sum = np.sum(x_diff * y_diff)
-
-    """ calculate slopes """
-    n = len(x)
-
-    slope = np.sqrt(y_sum_diff_sq / x_sum_diff_sq) * np.sign(mixed_sum)
-
-    if n <= 2:  # stdev not valid for two points
-        sigma = np.nan
-    else:
-        sigma = np.sqrt((2 * y_sum_diff_sq - 2 * slope * mixed_sum) / ((n - 2) * x_sum_diff_sq))
-
-    y_intercept = y_mean - (slope * x_mean)
-    x_intercept = - y_intercept / slope
-
-    return slope, sigma, y_intercept, x_intercept
-
-
-def set_get_attr(obj, attr, value=None):
-    """
-    checks if attribute exists, if not, creates attribute with value None
+    Takes a list and returns a list if there is more than one element else it returns only that element.
 
     Parameters
     ----------
-        obj: object
-        attr: str
-        value: (str, int, float)
-            default: None
+    item: List
 
     Returns
     -------
-        value(obj.attr)
+        list or first element of list
     """
-    if not hasattr(obj, attr):
-        setattr(obj, attr, value)
-    return getattr(obj, attr)
 
+    if np.shape(item)[0] == 1:
+        return item[0]
+    else:
+        return item
 
 @decorator.decorator
 def correction(func, *args, **kwargs):
@@ -363,62 +304,75 @@ def series_to_dict(series_tuple):
     dict
 
     """
-    return {series_tuple[0]:(series_tuple[1], series_tuple[2])}
+    return {series_tuple[0]: (series_tuple[1], series_tuple[2])}
 
 
-def list_or_item(item):
+""" class and object related """
+
+def extract_inheritors_from_cls(cls):
     """
-    Takes a list and returns a list if there is more than one element else it returns only that element.
-
-    Parameters
-    ----------
-    item: List
+    Method that gets all children and childrens-children ... from a class
 
     Returns
     -------
-        list or first element of list
+       list
     """
-
-    if np.shape(item)[0] == 1:
-        return item[0]
-    else:
-        return item
-
-def rotmat(dec, inc):
-    inc = np.radians(inc)
-    dec = np.radians(dec)
-    a = [[np.cos(inc)*np.cos(dec), -np.sin(dec), -np.sin(inc)*np.cos(dec)],
-         [np.cos(inc)*np.sin(dec), np.cos(dec), -np.sin(inc)*np.sin(dec)],
-         [np.sin(inc), 0 , np.cos(inc)]]
-    return a
-
-def extract_inheritors_from_cls(cls):
-        """
-        Method that gets all children and childrens-children ... from a class
-
-        Returns
-        -------
-           list
-        """
-        subclasses = set()
-        work = [cls]
-        while work:
-            parent = work.pop()
-            for child in parent.__subclasses__():
-                if child not in subclasses:
-                    subclasses.add(child)
-                    work.append(child)
-        return subclasses
+    subclasses = set()
+    work = [cls]
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return subclasses
 
 
-def welcome_message():
-    print('-'*75)
-    print(''.join(['|','This is RockPy'.center(73),'|']))
-    print('-'*75)
-    print('Installation dir: %s'%installation_directory)
-    print()
-    print('IMPLEMENTED MEASUREMENT TYPES     : \tFTYPES')
-    print('-'*75)
-    print('\n'.join(['\t{:<26}: \t{}'.format(m, ', '.join(obj.ftype_formatters().keys()))
-                     for m, obj in sorted(RockPy.implemented_measurements.items())]))
-    print()
+
+def set_get_attr(obj, attr, value=None):
+    """
+    checks if attribute exists, if not, creates attribute with value None
+
+    Parameters
+    ----------
+        obj: object
+        attr: str
+        value: (str, int, float)
+            default: None
+
+    Returns
+    -------
+        value(obj.attr)
+    """
+    if not hasattr(obj, attr):
+        setattr(obj, attr, value)
+    return getattr(obj, attr)
+
+
+def get_default_args(func):
+    signature = inspect.signature(func)
+
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
+
+""" Package related """
+
+def import_submodules(package, recursive=True):
+    """ Import all submodules of a module, recursively, including subpackages
+
+    :param package: package (name or actual module)
+    :type package: str | module
+    :rtype: dict[str, types.ModuleType]
+    """
+    if isinstance(package, str):
+        package = importlib.import_module(package)
+    results = {}
+    for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
+        full_name = package.__name__ + '.' + name
+        results[full_name] = importlib.import_module(full_name)
+        if recursive and is_pkg:
+            results.update(import_submodules(full_name))
+    return results

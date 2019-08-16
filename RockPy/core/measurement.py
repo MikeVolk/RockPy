@@ -94,22 +94,6 @@ class Measurement(object):
         return self.__class__._mids.index(self.mid)
 
     @classmethod
-    def implemented_ftypes(cls):  # todo move into RockPy core has nothing to do with measurement
-        """
-        Dictionary of all implemented filetypes.
-
-        Looks for all subclasses of RockPy3.core.ftype.io
-        generating a dictionary of implemented machines : {implemented out_* method : machine_class}
-
-        Returns
-        -------
-
-        dict: classname:
-        """
-        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.utils.extract_inheritors_from_cls(Ftype)}
-        return implemented_ftypes
-
-    @classmethod
     def ftype_formatters(cls):
         '''
         This method returns a collection of the implemented measurement formatters for a class.
@@ -197,12 +181,12 @@ class Measurement(object):
 
         ftype = ftype.lower()
         # check if measurement is implemented
-        if ftype in cls.implemented_ftypes():
+        if ftype in RockPy.implemented_ftypes:
             # read the ftype data from the file
-            ftype_data = cls.implemented_ftypes()[ftype](fpath, sobj.name, dialect=dialect, reload=reload)
+            ftype_data = RockPy.implemented_ftypes[ftype](fpath, sobj.name, dialect=dialect, reload=reload)
         else:
             cls.log().error('CANNOT IMPORT ')
-            cls.log().error('ftype not in implemented ftypes: %s ' % ', '.join(cls.implemented_ftypes().keys()))
+            cls.log().error('ftype not in implemented ftypes: %s ' % ', '.join(RockPy.io.tools.implemented_ftypes().keys()))
 
         # check if the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():

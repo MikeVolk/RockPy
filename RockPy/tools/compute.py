@@ -525,3 +525,75 @@ def handle_near_zero(d):
 #     plot_equal(d, color='g', markersize=4, marker='o', ls='--', linecolor='k')
 #
 #     print(rotate_arbitrary(np.array([[30, 40, 50, 40], [0, 0, 10, 20], [0.1, 1, 1, 1]]), 0, 0, 0, dim=True))
+def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
+    """
+        calculates a least squares linear regression for given x/y data
+
+        Parameters
+        ----------
+           pdd: pandas.DataFrame
+            input data
+           column_name_x: str
+            xcolumn name
+           column_name_y: str
+            ycolumn name
+           ypdd: pandas.DataFrame
+            input y-data. If not provided, it is asumed to be contained in pdd
+        Returns
+        -------
+            slope
+            sigma
+            y_intercept
+            x_intercept
+        """
+    x = pdd[column_name_x].values
+
+    if ypdd is not None:
+        y = ypdd[column_name_y].values
+    else:
+        y = pdd[column_name_y].values
+
+    if len(x) < 2 or len(y) < 2:
+        return None
+
+    """ calculate averages """
+    x_mean = np.mean(x)
+    y_mean = np.mean(y)
+
+    """ calculate differences """
+    x_diff = x - x_mean
+    y_diff = y - y_mean
+
+    """ square differences """
+    x_diff_sq = x_diff ** 2
+    y_diff_sq = y_diff ** 2
+
+    """ sum squared differences """
+    x_sum_diff_sq = np.sum(x_diff_sq)
+    y_sum_diff_sq = np.sum(y_diff_sq)
+
+    mixed_sum = np.sum(x_diff * y_diff)
+
+    """ calculate slopes """
+    n = len(x)
+
+    slope = np.sqrt(y_sum_diff_sq / x_sum_diff_sq) * np.sign(mixed_sum)
+
+    if n <= 2:  # stdev not valid for two points
+        sigma = np.nan
+    else:
+        sigma = np.sqrt((2 * y_sum_diff_sq - 2 * slope * mixed_sum) / ((n - 2) * x_sum_diff_sq))
+
+    y_intercept = y_mean - (slope * x_mean)
+    x_intercept = - y_intercept / slope
+
+    return slope, sigma, y_intercept, x_intercept
+
+
+def rotmat(dec, inc):
+    inc = np.radians(inc)
+    dec = np.radians(dec)
+    a = [[np.cos(inc) * np.cos(dec), -np.sin(dec), -np.sin(inc) * np.cos(dec)],
+         [np.cos(inc) * np.sin(dec), np.cos(dec), -np.sin(inc) * np.sin(dec)],
+         [np.sin(inc), 0, np.cos(inc)]]
+    return a
