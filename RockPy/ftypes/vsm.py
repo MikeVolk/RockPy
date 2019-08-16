@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import io
 from copy import deepcopy
-
+import io
 
 class Vsm(Ftype):
     standard_calibration_exponent = 0
@@ -18,55 +18,67 @@ class Vsm(Ftype):
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
+        self.raw_data = self.read_raw_data(dfile=dfile)
+
         # get the file infos first -> line numbers needed ect.
-        mtype, header_end, segment_start, segment_widths, self.data_start, self.data_widths, self.file_length = self.read_basic_file_info(
-            dfile)
+        self.file_length = len(self.raw_data)
+
+        mtype, header_end, segment_start, segment_end, segment_widths = self.read_basic_file_info()
 
         self.mtype = self.mtype_translation[mtype]
         self.header = self.read_header(dfile, header_end)
-        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_widths)
+        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_end, segment_widths)
 
         super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header = self.header)
+
         # check the calibration factor
         self.calibration_factor = float(self.header.loc['Calibration factor'])
 
-        if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
-            self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
-            RockPy.log.warning(
-                'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
-                    self.standard_calibration_exponent,
-                    int(np.floor(np.log10(self.calibration_factor)))))
-        else:
-            self.correct_exp = None
+        self.correct_exp = None
+        if not np.isnan(self.calibration_factor):
+            if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
+                self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
+                RockPy.log.warning(
+                    'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
+                        self.standard_calibration_exponent,
+                        int(np.floor(np.log10(self.calibration_factor)))))
 
         if self.correct_exp:
             for c in self.data:
                 if any(t in c for t in ('(Am2)',)):
                     self.data[c] *= self.correct_exp
 
-    def read_basic_file_info(self, dfile):
+    @staticmethod
+    def read_raw_data(dfile):
+        with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
+            raw_data = f.readlines()
+        return raw_data
+
+
+    def read_basic_file_info(self):
         '''
         Opens the file and extracts the mtype, header lines, segment lines, segment widths, data lines, and data widths.
         '''
         mtype, header_end, segment_start, segment_widths, data_start, data_widths = None, None, None, None, None, None
 
-        with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
-            d = f.readlines()
-            file_length = len(d)
-            for i, l in enumerate(d):
-                if i == 1:
-                    mtype = l
-                if 'Number of data' in l:
-                    header_end = i
-                if '0000001' in l:
-                    segment_widths = [len(n) + 1 for n in l.split(',')]
-                    segment_start = i
-                if l.startswith('+') or l.startswith('-'):
-                    data_start = i
-                    data_widths = [len(n) for n in l.split(',')]
-                    break
+        empty = []
+        for i, l in enumerate(self.raw_data):
+            if not l.rstrip():
+                empty.append(i)
+            if i == 1:
+                mtype = l
+            if 'Number of data' in l:
+                header_end = i
+            if '0000001' in l:
+                segment_widths = [len(n) + 1 for n in l.split(',')]
+                segment_start = i
+            if l.startswith('+') or l.startswith('-'):
+                self.data_start = i
+                self.data_widths = [len(n) for n in l.split(',')]
+                break
 
-        return mtype, header_end, segment_start, segment_widths, data_start, data_widths, file_length
+        segment_end = max(i for i in empty if i < self.data_start)
+        return mtype, header_end, segment_start, segment_end, segment_widths
 
     def read_header(self, dfile, header_end):
         '''
@@ -76,8 +88,9 @@ class Vsm(Ftype):
         -------
 
         '''
-        header = pd.read_fwf(dfile,
-                             skiprows=2, nrows=header_end - 1, skip_blank_lines=True,
+        head = self.raw_data[:header_end]
+        header = pd.read_fwf(io.StringIO(''.join(head)),
+                             skiprows=2, skip_blank_lines=True,
                              widths=(31, 13), index_col=0, names=[0])
         # remove empty line and section headers
         idx = [i for i,v in enumerate(header.index) if not str(v).upper() == v if str(v) != 'nan']
@@ -94,10 +107,13 @@ class Vsm(Ftype):
 
         # add file location to header
         header.loc['fpath'] = dfile
+
+        if not 'Calibration factor' in header.index:
+            header.loc['Calibration factor'] = None
         return header
 
-    def read_segement_infos(self, dfile,
-                            mtype, header_end, segment_start, segment_widths,
+    def read_segement_infos(self, dfile, mtype,
+                            header_end, segment_start, segment_end, segment_widths,
                             ):
         '''
         reads the segments of the VSM file
@@ -107,15 +123,15 @@ class Vsm(Ftype):
         VSM - FORC measurements do not have a segments part -> returns None
 
         Returns
-        -------
+        -------s
 
         '''
 
         if not 'First-order reversal curves' in mtype:
             # reading segments_tab data
-            segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in
-                              pd.read_fwf(dfile, skiprows=header_end + 1, nrows=segment_start - header_end - 2,
-                                          widths=segment_widths, header=None).values.T]
+            head = self.raw_data[header_end+1:segment_start]
+            head = pd.read_fwf(io.StringIO(''.join(head)), widths=segment_widths)
+            segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in head.values.T]
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
                                         names=segment_header, encoding='latin-1',
                                         )
@@ -183,7 +199,7 @@ class Vsm(Ftype):
                        pd.read_fwf(self.dfile, skiprows=self.data_start - 4,
                                    nrows=3, widths=self.data_widths).values.T]
 
-        data = pd.read_csv(self.dfile, skiprows=self.data_start,
+        data = pd.read_csv(io.StringIO(''.join(self.raw_data[self.data_start:])),
                            nrows=int(self.file_length - self.data_start) - 2,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
@@ -235,4 +251,9 @@ class Vsm(Ftype):
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
     # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
-    print(Vsm(dfile='/Users/mike/Dropbox/science/_projects/RockPy/RockPy/tests/test_data/VSM/dcd_vsm.001').header)
+    # print(Vsm(dfile='/Users/mike/Dropbox/science/_projects/RockPy/RockPy/tests/test_data/VSM/dcd_vsm.001').header)
+
+    s = RockPy.Sample('test')
+    m = s.add_measurement(
+        fpath='/Users/mike/Dropbox/science/_projects/Apollo15_kim/data/Apollo15_A15_hys_agm##(Bmax,500,mT)_(f,404,Hz)_(q,150.0,)#0.7(hr).012')
+    print(m.data)

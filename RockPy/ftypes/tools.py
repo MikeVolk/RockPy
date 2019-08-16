@@ -6,7 +6,7 @@ def __implemented__(cls):  # todo move into RockPy core has nothing to do with m
     """
     Dictionary of all implemented filetypes.
 
-    Looks for all subclasses of RockPy3.core.ftype.io
+    Looks for all subclasses of RockPy3.core.ftype.ftypes
     generating a dictionary of implemented machines : {implemented out_* method : machine_class}
 
     Returns

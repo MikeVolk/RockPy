@@ -25,14 +25,14 @@ class Hysteresis(Measurement):
     """ formatting functions """
 
     @staticmethod
-    def format_vsm(ftype_data, sobj_name=None):
+    def _format_vsm(ftype_data, sobj_name=None):
         '''
         formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
 
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.io.Vsm.vsm function.
+            data read by Magnetism.ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -45,8 +45,8 @@ class Hysteresis(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: io object
-                io object as read by Magnetism.io.Vsm.vsm
+            ftype_data: ftypes object
+                ftypes object as read by Magnetism.ftypes.Vsm.vsm
 
 
         '''
@@ -62,8 +62,8 @@ class Hysteresis(Measurement):
         return data
 
     @staticmethod
-    def format_agm(ftype_data, sobj_name = None):
-        return Hysteresis.format_vsm(ftype_data, sobj_name)
+    def _format_agm(ftype_data, sobj_name=None):
+        return Hysteresis._format_vsm(ftype_data, sobj_name)
 
     ####################################################################################################################
     ''' BRANCHES '''
@@ -515,8 +515,8 @@ class Hysteresis(Measurement):
                     self.log.warning('CANT calculate approach to saturation. Not enough points (<=2) in data. '
                                      'Consider using smaller <saturation_percent> value')
                     continue
-                popt, pcov = curve_fit(self.approach2sat_func, np.fabs(fields), moments*np.sign(np.mean(fields)),
-                                       p0=[max(abs(moments))/2, 0, 0])
+                popt, pcov = curve_fit(self.approach2sat_func, np.fabs(fields), moments * np.sign(np.mean(fields)),
+                                       p0=[max(abs(moments)) / 2, 0, 0])
 
                 ms.append(popt[0])
                 slope.append(popt[1])
@@ -535,10 +535,11 @@ class Hysteresis(Measurement):
                     # calculate for raw data plot
                     raw_d = self.get_df_uf_plus_minus(saturation_percent=0, ommit_last_n=ommit_last_n)
                     # plot all data
-                    plt.plot(np.abs(raw_d[i].index), raw_d[i]['M']*np.sign(np.mean(raw_d[i]['M'].index)), '.', mfc='w',
+                    plt.plot(np.abs(raw_d[i].index), raw_d[i]['M'] * np.sign(np.mean(raw_d[i]['M'].index)), '.',
+                             mfc='w',
                              color=RockPy.colors[i], alpha=0.5, label='')
                     # plot data used for fit
-                    plt.plot(fields, moments*np.sign(np.mean(raw_d[i]['M'].index)), '.', color=RockPy.colors[i],
+                    plt.plot(fields, moments * np.sign(np.mean(raw_d[i]['M'].index)), '.', color=RockPy.colors[i],
                              label=['upper +', 'upper -', 'lower +', 'lower -'][i] + '(data)')
                     # plot app2sat function
                     plt.plot(np.linspace(0.1, max(fields)),
@@ -548,7 +549,8 @@ class Hysteresis(Measurement):
                     plt.plot(np.linspace(0, max(fields)), slope[i] * np.linspace(0, max(fields)) + ms[i], '-',
                              color=RockPy.colors[i])
 
-                plt.errorbar(0, np.mean(ms), yerr=2*np.std(ms),color='k', marker='.', label='mean Ms (2$\sigma$)', zorder=100, )
+                plt.errorbar(0, np.mean(ms), yerr=2 * np.std(ms), color='k', marker='.', label='mean Ms (2$\sigma$)',
+                             zorder=100, )
                 plt.legend()
                 plt.xlim(-0.01, max(fields))
 
@@ -602,15 +604,15 @@ class Hysteresis(Measurement):
                     d0 = self.get_df_uf_plus_minus(0, 0)
                     x = np.linspace(0, self.mobj.max_field)
                     y_new = slope * x + abs(intercept)
-                    l, = plt.plot(abs(d0[i].index), d0[i]['M']*np.sign(np.mean(d0[i].index)), '.', mfc='w',
-                                  label=['df+','df-','uf+','uf-'][i],
+                    l, = plt.plot(abs(d0[i].index), d0[i]['M'] * np.sign(np.mean(d0[i].index)), '.', mfc='w',
+                                  label=['df+', 'df-', 'uf+', 'uf-'][i],
                                   color=RockPy.colors[i])
                     plt.plot(x, y_new, '--', color=l.get_color())
 
             # check plot
             if check:
                 # plt.plot([0,0,0,0], np.abs(ms_result), 'ko', label='Ms (branch)', mfc='none', mew=0.5)
-                plt.errorbar([0], np.mean(np.abs(ms_result)), yerr= 2 * np.std(np.abs(ms_result)),
+                plt.errorbar([0], np.mean(np.abs(ms_result)), yerr=2 * np.std(np.abs(ms_result)),
                              color='k', marker='.', label='mean Ms (2$\sigma$)', zorder=100, )
                 plt.axvline(self.mobj.max_field * saturation_percent / 100, ls='--', color='grey')
                 plt.xlabel('B [T]')
@@ -755,14 +757,13 @@ class Hysteresis(Measurement):
                     # indices of points within the grid points
                     if i == 0:
                         idx = [j for j, v in enumerate(d.index) if v <= grid[i]]
-                    elif i == len(grid)-1:
+                    elif i == len(grid) - 1:
                         idx = [j for j, v in enumerate(d.index) if grid[i] <= v]
                     else:
                         idx = [j for j, v in enumerate(d.index) if grid[i - 1] <= v <= grid[i + 1]]
 
                     if len(idx) > 1:  # if no points between gridpoints -> no interpolation
                         data = d.iloc[idx]
-
 
                         # make fit object
                         fit = np.polyfit(data.index, data[col], order)
@@ -891,11 +892,11 @@ class Paleointensity(Measurement):
             simobj = RockPy.Packages.Magnetism.simulations.Fabian2001(**simparams)
 
         return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag),
-                   series = series,
+                   series=series,
                    ftype_data=None, simobj=simobj, ftype='simulation')
 
     @staticmethod
-    def format_jr6(ftype_data, sobj_name=None):
+    def _format_jr6(ftype_data, sobj_name=None):
         """
 
         Returns
@@ -926,7 +927,7 @@ class Paleointensity(Measurement):
         return data
 
     @staticmethod
-    def format_tdt(ftype_data, sobj_name=None):
+    def _format_tdt(ftype_data, sobj_name=None):
         """
 
         Returns
@@ -937,7 +938,6 @@ class Paleointensity(Measurement):
         # check if sample name in file
         if not ftype_data.has_specimen(sobj_name):
             return
-
 
         # read ftype
         data = ftype_data.data[ftype_data.data['specimen'] == sobj_name].reset_index(drop=True)
@@ -953,7 +953,7 @@ class Paleointensity(Measurement):
         return data
 
     @staticmethod
-    def format_cryomag(ftype_data, sobj_name):
+    def _format_cryomag(ftype_data, sobj_name):
         '''
         formats the data fro ftype.cryomag into paleointensity readable format
 
@@ -967,7 +967,7 @@ class Paleointensity(Measurement):
 
         '''
         # only use results
-        data = ftype_data.data[ftype_data.data['mode']=='results']
+        data = ftype_data.data[ftype_data.data['mode'] == 'results']
 
         # rename the columns from magic format -> RockPy internal names
         data = data.rename(
@@ -1071,7 +1071,6 @@ class Paleointensity(Measurement):
 
         equal_vals = self.get_values_in_both(self.if_steps, self.zf_steps, 'level')
 
-
         if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
         zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
 
@@ -1079,13 +1078,14 @@ class Paleointensity(Measurement):
             if_steps.loc[:, ('x', 'y', 'z')] -= zf_steps.loc[:, ('x', 'y', 'z')]
         except ValueError:
             raise ValueError('cannot reindex from a duplicate axis -- likely duplicate values for IF or ZF steps\n'
-                             'IF steps: %s \nZF_steps: %s'%(if_steps['level'].values,zf_steps['level'].values))
+                             'IF steps: %s \nZF_steps: %s' % (if_steps['level'].values, zf_steps['level'].values))
         if_steps['LT_code'] = 'PTRM'
         if_steps['m'] = np.sqrt(if_steps.loc[:, ['x', 'y', 'z']].apply(lambda x: x ** 2).sum(axis=1))
         return if_steps
 
     ####################################################################################################################
     """ fitting routines """
+
     def create_model(self, ModelType='Fabian2001', **parameters):
         """
 
@@ -1100,7 +1100,6 @@ class Paleointensity(Measurement):
 
         if ModelType == 'Fabian2001':
             self.model = RockPy.Packages.Magnetism.simulations.Fabian2001(preset='Fabian5a', **parameters)
-
 
     def fit_demag_data(self):
         pass
@@ -1124,7 +1123,7 @@ class Paleointensity(Measurement):
             vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
             return vd.astype(float)
 
-        def vds(self, vmin, vmax, **unused_params): #todo move somwhere else
+        def vds(self, vmin, vmax, **unused_params):  # todo move somwhere else
             """
             The vector difference sum of the entire NRM vector :math:`\\mathbf{NRM}`.
 
@@ -1167,7 +1166,7 @@ class Paleointensity(Measurement):
 
             demagnetization, acquisition = self.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
             x_dash = (
-                demagnetization[component].v - self.result_y_int(vmin=vmin, vmax=vmax, component=component)[0])
+                    demagnetization[component].v - self.result_y_int(vmin=vmin, vmax=vmax, component=component)[0])
             x_dash = x_dash / self.result_slope(vmin=vmin, vmax=vmax, component=component)[0]
             x_dash = acquisition[component].v + x_dash
             x_dash = x_dash / 2.
@@ -1196,8 +1195,8 @@ class Paleointensity(Measurement):
             """
             acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
-            y_dash = acqu_data[component] + (self.get_result('slope') * demag_data[component])\
-                            + self.get_result('yint')
+            y_dash = acqu_data[component] + (self.get_result('slope') * demag_data[component]) \
+                     + self.get_result('yint')
 
             return 0.5 * y_dash.values
 
@@ -1256,16 +1255,21 @@ class Paleointensity(Measurement):
             # self.mobj.sobj.results.loc[self.mobj.mid, 'xint'] = xint
             # self.mobj.sobj.results.loc[self.mobj.mid, 'n'] = len(acqu_data)
 
-    class sigma(slope): pass
+    class sigma(slope):
+        pass
 
-    class yint(slope): pass
+    class yint(slope):
+        pass
 
-    class xint(slope): pass
+    class xint(slope):
+        pass
 
-    class n(slope): pass
+    class n(slope):
+        pass
 
     class banc(Result):
         dependencies = ('slope', 'sigma')
+
         def recipe_default(self, vmin=20, vmax=700, component='m', blab=35.0,
                            **unused_params):
             """
@@ -1303,6 +1307,7 @@ class Paleointensity(Measurement):
 
     class f(slope):
         dependencies = ('slope', 'yint')
+
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
             """
 
@@ -1326,8 +1331,10 @@ class Paleointensity(Measurement):
 
     ####################################################################################################################
     """ F_VDS """
+
     class fvds(slope):
-        dependencies = ('slope', )
+        dependencies = ('slope',)
+
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
             """
@@ -1377,7 +1384,7 @@ class Paleointensity(Measurement):
     """ BETA """
 
     class beta(Result):
-        dependencies = ('slope','sigma')
+        dependencies = ('slope', 'sigma')
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
@@ -1406,8 +1413,9 @@ class Paleointensity(Measurement):
 
     class g(slope):
         dependencies = ['slope']
+
         def recipe_default(self, vmin=20, vmax=700, component='m',
-                        **unused_params):
+                           **unused_params):
             """
 
             Gap factor: A measure of the gap between the points in the chosen segment of the Arai plot and the least-squares
@@ -1422,9 +1430,9 @@ class Paleointensity(Measurement):
             result = 1 - y_sum_dash_diff_sq / delta_y_dash ** 2
             self.set_result(result, 'g')
 
-
     ####################################################################################################################
     """ GAP MAX """
+
     class gapmax(slope):
         def recipe_default(self, vmin=20, vmax=700, **unused_params):
             """
@@ -1443,7 +1451,7 @@ class Paleointensity(Measurement):
             vd = np.linalg.norm(vd, axis=1)
             max_vd = np.max(vd)
             sum_vd = np.sum(vd)
-            result =  max_vd / sum_vd
+            result = max_vd / sum_vd
             self.set_result(result)
 
     ####################################################################################################################
@@ -1474,7 +1482,7 @@ class Paleointensity(Measurement):
     """ W """
 
     class w(Result):
-        dependencies =  ('q','n')
+        dependencies = ('q', 'n')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
             """
@@ -1558,14 +1566,14 @@ class Dcd(Measurement):
     """ formatting functions """
 
     @staticmethod
-    def format_vsm(ftype_data, **kwargs):
+    def _format_vsm(ftype_data, **kwargs):
         """
         formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
 
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.io.Vsm.vsm function.
+            data read by Magnetism.ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -1576,8 +1584,8 @@ class Dcd(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: io object
-                io object as read by Magnetism.io.Vsm.vsm
+            ftype_data: ftypes object
+                ftypes object as read by Magnetism.ftypes.Vsm.vsm
 
 
         """
@@ -1594,7 +1602,7 @@ class Dcd(Measurement):
         return data
 
     @staticmethod
-    def format_vftb(ftype_data, sobj_name=None):  # todo implement VFTB
+    def _format_vftb(ftype_data, sobj_name=None):  # todo implement VFTB
         """
         formats the output from vftb to measurement.data
         :return:
@@ -1681,16 +1689,16 @@ class Dcd(Measurement):
                 y = np.linspace(data['M'].values[0], data['M'].values[-1])
                 x_new = np.poly1d(fit)(y)
 
-                plt.plot(-data.index, data['M'], '.', color=RockPy.colors[0], mfc='w',label='data')
+                plt.plot(-data.index, data['M'], '.', color=RockPy.colors[0], mfc='w', label='data')
                 plt.plot(-x_new, y, color=RockPy.colors[0], label='fit')
-                plt.plot(-result, 0, 'xk',label='B$_{cr}$')
-                plt.axhline(0, color = 'k', zorder=0)
+                plt.plot(-result, 0, 'xk', label='B$_{cr}$')
+                plt.axhline(0, color='k', zorder=0)
 
-                plt.gca().text(0.05, 0.1, 'B$_{cr}$ = %.2f mT'%(abs(result)*1000),
-                           verticalalignment='bottom', horizontalalignment='left',
-                           transform=plt.gca().transAxes,
-                           bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
-                           color='k')
+                plt.gca().text(0.05, 0.1, 'B$_{cr}$ = %.2f mT' % (abs(result) * 1000),
+                               verticalalignment='bottom', horizontalalignment='left',
+                               transform=plt.gca().transAxes,
+                               bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                               color='k')
 
                 plt.xlabel('B [mT]')
                 plt.ylabel('M [Am$^2$]')

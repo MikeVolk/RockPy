@@ -482,35 +482,12 @@ class Study(object):
             for importinfos in iHelper.gen_measurement_dict:
                 s.add_measurement(create_parameters=False, **importinfos)
 
+    @property
     def info(self):
-        info = pd.DataFrame(columns=['mass[kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
+        info = pd.DataFrame()
 
         for s in self.samples:
-            info.loc[s.name, 'mass[kg]'] = s.get_measurement('mass')[0].data['mass[kg]'].values[0] if s.get_measurement(
-                'mass') else np.nan
-            info.loc[s.name, 'sample groups'] = s._samplegroups if s._samplegroups else 'None'
-
-            mtypes = [(mt, len(s.get_measurement(mtype=mt))) for mt in s.mtypes]
-            info.loc[s.name, 'mtypes'] = mtypes if len(mtypes) > 1 else mtypes[0]
-
-            ''' STYPES '''
-            if len(s.stypes) == 0:
-                stypes = 'None'
-            elif len(s.stypes) > 1:
-                stypes = sorted(s.stypes)
-            else:
-                stypes = list(s.stypes)[0]
-
-            info.loc[s.name, 'stypes'] = stypes
-
-            ''' SVALS '''
-            if len(s.svals) == 0:
-                svals = 'None'
-            elif len(s.svals) > 1:
-                svals = sorted(s.svals)
-            else:
-                svals = list(s.stypes)[0]
-            info.loc[s.name, 'svals'] = svals
+            info = pd.concat([info, s.info])
 
         return info
 

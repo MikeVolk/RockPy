@@ -45,7 +45,7 @@ class Parameter(Measurement):
         #         'creating %s: %.2f [%s] -> %.2e [%s]' % (self.__class__.get_subclass_name(),
         #                                                  value, unit, self.value, self.SIunit))
 
-    def format_generic(self):
+    def _format_generic(self):
         pass
 
 

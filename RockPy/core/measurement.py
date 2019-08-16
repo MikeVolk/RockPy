@@ -26,7 +26,7 @@ class Measurement(object):
 
     1. measurement formatters
     -------------------------
-        The measurement formatter uses the data from the Package.io.ftype and turns it into a RockPyData
+        The measurement formatter uses the data from the Package.ftypes.ftype and turns it into a RockPyData
         object fitting the Measurement.data specifications of the measurement.
 
     2. results
@@ -107,11 +107,7 @@ class Measurement(object):
             dict:
                 Dictionary with a formatter_name : formatter_method
         '''
-
-        measurement_formatters = {
-            i.replace('format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('format_')
-        }
-        return measurement_formatters
+        return {i.replace('_format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('_format_')}
 
     @classmethod
     def correct_methods(cls) -> dict:
@@ -186,7 +182,8 @@ class Measurement(object):
             ftype_data = RockPy.implemented_ftypes[ftype](fpath, sobj.name, dialect=dialect, reload=reload)
         else:
             cls.log().error('CANNOT IMPORT ')
-            cls.log().error('ftype not in implemented ftypes: %s ' % ', '.join(RockPy.io.tools.implemented_ftypes().keys()))
+            cls.log().error(
+                'ftype not in implemented ftypes: %s ' % ', '.join(RockPy.ftypes.tools.implemented_ftypes().keys()))
 
         # check if the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():
@@ -197,8 +194,9 @@ class Measurement(object):
                 return
         else:
             cls.log().error('UNKNOWN ftype: << %s >>' % ftype)
-            cls.log().error('most likely cause is the \"format_%s\" method is missing in the measurement << %s >>' % (
-                ftype, cls.__name__))
+            cls.log().error(
+                'most likely cause is the \"_format_%s\" method is missing in the measurement << %s >>' % (
+                    ftype, cls.__name__))
             return
 
         return cls(sobj=sobj, fpath=fpath, ftype=ftype,
@@ -253,7 +251,7 @@ class Measurement(object):
 
     def __init__(self, sobj,
                  fpath=None, ftype=None, mdata=None,
-                 ftype_data=None, simobj = None,
+                 ftype_data=None, simobj=None,
                  series=None,
                  idx=None,
                  **options
@@ -312,8 +310,8 @@ class Measurement(object):
         """ simulation and model """
         # initialize simulation/model objects
 
-        self.simobj = simobj # for the case that the measurement is created from a simulation
-        self.model = None # for modeling of the data
+        self.simobj = simobj  # for the case that the measurement is created from a simulation
+        self.model = None  # for modeling of the data
 
         ''' initial state '''
         self.is_initial_state = False
@@ -345,7 +343,7 @@ class Measurement(object):
         self.__init_results()
         self.__class__.n_created += 1
 
-    def _result_classes(self):  #todo test
+    def _result_classes(self):  # todo test
         """
         Mothod that gets all result classes of the measurement
          
@@ -943,7 +941,7 @@ class Measurement(object):
                   reference='data', ref_dtype='mag', norm_dtypes='all', vval=None,
                   norm_method='max', norm_factor=None, result=None,
                   normalize_variable=False, dont_normalize=('temperature', 'field'),
-                  norm_initial_state=True, **options): #todo check if works
+                  norm_initial_state=True, **options):  # todo check if works
         """
         normalizes all available data to reference value, using norm_method
 

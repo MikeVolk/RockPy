@@ -173,7 +173,43 @@ class Sample(object):
                                             height=height, diameter=diameter, lengthunit=lengthunit)
 
         self.comment = comment
+    
+    @property
+    def info(self):
+        info = pd.DataFrame(columns=['mass[kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
+
+        info.loc[self.name, 'mass[kg]'] = self.get_measurement('mass')[0].data['mass[kg]'].values[0] if self.get_measurement(
+            'mass') else np.nan
+        info.loc[self.name, 'sample groups'] = self._samplegroups if self._samplegroups else 'None'
+
+        mtypes = [(mt, len(self.get_measurement(mtype=mt))) for mt in self.mtypes]
+
+        if mtypes:
+            info.loc[self.name, 'mtypes'] = mtypes if len(mtypes) > 1 else mtypes[0]
+        else:
+            info.loc[self.name, 'mtypes'] = None
+
+        ''' STYPES '''
+        if len(self.stypes) == 0:
+            stypes = 'None'
+        elif len(self.stypes) > 1:
+            stypes = sorted(self.stypes)
+        else:
+            stypes = list(self.stypes)[0]
+
+        info.loc[self.name, 'stypes'] = stypes
+
+        ''' SVALS '''
+        if len(self.svals) == 0:
+            svals = 'None'
+        elif len(self.svals) > 1:
+            svals = sorted(self.svals)
+        else:
+            svals = list(self.stypes)[0]
+        info.loc[self.name, 'svals'] = svals
+
+        return info
     def add_simulation(self, mtype, idx=None, series= None, **sim_param):
         """
         add simulated measurements
@@ -240,7 +276,7 @@ class Sample(object):
             # catch cant create error case where no data is written
             if mobj.data is None:
                 return
-            self.add_measurement(mtype=mtype, mobj=mobj)
+            self.add_measurement(mtype=mtype, mobj=mobj, ftype='generic')
 
     def add_measurement(
             self,
@@ -685,6 +721,4 @@ class Sample(object):
 
 if __name__ == '__main__':
     S = RockPy.Study()
-    s = S.add_sample('62')
-    m = s.add_measurement(fpath='/Users/mike/Dropbox/science/_projects/Apollo15_kim/data/Apollo15_A15_hys_agm##(Bmax,500,mT)_(f,404,Hz)_(q,150.0,)#0.7(hr).012',
-                          )
+    s = S.add_sample('62', mass=1)
