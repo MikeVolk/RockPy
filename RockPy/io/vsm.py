@@ -26,10 +26,9 @@ class Vsm(Ftype):
         self.header = self.read_header(dfile, header_end)
         self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_widths)
 
-        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
-
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header = self.header)
         # check the calibration factor
-        self.calibration_factor = float(self.header.T['Calibration factor'])
+        self.calibration_factor = float(self.header.loc['Calibration factor'])
 
         if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
             self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
@@ -80,14 +79,12 @@ class Vsm(Ftype):
         header = pd.read_fwf(dfile,
                              skiprows=2, nrows=header_end - 1, skip_blank_lines=True,
                              widths=(31, 13), index_col=0, names=[0])
-
         # remove empty line and section headers
         idx = [i for i,v in enumerate(header.index) if not str(v).upper() == v if str(v) != 'nan']
 
         header = header.iloc[idx]
         header = header.replace('No', False)
         header = header.replace('Yes', True)
-
         # make numerical entries to float
         for i, v in enumerate(header.index):
             try:
@@ -238,4 +235,4 @@ class Vsm(Ftype):
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
     # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
-    print(Vsm(dfile='/Users/mike/Dropbox/github/collaborations/Andrew Fowler (UMN)/data/VSM/pyrrhotite#3base_7.2mg_DCD_VSM.001').header)
+    print(Vsm(dfile='/Users/mike/Dropbox/science/_projects/RockPy/RockPy/tests/test_data/VSM/dcd_vsm.001').header)

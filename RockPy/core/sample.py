@@ -15,8 +15,6 @@ log = logging.getLogger(__name__)
 class Sample(object):
     snum = 0
 
-
-
     @property
     def results(self):
         self._results['sID'] = self.sid
@@ -143,7 +141,7 @@ class Sample(object):
         else:
             if not isinstance(study, RockPy.core.study.Study):
                 self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy Masterstudy')
-            study = RockPy.MasterStudy
+            # study = RockPy.MasterStudy
 
         self.study = study
 

@@ -10,16 +10,14 @@ test_data_path = os.path.join(installation_directory, 'tests', 'test_data')
 # unit handling
 import pint
 ureg = pint.UnitRegistry()
-# add additional units
-ureg.load_definitions(os.path.join(installation_directory,'unit_definitions.txt')) # doctest: +SKIP
 
 
-import RockPy.core.measurement as measurement
 import RockPy.core.file_io
-
 from RockPy.core.study import Study
 from RockPy.core.sample import Sample
+from RockPy.core.measurement import Measurement
 
+import RockPy.io
 from RockPy.core.utils import to_tuple, welcome_message
 
 ''' PLOTTING '''
@@ -41,16 +39,21 @@ abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviation
 
 # # import all RockPy.packages
 __all__ = []
-for loader, module_name, is_pkg in  pkgutil.walk_packages([installation_directory+'/Packages']):
+for loader, module_name, is_pkg in pkgutil.walk_packages([installation_directory+'/Packages']):
+    print(module_name)
     __all__.append(module_name)
     module = loader.find_module(module_name).load_module(module_name)
     exec('%s = module' % module_name)
 
 # create implemented measurements dictionary
-implemented_measurements = {m.__name__.lower(): m for m in measurement.Measurement.inheritors()}
+implemented_measurements = {m.__name__.lower(): m for m in Measurement.inheritors()}
 
 # todo create config file for RockPy
 auto_calc_results = True
 
 def debug_mode(on=True):
     create_logger(on)
+
+
+if __name__ == '__main__':
+    pass

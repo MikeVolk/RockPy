@@ -94,7 +94,7 @@ class Measurement(object):
         return self.__class__._mids.index(self.mid)
 
     @classmethod
-    def implemented_ftypes(cls):  # todo move into RockPy core.core has nothing to do with measurement
+    def implemented_ftypes(cls):  # todo move into RockPy core has nothing to do with measurement
         """
         Dictionary of all implemented filetypes.
 
@@ -106,7 +106,7 @@ class Measurement(object):
 
         dict: classname:
         """
-        implemented_ftypes = {cl.__name__.lower(): cl for cl in Ftype.inheritors()}
+        implemented_ftypes = {cl.__name__.lower(): cl for cl in RockPy.core.utils.extract_inheritors_from_cls(Ftype)}
         return implemented_ftypes
 
     @classmethod

@@ -1,25 +1,17 @@
-# coding: utf-8
-import pandas as pd
-import numpy as np
-import scipy as sp
-import RockPy
-
+import logging
 import os
-import matplotlib.pylab as plt
-import RockPy.Packages.Mag.Measurement.Simulation.utils as SimUtils
-
-# from pylatex import Document, Section, Subsection, Tabular, Math, TikZ, Axis, \
-#     Plot, Figure, Matrix, Package
-# from pylatex.utils import italic
 from copy import deepcopy
 
-import logging
+import RockPy
+import numpy as np
+import pandas as pd
+from RockPy.Packages.Magnetism import utils as SimUtils
+from matplotlib import pylab as plt
 
 
 class Fabian2001(object):
     presets = pd.read_csv(os.path.join(RockPy.installation_directory,
-                                       'Packages', 'Mag', 'Measurement', 'Simulation',
-                                       'paleointensity_presets.csv'), index_col=0)
+                                       'Packages', 'Magnetism', 'paleointensity_presets.csv'), index_col=0)
 
     @classmethod
     def log(cls):
@@ -40,10 +32,10 @@ class Fabian2001(object):
             'TR': 'LT-PTRM-MD'
             'AC': 'LT-PTRM-Z'
             'NRM': 'LT-NO'
-            
+
         Notes
         -----
-            calls RockPy.Packages.Mag.Measurement.Simulation.utils.ThellierStepMaker
+            calls RockPy.Packages.Magnetismnetism.Measurement.Simulation.utils.ThellierStepMaker
         """
         out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every,
                                          ac_every=ac_every)
@@ -97,7 +89,7 @@ class Fabian2001(object):
 
             tc: float
                 Curie temperature of the simulation
-                
+
             # Pressure demagnetization parameters
             d1: float
                 linear part of the pressure demagnetization
@@ -107,7 +99,7 @@ class Fabian2001(object):
                 width of the demagnetization distribution
             dt: float
                 center of the distribution
-            
+
             grid: int
                 default_recipe:100
                 the number of blocking and unblocking temperatures to be calculated
@@ -119,7 +111,7 @@ class Fabian2001(object):
                 reduced labfield
             ms: float
                 saturation magnetization of the simulated sample
-            
+
             # measurement simulation parameters e.g. how many points
             temp_steps: int, arraylike, pd.DataFrame
                 int will create an evenly spaced number of measurement temperatures up to tmax
@@ -131,7 +123,7 @@ class Fabian2001(object):
                 after how many thermal demag steps a pTRM check is done
             tr_every: int
                 after how many thermal demag steps a tail check is done
-            ac_every: int                
+            ac_every: int
                 after how many thermal demag steps a additivity check is done
 
         """
@@ -370,7 +362,7 @@ class Fabian2001(object):
         """
         Method that calculates a matrix of chi values.
         For each tb there is a distribution of tub, get_chi_grid calculates them for a given tb
-        
+
         Returns
         -------
             numpy ndarray with chi values (columns = blocking temperatures, indices = unblocking temperatures)
@@ -666,18 +658,3 @@ class Fabian2001(object):
         ax.legend(['pTRM acquisition', 'Thermal demag.', 'sum'])
         ax.set_xlabel('T [C]')
         ax.set_ylabel('M [arb. units]')
-
-
-if __name__ == '__main__':
-    RockPy.log.setLevel('INFO')
-    s = RockPy.Sample('test')
-    mnp = s.add_simulation('paleointensity', preset='Fabian4a', a11=1, a12=0, a13=1, a1t=1)
-    # mp = s.add_simulation('paleointensity', preset='Fabian7a', d1=0, d2=0.1, d3=0.3, dt=0.1, pressure_demag=True)
-    #
-    # mp.simobj.plot_arai()
-    mnp.simobj.change_simparams(a11=0)
-    mnp.simobj.plot_arai()
-    plt.show()
-    mnp.simobj.change_simparams(a11=1, a12=1, a1t=1)
-    mnp.simobj.plot_arai()
-    plt.show()

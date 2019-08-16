@@ -1,9 +1,5 @@
-import RockPy
 from RockPy.core.ftype import Ftype
-import pandas as pd
-import numpy as np
-from RockPy.Packages.Mag.io.vsm import Vsm
-from copy import deepcopy
+from RockPy.io.vsm import Vsm
 
 
 class Agm(Vsm):

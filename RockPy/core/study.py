@@ -2,7 +2,6 @@ import logging
 import time
 
 import RockPy
-from RockPy.Packages.Generic.Measurement.Parameter import Parameter
 from RockPy.core.file_io import ImportHelper
 from RockPy.core.utils import to_tuple
 
@@ -10,7 +9,7 @@ import pandas as pd
 import numpy as np
 
 import ipywidgets as widgets
-from IPython.display import clear_output, display
+from IPython.display import display
 from ipywidgets import HBox, VBox, Label
 
 log = logging.getLogger(__name__)

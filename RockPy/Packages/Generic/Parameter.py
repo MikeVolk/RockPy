@@ -1,6 +1,5 @@
 import RockPy
 import RockPy.core.utils
-import numpy as np
 import pandas as pd
 from RockPy.core.measurement import Measurement
 
@@ -105,7 +104,7 @@ if __name__ == '__main__':
     s.add_measurement(mass = '13mg')
     s.add_measurement(mass = '12mg')
 
-    m = RockPy.Packages.Generic.Measurement.Parameter.Mass(sobj=s, value='2kg')
+    m = RockPy.Packages.Generic.Parameter.Mass(sobj=s, value='2kg')
     m2 = RockPy.implemented_measurements['mass'](sobj=s, value='3kg')
 
     print(s.measurements[0].clsdata)
