@@ -9,7 +9,7 @@ from copy import deepcopy
 class Vftb(Ftype):
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
         self.mass, self.header, self.segment_idx, self.header_idx = self.read_header(dfile)
-        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
+        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header=self.header)
 
         # get the header_index for iterator
         self.header_idx += [len(self.data)]
@@ -52,7 +52,6 @@ class Vftb(Ftype):
 
     def read_file(self):
 
-
         self.units = [i.split('/')[1].strip() for i in self.header]
         conversion = [1e-3 if 'E-3' in unit else 1 for unit in self.units]
 
@@ -68,9 +67,6 @@ class Vftb(Ftype):
         return data
 
 if __name__ == '__main__':
-    vftb_file = os.path.join(RockPy.test_data_path, 'VFTB', 'hem4_20080702.rmp')
-
-    data = Vftb(dfile=vftb_file)
-
-    for s in data.segments:
-        print(s)
+    RockPy.welcome_message()
+    s = RockPy.Sample('test')
+    m = s.add_measurement(os.path.join(RockPy.test_data_path, 'vftb', 'hys_vftb.001'), mtype='hysteresis', ftype='vftb')
