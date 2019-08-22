@@ -32,35 +32,35 @@ class Cif(RockPy.core.ftype.Ftype):
                    "WS": [270, 270],
                    }
 
-    # in_out_units = {'geo_dec': ureg('degree'),
-    #          'geo_inc': ureg('degree'),
-    #          'strat_dec': ureg('degree'),
-    #          'strat_inc': ureg('degree'),
-    #          'intensity': ureg('emu'),
-    #          'ang_err': ureg('degree'),
-    #          'plate_dec': ureg('degree'),
-    #          'plate_inc': ureg('degree'),
-    #          'std_x': 1e-5 * ureg('emu'),
-    #          'std_y': 1e-5 * ureg('emu'),
-    #          'std_z': 1e-5 * ureg('emu'),
-    #          'x': ureg('emu'),
-    #          'y': ureg('emu'),
-    #          'z': ureg('emu')}
-    #
-    # units = {'geo_dec': ureg('degree'),
-    #          'geo_inc': ureg('degree'),
-    #          'strat_dec': ureg('degree'),
-    #          'strat_inc': ureg('degree'),
-    #          'intensity': ureg('ampere meter ^2'),
-    #          'ang_err': ureg('degree'),
-    #          'plate_dec': ureg('degree'),
-    #          'plate_inc': ureg('degree'),
-    #          'std_x': ureg('ampere meter ^2'),
-    #          'std_y': ureg('ampere meter ^2'),
-    #          'std_z': ureg('ampere meter ^2'),
-    #          'x': ureg('ampere meter ^2'),
-    #          'y': ureg('ampere meter ^2'),
-    #          'z': ureg('ampere meter ^2')}
+    in_units = {'geo_dec': ureg('degree'),
+             'geo_inc': ureg('degree'),
+             'strat_dec': ureg('degree'),
+             'strat_inc': ureg('degree'),
+             'intensity': ureg('emu'),
+             'ang_err': ureg('degree'),
+             'plate_dec': ureg('degree'),
+             'plate_inc': ureg('degree'),
+             'std_x': 1e-5 * ureg('emu'),
+             'std_y': 1e-5 * ureg('emu'),
+             'std_z': 1e-5 * ureg('emu'),
+             'x': ureg('emu'),
+             'y': ureg('emu'),
+             'z': ureg('emu')}
+    out_units = in_units
+    units = {'geo_dec': ureg('degree'),
+             'geo_inc': ureg('degree'),
+             'strat_dec': ureg('degree'),
+             'strat_inc': ureg('degree'),
+             'intensity': ureg('ampere meter ^2'),
+             'ang_err': ureg('degree'),
+             'plate_dec': ureg('degree'),
+             'plate_inc': ureg('degree'),
+             'std_x': ureg('ampere meter ^2'),
+             'std_y': ureg('ampere meter ^2'),
+             'std_z': ureg('ampere meter ^2'),
+             'x': ureg('ampere meter ^2'),
+             'y': ureg('ampere meter ^2'),
+             'z': ureg('ampere meter ^2')}
 
     def __init__(self, dfile,
                  snames=None, reload=False,
@@ -94,6 +94,12 @@ class Cif(RockPy.core.ftype.Ftype):
         kwargs: dict optional
             additional keyword arguments
         """
+        if level_unit == 'gauss':
+            self.in_units['level'] = ureg('gauss')
+            self.units['level'] = ureg('tesla')
+        if level_unit == 'celsius':
+            self.in_units['level'] = ureg('celsius')
+            self.units['level'] = ureg('kelvin')
 
         # call the ftype constructor
         super().__init__(dfile, snames=snames,
@@ -102,11 +108,6 @@ class Cif(RockPy.core.ftype.Ftype):
                          **kwargs)
 
         self.data = self.add_missing_levels(self.data)
-
-        if level_unit == 'gauss':
-            gauss = 1 * ureg[level_unit]
-            tesla = gauss.to('tesla')
-            self.data['level'] *= tesla.magnitude
 
     @classmethod
     def add_missing_levels(cls, data):
@@ -182,9 +183,11 @@ class Cif(RockPy.core.ftype.Ftype):
                      'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time'], data=rows)
 
         # moment is stored in 10^-5 emu -> 1E-5 * 1E-3 -> Am^2
-        data['intensity'] *= 1e5
-        data.loc[:, ['std_x', 'std_y', 'std_z', 'intensity']] *= 1e-3
-
+        for u in self.in_units:
+            print(self.in_units[u].to(self.units[u]))
+        # print(self.units['intensity'], self.in_units['intensity'])
+        # data['intensity'] *= 1e5
+        # data.loc[:, ['std_x', 'std_y', 'std_z', 'intensity']] *= 1e-3
         data = DIM2XYZ(data, colD='plate_dec', colI='plate_inc', colM='intensity')
         data.loc[:, 'datetime'] = pd.to_datetime(data['date'] + ' ' + data['time'])
         data = data.set_index('datetime')
@@ -284,8 +287,7 @@ class Cif(RockPy.core.ftype.Ftype):
                     num_index += 1
 
                 mtype = row[:num_index].rstrip()
-
-                if row.startswith('NRM'):
+                if not row[num_index:6]:
                     level = 0
                 else:
                     level = int(row[num_index:6])
