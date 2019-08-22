@@ -19,15 +19,15 @@ from RockPy.core.sample import Sample
 from RockPy.core.measurement import Measurement
 from RockPy.core.ftype import Ftype
 
-import RockPy.Ftypes
-import RockPy.Ftypes.tools
+import RockPy.ftypes
+import RockPy.ftypes.tools
 
-import RockPy.Packages
+import RockPy.packages
 
 from RockPy.core.utils import to_tuple, welcome_message
 
 ''' PLOTTING '''
-from RockPy.Tools.plotting import colorpalettes, ls, marker
+from RockPy.tools.plotting import colorpalettes, ls, marker
 
 colors = colorpalettes['cat10']
 
@@ -41,11 +41,11 @@ log = logging.getLogger('RockPy')
 # read the abbreviations.txt file
 abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviations()
 
-''' automatic import of all subpackages in Packages and core '''
+''' automatic import of all subpackages in packages and core '''
 
 # create implemented measurements dictionary
-implemented_measurements = RockPy.Ftypes.tools.__implemented__(Measurement)
-implemented_ftypes = RockPy.Ftypes.tools.__implemented__(Ftype)
+implemented_measurements = RockPy.ftypes.tools.__implemented__(Measurement)
+implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
 
 # todo create config file for RockPy
 auto_calc_results = True

@@ -10,9 +10,9 @@ from scipy.optimize import curve_fit
 from RockPy.core.measurement import Measurement
 from RockPy.core.result import Result
 from RockPy.core.utils import correction
-from RockPy.Tools.compute import lin_regress
-import RockPy.Packages.Magnetism.simulations
-from RockPy.Tools.pandas_tools import get_values_in_both
+from RockPy.tools.compute import lin_regress
+import RockPy.packages.magnetism.simulations
+from RockPy.tools.pandas_tools import get_values_in_both
 
 class Hysteresis(Measurement):
 
@@ -32,7 +32,7 @@ class Hysteresis(Measurement):
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.Ftypes.Vsm.vsm function.
+            data read by magnetism.ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -45,8 +45,8 @@ class Hysteresis(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: Ftypes object
-                Ftypes object as read by Magnetism.Ftypes.Vsm.vsm
+            ftype_data: ftypes object
+                ftypes object as read by magnetism.ftypes.Vsm.vsm
 
 
         '''
@@ -73,7 +73,7 @@ class Hysteresis(Measurement):
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.Ftypes.Vsm.vsm function.
+            data read by magnetism.ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -86,8 +86,8 @@ class Hysteresis(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: Ftypes object
-                Ftypes object as read by Magnetism.Ftypes.Vsm.vsm
+            ftype_data: ftypes object
+                ftypes object as read by magnetism.ftypes.Vsm.vsm
 
 
         '''
@@ -927,7 +927,7 @@ class Paleointensity(Measurement):
         method = simparams.pop('method', 'fabian')
 
         if method == 'fabian':
-            simobj = RockPy.Packages.Magnetism.simulations.Fabian2001(**simparams)
+            simobj = RockPy.packages.magnetism.simulations.Fabian2001(**simparams)
 
         return cls(sobj=sobj, mdata=simobj.get_data(pressure_demag=pressure_demag),
                    series=series,
@@ -1137,7 +1137,7 @@ class Paleointensity(Measurement):
         """
 
         if ModelType == 'Fabian2001':
-            self.model = RockPy.Packages.Magnetism.simulations.Fabian2001(preset='Fabian5a', **parameters)
+            self.model = RockPy.packages.magnetism.simulations.Fabian2001(preset='Fabian5a', **parameters)
 
     def fit_demag_data(self):
         pass
@@ -1611,7 +1611,7 @@ class Dcd(Measurement):
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.Ftypes.Vsm.vsm function.
+            data read by magnetism.ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -1622,8 +1622,8 @@ class Dcd(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: Ftypes object
-                Ftypes object as read by Magnetism.Ftypes.Vsm.vsm
+            ftype_data: ftypes object
+                ftypes object as read by magnetism.ftypes.Vsm.vsm
 
 
         """

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from RockPy.Ftypes.cif import Cif
+from RockPy.ftypes.cif import Cif
 
 class TestCif(TestCase):
     def test_write_header(self):

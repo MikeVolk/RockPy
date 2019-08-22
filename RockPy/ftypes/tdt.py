@@ -1,6 +1,6 @@
 import RockPy
 from RockPy.core.ftype import Ftype
-from RockPy.Tools import pandas_tools as pdt
+from RockPy.tools import pandas_tools as pdt
 import pandas as pd
 import numpy as np
 

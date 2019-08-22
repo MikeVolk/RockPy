@@ -5,13 +5,13 @@ from copy import deepcopy
 import RockPy
 import numpy as np
 import pandas as pd
-from RockPy.Packages.Magnetism import tools as SimUtils
+from RockPy.packages.magnetism import tools as SimUtils
 from matplotlib import pylab as plt
 
 
 class Fabian2001(object):
     presets = pd.read_csv(os.path.join(RockPy.installation_directory,
-                                       'Packages', 'Magnetism', 'paleointensity_presets.csv'), index_col=0)
+                                       'packages', 'magnetism', 'paleointensity_presets.csv'), index_col=0)
 
     @classmethod
     def log(cls):
@@ -35,7 +35,7 @@ class Fabian2001(object):
 
         Notes
         -----
-            calls RockPy.Packages.Magnetismnetism.Measurement.Simulation.utils.ThellierStepMaker
+            calls RockPy.packages.Magnetismnetism.Measurement.Simulation.utils.ThellierStepMaker
         """
         out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every,
                                          ac_every=ac_every)

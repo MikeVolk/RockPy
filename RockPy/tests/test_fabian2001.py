@@ -1,6 +1,6 @@
 from unittest import TestCase
 import RockPy
-from RockPy.Packages.Magnetism.Simulation import Fabian2001
+from RockPy.packages.magnetism.Simulation import Fabian2001
 import pandas as pd
 import os.path
 import numpy.testing as npt

@@ -509,7 +509,7 @@ def handle_near_zero(d):
     return d
 
 # if __name__ == '__main__':
-#     from RockPy.Tools.plotting import *
+#     from RockPy.tools.plotting import *
 #
 #     lst = [90, 90, 1]
 #     lstlst = [lst, lst]

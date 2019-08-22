@@ -5,7 +5,7 @@ import numpy as np
 import io
 from copy import deepcopy
 import matplotlib.pyplot as plt
-from RockPy.Tools.plotting import MidpointNormalize
+from RockPy.tools.plotting import MidpointNormalize
 
 
 class VariForc(Ftype):

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from RockPy.Tools.compute import *
+from RockPy.tools.compute import *
 import numpy as np
 from numpy import testing
 

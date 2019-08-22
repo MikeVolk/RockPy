@@ -11,7 +11,7 @@ from matplotlib.collections import LineCollection
 import matplotlib.colors as colors
 from matplotlib.legend_handler import HandlerTuple
 
-from RockPy.Tools.compute import convert_to_equal_area, maintain_n3_shape
+from RockPy.tools.compute import convert_to_equal_area, maintain_n3_shape
 from matplotlib.mlab import griddata
 
 colorpalettes = {
@@ -491,7 +491,7 @@ def plot_metamorphic_facies(ax=None, facies_list=None, text=None, **kwargs):
 
     """
     xls = pd.ExcelFile(
-        os.path.join(RockPy.installation_directory, 'Tools', 'data', 'mtemorphic-facies_list-Gillen1982.xls'))
+        os.path.join(RockPy.installation_directory, 'tools', 'data', 'mtemorphic-facies_list-Gillen1982.xls'))
 
     if facies_list is None:
         facies_list = xls.sheet_names

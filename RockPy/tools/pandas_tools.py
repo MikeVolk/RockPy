@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import RockPy
 import pandas as pd
-from RockPy.Tools import compute
-from RockPy.Tools.compute import rotate
+from RockPy.tools import compute
+from RockPy.tools.compute import rotate
 
 
 def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
