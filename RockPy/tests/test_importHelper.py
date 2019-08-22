@@ -1,6 +1,5 @@
 from unittest import TestCase
 from RockPy.core.file_io import ImportHelper
-from RockPy.core.utils import return_list_only_on_multiple
 
 import numpy as np
 
@@ -26,8 +25,8 @@ class TestImportHelper(TestCase):
                      'heightunit', 'diameter', 'diameterunit', 'lengthunit', 'series', 'comment', 'additional',
                      'suffix']
 
-    def test_from_folder(self):
-        self.fail()
+    # def test_from_folder(self):
+    #     self.fail()
 
     def test_from_file(self):
 
@@ -46,54 +45,54 @@ class TestImportHelper(TestCase):
                 self.assertEqual(1, np.shape(elem[1])[0])
 
 
-    def test_extract_measurement_block(self):
-        self.fail()
-
-    def test_extract_sample_block(self):
-        self.fail()
+    # def test_extract_measurement_block(self):
+    #     self.fail()
+    #
+    # def test_extract_sample_block(self):
+    #     self.fail()
 
     def test_extract_series_block(self):
         series_block = self.test_file_1.split('#')[2]
         self.assertEqual([('series1',32,'h'),('series2', 1,'n')],ImportHelper.extract_series_block(series_block))
-
-    def test_extract_add_dialect_block(self):
-        self.fail()
-
-    def test_from_dict(self):
-        self.fail()
-
-    def test_get_measurement_block(self):
-        self.fail()
-
-    def test_get_sample_block(self):
-        self.fail()
-
-    def test_get_series_block(self):
-        self.fail()
-
-    def test_get_add_block(self):
-        self.fail()
-
-    def test_new_filenames(self):
-        self.fail()
-
-    def test_getImportHelper(self):
-        self.fail()
-
-    def test_nsnames(self):
-        self.fail()
-
-    def test_nfiles(self):
-        self.fail()
-
-    def test__gen_dicts(self):
-        self.fail()
-
-    def test_gen_measurement_dict(self):
-        self.fail()
-
-    def test_gen_sample_dict(self):
-        self.fail()
-
-    def test_return_file_infos(self):
-        self.fail()
+    #
+    # def test_extract_add_dialect_block(self):
+    #     self.fail()
+    #
+    # def test_from_dict(self):
+    #     self.fail()
+    #
+    # def test_get_measurement_block(self):
+    #     self.fail()
+    #
+    # def test_get_sample_block(self):
+    #     self.fail()
+    #
+    # def test_get_series_block(self):
+    #     self.fail()
+    #
+    # def test_get_add_block(self):
+    #     self.fail()
+    #
+    # def test_new_filenames(self):
+    #     self.fail()
+    #
+    # def test_getImportHelper(self):
+    #     self.fail()
+    #
+    # def test_nsnames(self):
+    #     self.fail()
+    #
+    # def test_nfiles(self):
+    #     self.fail()
+    #
+    # def test__gen_dicts(self):
+    #     self.fail()
+    #
+    # def test_gen_measurement_dict(self):
+    #     self.fail()
+    #
+    # def test_gen_sample_dict(self):
+    #     self.fail()
+    #
+    # def test_return_file_infos(self):
+    #     self.fail()

@@ -4,14 +4,14 @@ import RockPy.core.file_io
 
 class TestMinfo(TestCase):
     def setUp(self):
-        self.only_sample = RockPy.core.file_io.minfo(fpath='NoPath', sample='sample1', mtypes='hys', ftype='vsm')
-        self.only_sample_mass = RockPy.core.file_io.minfo(fpath='NoPath', sample='sample1', mtypes='hys', ftype='vsm',
+        self.only_sample = RockPy.core.file_io.ImportHelper(fpath='NoPath', sample='sample1', mtypes='hys', ftype='vsm')
+        self.only_sample_mass = RockPy.core.file_io.ImportHelper(fpath='NoPath', sample='sample1', mtypes='hys', ftype='vsm',
                                                           mass='33mg')
-        self.only_sample_mass_series = RockPy.core.file_io.minfo(fpath='NoPath', sample='sample1', mtypes='hys',
+        self.only_sample_mass_series = RockPy.core.file_io.ImportHelper(fpath='NoPath', sample='sample1', mtypes='hys',
                                                                  ftype='vsm',
                                                                  mass='33mg',
                                                                  series=('s1', 1, 'a'))
-        self.only_sample_add = RockPy.core.file_io.minfo(fpath='NoPath', sample='sample1', mtypes='hys', ftype='vsm',
+        self.only_sample_add = RockPy.core.file_io.ImportHelper(fpath='NoPath', sample='sample1', mtypes='hys', ftype='vsm',
                                                          add1=0)
 
     def test_extract_series(self):
