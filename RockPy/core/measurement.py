@@ -13,7 +13,7 @@ from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 import numpy as np
 import pandas as pd
 import inspect
-
+from RockPy.tools.pandas_tools import get_values_in_both
 
 class Measurement(object):
     """
@@ -183,7 +183,7 @@ class Measurement(object):
         else:
             cls.log().error('CANNOT IMPORT ')
             cls.log().error(
-                'ftype not in implemented ftypes: %s ' % ', '.join(RockPy.ftypes.tools.implemented_ftypes().keys()))
+                'ftype not in implemented ftypes: %s ' % ', '.join(RockPy.implemented_ftypes.keys()))
 
         # check if the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():
@@ -244,12 +244,12 @@ class Measurement(object):
               measurement data file
            machine: str
               measurement machine
-            mobj: RockPy3.MEasurement object
+            mobj: RockPy.MEasurement object
         """
         # todo needs to be rewritten
         raise NotImplementedError
 
-    def __init__(self, sobj,
+    def __init__(self, sobj=None,
                  fpath=None, ftype=None, mdata=None,
                  ftype_data=None, simobj=None,
                  series=None,
@@ -261,7 +261,7 @@ class Measurement(object):
 
         Several checks have to be done:
             1. is the measurement implemented:
-                this is checked by looking if the measurement is in the RockPy3.implemented_measurements
+                this is checked by looking if the measurement is in the RockPy.implemented_measurements
             2. if mdata is given, we can directly create the measurement #todo from_mdata?
             3. if the file format (ftype) is implemented #todo from_file
                 The ftype has to be given. This is how RockPy can format data from different sources into the same
@@ -269,7 +269,7 @@ class Measurement(object):
 
         Parameters
         ----------
-            sobj: RockPy3.Sample
+            sobj: RockPy.Sample
                 the sample object the measurement belongs to. The constructor is usually called from the
                 Sample.add_measurement method
             mtype: str
@@ -290,22 +290,22 @@ class Measurement(object):
         self.mid = id(self)
         self.__idx = self.n_created
 
-        self.sobj = sobj
-        self.sid = self.sobj.sid
-
         self.log().debug('Creating measurement: id:{} idx:{}'.format(self.mid, self.__idx))
-
-        # add the data to the clsdata
-        self.append_to_clsdata(mdata)
 
         # flags for mean and the base measurements
         self.is_mean = options.get('ismean', False)  # flag for mean measurements
         self.base_measurements = options.get('base_measurements',
                                              False)  # list with all measurements used to generate the mean
-
         self.ftype = ftype
         self.fpath = fpath
         self.ftype_data = ftype_data
+
+        """ add measurement to the sample object """
+        if sobj is None:
+            sobj = RockPy.Sample('Space_holder')
+
+        self.sobj = sobj
+        sobj._add_mobj(self)
 
         """ simulation and model """
         # initialize simulation/model objects
@@ -338,10 +338,20 @@ class Measurement(object):
 
         self.idx = idx if idx else self.__idx  # external index e.g. 3rd hys measurement of sample 1
 
+        # add the data to the clsdata
+        self.append_to_clsdata(mdata)
+
         ''' initialize results '''
         # self._result_classes()
         self.__init_results()
         self.__class__.n_created += 1
+
+        if RockPy.auto_calc_results:
+            self.calc_results()
+
+    @property
+    def sid(self):
+        return self.sobj.sid
 
     def _result_classes(self):  # todo test
         """
@@ -431,7 +441,7 @@ class Measurement(object):
             add = 'mean_'
         else:
             add = ''
-        return '<<RockPy3.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
+        return '<<RockPy.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
                                                     '[' + ';'.join(['{},{}({})'.format(i[0], i[1], i[2]) for i in
                                                                     self.get_series()]) + ']' if self.has_series() else '',
 
@@ -833,7 +843,7 @@ class Measurement(object):
 
         Returns
         -------
-           [RockPy3.Series] list of RockPy series objects
+           [RockPy.Series] list of RockPy series objects
 
         """
         series = (stype, sval, sunit)
@@ -883,7 +893,7 @@ class Measurement(object):
 
         Note
         ----
-            m = measurement with [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
+            m = measurement with [<RockPy.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
             m.get_series(stype = 'pressure', sval = 0) -> [<RockPy3.series> pressure, 0.00, [GPa]]
             m.get_series(sval = 0) -> [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
             m.get_series(series=('temperature', 0)) -> [<RockPy3.series> pressure, 0.00, [GPa], <RockPy3.series> temperature, 0.00, [C]]
@@ -1153,26 +1163,6 @@ class Measurement(object):
     ''' REPORT '''
 
     ''' HELPER '''
-
-    @staticmethod
-    def get_values_in_both(a, b, key='level'):  # todo TEST
-        '''
-        Looks through pd.DataFrame(a)[key] and pd.DataFrame(b)[key] to find values in both
-
-        Parameters
-        ----------
-        a: pd.DataFrame
-        b: pd.DataFrame
-        key: str
-
-        Returns
-        -------
-            sorted(list) of items
-        '''
-
-        # get equal temperature steps for both demagnetization and acquisition measurements
-        equal_vals = list(set(a[key].values) & set(b[key].values))
-        return sorted(equal_vals)
 
 
 if __name__ == '__main__':
