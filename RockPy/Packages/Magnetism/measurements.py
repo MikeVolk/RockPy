@@ -12,7 +12,7 @@ from RockPy.core.result import Result
 from RockPy.core.utils import correction
 from RockPy.tools.compute import lin_regress
 import RockPy.Packages.Magnetism.simulations
-
+from RockPy.tools.pandas_tools import get_values_in_both
 
 class Hysteresis(Measurement):
 
@@ -65,6 +65,38 @@ class Hysteresis(Measurement):
     def _format_agm(ftype_data, sobj_name=None):
         return Hysteresis._format_vsm(ftype_data, sobj_name)
 
+    @staticmethod
+    def _format_vftb(ftype_data, sobj_name=None):
+        '''
+        formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
+
+        Parameters
+        ----------
+        ftype_data: RockPy.io
+            data read by Magnetism.ftypes.Vsm.vsm function.
+            Contains:
+              - data
+              - header
+              - segment_header
+
+        sobj_name: str
+            unused
+
+        Returns
+        -------
+            data: pandas.Dataframe
+                columns = ['B','M']
+            ftype_data: ftypes object
+                ftypes object as read by Magnetism.ftypes.Vsm.vsm
+
+
+        '''
+
+        # expected column names for typical VSM hysteresis experiments
+        expected_columns = ['B', 'M']
+        data = ftype_data.data
+        data = data.dropna(how='all')
+        return data
     ####################################################################################################################
     ''' BRANCHES '''
 
@@ -191,9 +223,9 @@ class Hysteresis(Measurement):
         # todo how to change window size?
         idx = self.get_polarity_switch_index(5)
         if len(idx) > 1:
-            return self.data.iloc[int(idx[0]):int(idx[1])].dropna()
+            return self.data.iloc[int(idx[0]):int(idx[1])].dropna(axis=1).dropna()
         else:
-            return self.data.iloc[0:int(idx[1])].dropna()
+            return self.data.iloc[0:int(idx[1])].dropna(axis=1).dropna()
 
     @property
     def upfield(self):
@@ -205,7 +237,7 @@ class Hysteresis(Measurement):
         '''
         # todo how to change window size?
         idx = self.get_polarity_switch_index(5)
-        return self.data.iloc[int(idx[-1]) - 1:].dropna()
+        return self.data.iloc[int(idx[-1]) - 1:].dropna(axis=1).dropna()
 
     """ CALCULATIONS """
 
@@ -268,7 +300,7 @@ class Hysteresis(Measurement):
             """
             self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
-        def recipe_nonlinear(self, npoints=8, order=2, check=False):
+        def recipe_nonlinear(self, npoints=4, order=2, check=False):
             """
             Calculates the coercivity using a spline interpolation between the points crossing
             the x axis for upfield and down field slope.
@@ -860,6 +892,12 @@ class Hysteresis(Measurement):
         plt.tight_layout()
         return ax
 
+    def plot(self, ax=None, **kwargs):
+
+        if ax is None:
+            ax = plt.gca()
+
+        ax.plot(self.data['M'])
 
 class Paleointensity(Measurement):
 
@@ -870,7 +908,7 @@ class Paleointensity(Measurement):
         """
 
         # get equal temperature steps for both demagnetization and acquisition measurements
-        equal_steps = self.get_values_in_both(self.zf_steps, self.if_steps, 'level')
+        equal_steps = get_values_in_both(self.zf_steps, self.if_steps, key='level')
 
         # Filter data for the equal steps and filter steps outside of tmin-tmax range
         # True if step between vmin, vmax
@@ -1069,7 +1107,7 @@ class Paleointensity(Measurement):
             pandas.DataFrame
         """
 
-        equal_vals = self.get_values_in_both(self.if_steps, self.zf_steps, 'level')
+        equal_vals = get_values_in_both(self.if_steps, self.zf_steps, key = 'level')
 
         if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
         zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
