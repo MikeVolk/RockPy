@@ -1,6 +1,6 @@
 import RockPy
 import RockPy.core.ftype
-from RockPy.tools.pandas_tools import XYZ2DIM, DIM2XYZ, correct_dec_inc
+from RockPy.tools.pandas_tools import xyz2dim, dim2xyz, correct_dec_inc
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -188,7 +188,7 @@ class Cif(RockPy.core.ftype.Ftype):
         # print(self.units['intensity'], self.in_units['intensity'])
         # data['intensity'] *= 1e5
         # data.loc[:, ['std_x', 'std_y', 'std_z', 'intensity']] *= 1e-3
-        data = DIM2XYZ(data, colD='plate_dec', colI='plate_inc', colM='intensity')
+        data = dim2xyz(data, colD='plate_dec', colI='plate_inc', colM='intensity')
         data.loc[:, 'datetime'] = pd.to_datetime(data['date'] + ' ' + data['time'])
         data = data.set_index('datetime')
         return data
@@ -251,7 +251,7 @@ class Cif(RockPy.core.ftype.Ftype):
                 sdata.loc[idx, 'y'] *= -1
                 sdata.loc[idx, 'z'] *= -1
 
-        sdata = XYZ2DIM(sdata, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
+        sdata = xyz2dim(sdata, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
 
         sdata = sdata.set_index('datetime')
         dfile = os.path.basename(dfile)
@@ -394,7 +394,7 @@ class Cif(RockPy.core.ftype.Ftype):
         else:
             data = average_df[0]
 
-        data = XYZ2DIM(data, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
+        data = xyz2dim(data, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
 
         data = data.sort_index()
         data.index.name = 'datetime'
@@ -432,7 +432,7 @@ class Cif(RockPy.core.ftype.Ftype):
         return self.data[['x','y','z']]
     @property
     def geo_xyz(self):
-        return DIM2XYZ(self.geo_dim, colD='geo_dec', colI='geo_inc',colM='intensity')[['x','y','z']]
+        return dim2xyz(self.geo_dim, colD='geo_dec', colI='geo_inc', colM='intensity')[['x', 'y', 'z']]
     
     def mean_levels(self):
         """
@@ -504,7 +504,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
     @classmethod
     def _recalc_plate(cls, df):
-        df = XYZ2DIM(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
+        df = xyz2dim(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
         return df
 
     def reset_geo(self, dip=None, strike=None):

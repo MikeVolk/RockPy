@@ -30,7 +30,7 @@ class tdt(Ftype):
 
         data['LT_code'] = [self.lookup_lab_treatment_code(i) for i in data['step']]
 
-        data = pdt.DIM2XYZ(data,
+        data = pdt.dim2xyz(data,
                            colI='inc', colD='dec', colM='magn_moment',
                            colX='magn_x', colY='magn_y', colZ='magn_z')
         data['level'] = np.round(data['step'])

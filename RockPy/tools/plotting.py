@@ -33,7 +33,7 @@ marker = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 
 """ AXIS """
 
 
-def forceAspect(ax=None, aspect=1):
+def force_aspect(ax=None, aspect=1):
     """
     Changes the aspect of an axes to be `aspect`. Not by data
     Parameters

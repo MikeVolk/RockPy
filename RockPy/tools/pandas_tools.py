@@ -7,7 +7,7 @@ from RockPy.tools import compute
 from RockPy.tools.compute import rotate
 
 
-def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
+def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     """
     adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
 
@@ -43,7 +43,7 @@ def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     return df
 
 
-def XYZ2DIM(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
+def xyz2dim(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
     """
     adds D,I,(M) columns to pandas dataframe calculated from x,y,z columns
 
@@ -372,14 +372,14 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
     """
     df = df.copy()
     DI = df[[colD, colI]]
-    DI = DIM2XYZ(DI, colI=colI, colD=colD, colM=None)
+    DI = dim2xyz(DI, colI=colI, colD=colD, colM=None)
 
     xyz = DI[['x', 'y', 'z']]
 
     xyz = rotate(xyz, axis='y', theta=-dip)
     xyz = rotate(xyz, axis='z', theta=-strike)
 
-    corrected = XYZ2DIM(pd.DataFrame(columns=['x', 'y', 'z'], data=xyz, index=DI.index),
+    corrected = xyz2dim(pd.DataFrame(columns=['x', 'y', 'z'], data=xyz, index=DI.index),
                         colI=newI, colD=newD)
 
     df[newI] = corrected[newI]

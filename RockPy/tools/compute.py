@@ -115,7 +115,7 @@ def maintain_n3_shape(xyz):
 
 
 ### ROTATIONS
-def RX(angle):
+def rx(angle):
     """
     Rotation matrix around X axis
 
@@ -135,7 +135,7 @@ def RX(angle):
     return RX
 
 
-def RY(angle):
+def ry(angle):
     """
     Rotation matrix around Y axis
 
@@ -155,7 +155,7 @@ def RY(angle):
     return RY
 
 
-def RZ(angle):
+def rz(angle):
     """
     Rotation matrix around Z axis
 
@@ -248,7 +248,7 @@ def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, input='xyz'):
 
     alpha, beta, gamma = np.radians([alpha, beta, gamma])
 
-    R = np.dot(np.dot(RZ(alpha), RY(beta)), RX(gamma))
+    R = np.dot(np.dot(rz(alpha), ry(beta)), rx(gamma))
 
     out = np.dot(R, xyz.T).T
     out = handle_near_zero(out)
@@ -284,11 +284,11 @@ def rotate(xyz, *, axis='x', theta=0, input='xyz'):
     theta = np.radians(theta)
 
     if axis.lower() == 'x':
-        out = np.dot(xyz, RX(theta))
+        out = np.dot(xyz, rx(theta))
     if axis.lower() == 'y':
-        out = np.dot(xyz, RY(theta))
+        out = np.dot(xyz, ry(theta))
     if axis.lower() == 'z':
-        out = np.dot(xyz, RZ(theta))
+        out = np.dot(xyz, rz(theta))
     return out
 
 

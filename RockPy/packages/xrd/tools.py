@@ -15,7 +15,7 @@ def theta_to_q(theta, lamb):
     Parameters
     ----------
     theta: theta values
-    lamb: wavelength of the XRD radiation
+    lamb: wavelength of the xrd radiation
 
     Returns
     -------
@@ -36,7 +36,7 @@ def q_to_theta(q, lamb):
     Parameters
     ----------
     q: Q value
-    lamb: wavelength of XRD ratiation
+    lamb: wavelength of xrd ratiation
 
     Returns
     -------
