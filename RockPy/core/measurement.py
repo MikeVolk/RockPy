@@ -58,6 +58,8 @@ class Measurement(object):
                           'solid_capstyle', 'solid_joinstyle', 'transform', 'url', 'visible', 'xdata', 'ydata',
                           'zorder']
 
+    _ftype_formatters = None
+
     @classmethod
     def log(cls):
         # create and return a logger with the pattern RockPy.MTYPE
@@ -100,7 +102,10 @@ class Measurement(object):
             dict:
                 Dictionary with a formatter_name : formatter_method
         '''
-        return {i.replace('_format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('_format_')}
+
+        if cls._ftype_formatters is None:
+            cls._ftype_formatters =  {i.replace('_format_', '').lower(): getattr(cls, i) for i in dir(cls) if i.startswith('_format_')}
+        return cls._ftype_formatters
 
     @classmethod
     def correct_methods(cls) -> dict:
