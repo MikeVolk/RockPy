@@ -257,7 +257,7 @@ class Measurement(object):
             1. is the measurement implemented:
                 this is checked by looking if the measurement is in the RockPy.implemented_measurements
             2. if mdata is given, we can directly create the measurement #todo from_mdata?
-            3. if the file format (ftype) is implemented #todo from_file
+            3. if the file format (ftype) is implemented
                 The ftype has to be given. This is how RockPy can format data from different sources into the same
                 format, so it can be analyzed the same way.
 
@@ -356,20 +356,28 @@ class Measurement(object):
             list: <class 'RockPy.Result'>
             
         """
-        # if not Measurement._result_classes_list:
-        # out = []
         for name, cls in inspect.getmembers(self.__class__):
             if not inspect.isclass(cls):
                 continue
             if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
                 yield cls
-        #         out.append(cls)
-        # return out
 
     def __init_results(self, **parameters):  # todo is _results needed?
         """ 
-        creates a list of results for that measurement 
-        
+        This method initializes the results and creates a dictionary with {resultname:resultinstance}.
+        It first creates an instance of each result class in the measurement.
+        Then it creates a new attribute named '__resultname' with the class and a 'resultname' attribute for the
+        instance so it can be called.
+
+        Parameters
+        ----------
+        parameters:
+            calculation parameters used for the calculation
+
+        Returns
+        -------
+        dict
+            dictionary with result_name : result_instance
         """
         if self._results is None:
             self._results = {}
@@ -377,16 +385,25 @@ class Measurement(object):
                 res = cls.__name__.replace('result_', '')
                 instance = cls(mobj=self, **parameters)
                 # replace the method with the instance
+                # the class itself is stored in self._result_classes()
                 self._results[res] = instance
-                self.log().debug('replacing class %s with instance %s' % (cls.__name__, instance))
+                self.log().debug('replacing class %s with instance %s' % (cls.__name__, instance)) #todo change use __getattr__
+                setattr(self, '__'+cls.__name__, cls)
                 setattr(self, cls.__name__, instance)
 
         return self._results
 
     @property
     def mass(self):
+        '''
+        returns the last measured mass.
+
+        Returns
+        -------
+            float, np.nan
+        '''
         mass = self.get_mtype_prior_to(mtype='mass')
-        return mass.data['mass[kg]'].iloc[0] if mass else None
+        return mass.data['mass[kg]'].iloc[0] if mass else np.nan
 
     def get_recipes(self, res):
         """
@@ -511,6 +528,7 @@ class Measurement(object):
         """
         midx = self.__class__._mids.index(self.mid)
 
+        self.log().debug(f'Resetting the data')
         self.clsdata[midx] = self._clsdata[midx]
 
         # create _correction if not exists
