@@ -18,7 +18,7 @@ class Vsm(Ftype):
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
-        self.raw_data = self.read_raw_data(dfile=dfile)
+        self._raw_data = self.read_raw_data(dfile=dfile)
 
         # get the file infos first -> line numbers needed ect.
         self.file_length = len(self.raw_data)
@@ -47,12 +47,6 @@ class Vsm(Ftype):
             for c in self.data:
                 if any(t in c for t in ('(Am2)',)):
                     self.data[c] *= self.correct_exp
-
-    @staticmethod
-    def read_raw_data(dfile):
-        with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
-            raw_data = f.readlines()
-        return raw_data
 
 
     def read_basic_file_info(self):

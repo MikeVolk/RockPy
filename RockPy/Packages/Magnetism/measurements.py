@@ -32,7 +32,7 @@ class Hysteresis(Measurement):
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.ftypes.Vsm.vsm function.
+            data read by Magnetism.Ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -45,8 +45,8 @@ class Hysteresis(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: ftypes object
-                ftypes object as read by Magnetism.ftypes.Vsm.vsm
+            ftype_data: Ftypes object
+                Ftypes object as read by Magnetism.Ftypes.Vsm.vsm
 
 
         '''
@@ -73,7 +73,7 @@ class Hysteresis(Measurement):
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.ftypes.Vsm.vsm function.
+            data read by Magnetism.Ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -86,8 +86,8 @@ class Hysteresis(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: ftypes object
-                ftypes object as read by Magnetism.ftypes.Vsm.vsm
+            ftype_data: Ftypes object
+                Ftypes object as read by Magnetism.Ftypes.Vsm.vsm
 
 
         '''
@@ -1611,7 +1611,7 @@ class Dcd(Measurement):
         Parameters
         ----------
         ftype_data: RockPy.io
-            data read by Magnetism.ftypes.Vsm.vsm function.
+            data read by Magnetism.Ftypes.Vsm.vsm function.
             Contains:
               - data
               - header
@@ -1622,8 +1622,8 @@ class Dcd(Measurement):
         -------
             data: pandas.Dataframe
                 columns = ['B','M']
-            ftype_data: ftypes object
-                ftypes object as read by Magnetism.ftypes.Vsm.vsm
+            ftype_data: Ftypes object
+                Ftypes object as read by Magnetism.Ftypes.Vsm.vsm
 
 
         """

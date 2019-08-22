@@ -1,5 +1,5 @@
 from RockPy.core.ftype import Ftype
-from RockPy.ftypes.vsm import Vsm
+from RockPy.Ftypes.vsm import Vsm
 
 
 class Agm(Vsm):

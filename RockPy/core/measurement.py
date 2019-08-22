@@ -26,7 +26,7 @@ class Measurement(object):
 
     1. measurement formatters
     -------------------------
-        The measurement formatter uses the data from the Package.ftypes.ftype and turns it into a RockPyData
+        The measurement formatter uses the data from the Package.Ftypes.ftype and turns it into a RockPyData
         object fitting the Measurement.data specifications of the measurement.
 
     2. results
@@ -183,7 +183,7 @@ class Measurement(object):
         else:
             cls.log().error('CANNOT IMPORT ')
             cls.log().error(
-                'ftype not in implemented ftypes: %s ' % ', '.join(RockPy.implemented_ftypes.keys()))
+                'ftype not in implemented Ftypes: %s ' % ', '.join(RockPy.implemented_ftypes.keys()))
 
         # check if the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():

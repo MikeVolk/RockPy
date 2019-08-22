@@ -266,14 +266,6 @@ class Result():
         self.recipe = None
         self.params = {}
         self.set_default_recipe()
-        #
-        # # create the classes for each of the indirect results from cls.__calculates__
-        # self.__calculates__ = kwargs.pop('calculates', self.__class__.__calculates__)
-        # for method in self.__calculates__:
-        #     if not method in dir(self.mobj):
-        #         self.log().debug('METACLASS creation << %s >> for result << %s >>' %(method, self))
-        #         SubClass = type(method, (self.__class__, ), {'mobj': None})
-        #         setattr(self.mobj, method, SubClass(mobj, calculates=[]))
 
     def set_default_recipe(self):
         """

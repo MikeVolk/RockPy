@@ -19,8 +19,8 @@ from RockPy.core.sample import Sample
 from RockPy.core.measurement import Measurement
 from RockPy.core.ftype import Ftype
 
-import RockPy.ftypes
-import RockPy.ftypes.tools
+import RockPy.Ftypes
+import RockPy.Ftypes.tools
 
 import RockPy.Packages
 
@@ -44,8 +44,8 @@ abbrev_to_classname, classname_to_abbrev = RockPy.core.file_io.read_abbreviation
 ''' automatic import of all subpackages in Packages and core '''
 
 # create implemented measurements dictionary
-implemented_measurements = RockPy.ftypes.tools.__implemented__(Measurement)
-implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
+implemented_measurements = RockPy.Ftypes.tools.__implemented__(Measurement)
+implemented_ftypes = RockPy.Ftypes.tools.__implemented__(Ftype)
 
 # todo create config file for RockPy
 auto_calc_results = True
