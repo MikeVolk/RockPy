@@ -5,10 +5,17 @@ from shutil import copy2
 import pandas as pd
 import RockPy.core.utils
 from RockPy.core.file_io import ImportHelper
-
+from copy import deepcopy
 
 class Ftype(object):
     imported_files = {}
+
+    # std units for import
+    in_units = {}
+    # std units for export
+    out_units = {}
+    # internal units
+    units = {}
 
     def has_specimen(self, specimen):
         if specimen not in self.data['specimen'].values:
@@ -18,6 +25,18 @@ class Ftype(object):
             return False
         else:
             return True
+
+    def to_si_units(self):
+        for col in self.data.columns:
+            if col in self.in_units:
+                if not col in self.units:
+                    self.log().warning('Unit of data column << {} >> has no internal equivalent. The input unit is  << {:P} >>.'.format(col, self.in_units[col]))
+                    continue
+                inunit = self.in_units[col]
+                outunit = self.units[col]
+
+                self.data.loc[:,col] *= (1*inunit).to(outunit).magnitude
+
 
     @classmethod
     def log(cls):
@@ -80,6 +99,7 @@ class Ftype(object):
         # set file ID
         self.fid = id(self)
 
+        self._raw_data = None
         # create sample name tuple
         self.snames = [str(i) for i in RockPy.core.utils.to_tuple(snames)] if snames else None
         self.dfile = dfile
@@ -112,6 +132,8 @@ class Ftype(object):
 
             self.data = self.__class__.imported_files[dfile]
 
+        self.to_si_units()
+
     def read_file(self):
         """
         Method for actual import of the file. Needs to be written for each individual filetype.
@@ -132,3 +154,18 @@ class Ftype(object):
             copy2(self.dfile, self.dfile.replace(old_filename, '#' + old_filename))
         self.log().info('Renaming file << %s >> to << %s >>' % (old_filename, new_filename))
         os.rename(self.dfile, self.dfile.replace(old_filename, new_filename))
+
+    @property
+    def raw_data(self):
+        if self._raw_data is None:
+            self._raw_data = self.read_raw_data(dfile=self.dfile)
+        return self._raw_data
+
+    @staticmethod
+    def read_raw_data(dfile):
+        with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
+            raw_data = f.readlines()
+        return raw_data
+
+    def copy(self):
+        return deepcopy(self)
