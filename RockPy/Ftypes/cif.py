@@ -1,6 +1,6 @@
 import RockPy
 import RockPy.core.ftype
-from RockPy.tools.pandas_tools import XYZ2DIM, DIM2XYZ, correct_dec_inc
+from RockPy.Tools.pandas_tools import XYZ2DIM, DIM2XYZ, correct_dec_inc
 from datetime import datetime
 import pandas as pd
 import numpy as np

@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # m = s.add_measurement(mass='13mg')
     # m2 = s.add_measurement(mass='12mg')
 
-    m = RockPy.Packages.Generic.Parameter.Mass(sobj=s, value='2kg')
+    m = RockPy.Packages.Generic.parameter.Mass(sobj=s, value='2kg')
     print(m)
     # m2 = RockPy.implemented_measurements['mass'](sobj=s, value='3kg')
 

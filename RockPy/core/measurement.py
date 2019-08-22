@@ -13,7 +13,7 @@ from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 import numpy as np
 import pandas as pd
 import inspect
-from RockPy.tools.pandas_tools import get_values_in_both
+from RockPy.Tools.pandas_tools import get_values_in_both
 
 class Measurement(object):
     """

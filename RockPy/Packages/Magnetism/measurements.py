@@ -10,9 +10,9 @@ from scipy.optimize import curve_fit
 from RockPy.core.measurement import Measurement
 from RockPy.core.result import Result
 from RockPy.core.utils import correction
-from RockPy.tools.compute import lin_regress
+from RockPy.Tools.compute import lin_regress
 import RockPy.Packages.Magnetism.simulations
-from RockPy.tools.pandas_tools import get_values_in_both
+from RockPy.Tools.pandas_tools import get_values_in_both
 
 class Hysteresis(Measurement):
 
