@@ -10,7 +10,7 @@ test_data_path = os.path.join(installation_directory, 'tests', 'test_data')
 # unit handling
 import pint
 ureg = pint.UnitRegistry()
-
+ureg.define('emu = 1 * (erg / gauss) = 1e-3 ampere /  metere ^2')
 
 import RockPy.core.file_io
 
@@ -33,7 +33,7 @@ colors = colorpalettes['cat10']
 
 ''' LOGGING '''
 from RockPy.core.utils import create_logger
-create_logger(False)
+create_logger(debug=False)
 
 # create the RockPy main logger
 log = logging.getLogger('RockPy')
@@ -51,4 +51,4 @@ implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
 auto_calc_results = True
 
 def debug_mode(on=True):
-    create_logger(on)
+    create_logger(debug=on)

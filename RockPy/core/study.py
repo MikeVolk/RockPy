@@ -57,6 +57,7 @@ class Study(object):
         # create variable for all imported files to be stored. If file has been imported the fpath is stored here.
         self.imported_files = []
 
+        self.log().debug(f'Creating Study[{self.studID}] << {name} >>')
         # if folder:
         #     self.import_folder(folder)
 

@@ -12,7 +12,7 @@ import inspect
 import logging
 
 from RockPy import installation_directory, ureg
-
+import pint
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
 
@@ -54,9 +54,12 @@ def convert(value, unit, si_unit):
     -----
         the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
     """
-    RockPy.log.debug(
-        'converting %.3e [%s] -> %.3e [%s]' % (value, unit, value * conversion_table[unit][si_unit], si_unit))
-    return value * conversion_table[unit][si_unit]
+    # print(value, unit, si_unit)
+    converted = convert_units(value, in_unit=unit, out_unit=si_unit)
+    if hasattr(value,'magnitude'):
+        value = value.magnitude
+    RockPy.log.debug('converting %.3e [%s] -> %.3e [%s]' % (value, unit, converted, si_unit))
+    return converted
 
 
 def convert_units(values, in_unit, out_unit):
@@ -78,10 +81,16 @@ def convert_units(values, in_unit, out_unit):
         the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
     """
     values = as_array(values)
-    in_unit = values * ureg(in_unit)
-    out_unit = in_unit.to(out_unit)
+    in_unit = values * to_quantity(in_unit)
+    out_unit = in_unit.to(to_quantity(out_unit))
     return out_unit.magnitude
 
+def to_quantity(unit):
+    try:
+        unit = ureg(unit)
+    except AttributeError:
+        pass
+    return unit
 
 @contextmanager
 def ignored(*exceptions):
@@ -122,9 +131,10 @@ def mtype_implemented(mtype):
 def as_array(df):
     if isinstance(df, (pd.Series, pd.DataFrame)):
         return df.values
-    if isinstance(df, (np.array, list, tuple, set)):
+    elif hasattr(df, '__iter__'):
         return df
-
+    else: # todo
+        return df
 
 def tuple2list_of_tuples(item) -> list:
     """
@@ -326,7 +336,6 @@ def extract_inheritors_from_cls(cls):
                 subclasses.add(child)
                 work.append(child)
     return subclasses
-
 
 
 def set_get_attr(obj, attr, value=None):
