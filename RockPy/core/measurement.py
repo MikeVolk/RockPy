@@ -77,13 +77,6 @@ class Measurement(object):
         return cls.__name__.lower()
 
     @classmethod
-    def subclasses(cls):
-        """
-        Returns a list of the implemented_visuals names
-        """
-        return [i.__name__.lower() for i in cls.inheritors()]
-
-    @classmethod
     def inheritors(cls):
         return RockPy.core.utils.extract_inheritors_from_cls(cls)
 
