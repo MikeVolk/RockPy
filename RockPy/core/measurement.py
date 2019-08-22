@@ -124,10 +124,6 @@ class Measurement(object):
 
     ####################################################################################################################
 
-    @classmethod
-    def get_subclass_name(cls):
-        return cls.__name__
-
     """    measurement creation through function    """
 
     @classmethod
@@ -568,7 +564,7 @@ class Measurement(object):
         '''
 
         midx = cls._mids.index(mid)
-        cls.log().debug('removing all data of mid: %s from  %s cls data' % (mid, cls.get_subclass_name()))
+        cls.log().debug('removing all data of mid: %s from  %s cls data' % (mid, cls.__name__))
 
         for lst in [cls.clsdata, cls._clsdata, cls._mids, cls._sids]:
 
