@@ -256,6 +256,10 @@ class Result():
         return {i.replace('recipe_', ''): getattr(cls, i) for i in dir(cls)
                 if i.startswith('recipe') if not i.endswith('recipes')}
 
+    @property
+    def implemented_recipes(self):
+        return list(self._recipes().keys())
+
     def __init__(self, mobj, **kwargs):
         self.mobj = mobj
         self.log().debug('initializing instance %s' % self.name)
