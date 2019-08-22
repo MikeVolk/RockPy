@@ -1,8 +1,9 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import RockPy
+import pandas as pd
+from RockPy.tools import compute
 from RockPy.tools.compute import rotate
 
 
@@ -36,9 +37,9 @@ def DIM2XYZ(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     col_i = df[colI].values.astype(float)
     col_d = df[colD].values.astype(float)
 
-    df.loc[:,colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
-    df.loc[:,colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
-    df.loc[:,colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
+    df.loc[:, colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
+    df.loc[:, colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
+    df.loc[:, colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
     return df
 
 
@@ -235,16 +236,7 @@ def detect_outlier(df, column, threshold=3, order=4):
         list of indices
     """
     x, y = (df.index, df[column])
-    # fit data with polynomial
-    z, res, _, _, _ = np.polyfit(x, y, order, full=True)
-
-    rmse = np.sqrt(sum(res) / len(x))  # root mean squared error
-    p = np.poly1d(z)  # polynomial p(x)
-
-    outliers = [i for i, v in enumerate(df[column]) if v < p(x[i]) - threshold * rmse] + \
-               [i for i, v in enumerate(df[column]) if v > p(x[i]) + threshold * rmse]
-
-    return outliers
+    return compute.detect_outlier(x, y, order, threshold)
 
 
 def remove_outliers(df, column, threshold=3, order=4, **kwargs):
@@ -395,9 +387,77 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
     return df
 
 
-if __name__ == '__main__':
-    import pandas as pd
+def get_values_in_both(a, b, key='level', return_sorted=True):  # todo TEST
+    '''
+    Looks through pd.DataFrame(a)[key] and pd.DataFrame(b)[key] to find values in both
 
-    test = pd.DataFrame(columns=['x', 'y', 'z'], data=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    print(test)
-    print(rotate(test, axis='Z', theta=90))
+    Parameters
+    ----------
+    a: pd.DataFrame
+        first DataFrame
+    b: pd.DataFrame
+        second DataFrame
+    key: str
+
+    return_sorted: bool, optional
+        default: True
+        if True the values are returned sorted
+        if False values are returned as is
+    Returns
+    -------
+        sorted(list) of items
+    '''
+
+    if key == 'index':
+        aval = a.index
+        bval = b.index
+    else:
+        aval = a[key].values
+        bval = b[key].values
+
+    equal_vals = np.array(list(set(aval) & set(bval)))
+
+    if return_sorted:
+        return np.sort(equal_vals)
+    else:
+        return equal_vals
+
+def interpolate(df, levels, retain_levels = True, **kwargs):
+    """
+    Interpolates a dataframe to new index values.
+
+    Parameters
+    ----------
+    df
+    levels
+    retain_levels
+    kwargs: dict
+        passed on to pandas.DataFrame.interpolate
+    Returns
+    -------
+        pandas.DataFrame
+    a copy of the original DataFrame with the interpolated values
+    """
+    df = df.copy()
+
+    if retain_levels:
+        levels_not_included = df.index[np.in1d(df.index,levels)].values
+        if any(levels_not_included):
+            levels = np.concatenate([levels, levels_not_included])
+            levels = np.sort(levels)
+    df = df.reindex(levels)
+    df = df.interpolate(**kwargs)
+    return df
+
+def remove_duplicate_index(df, method='duplicated', **kwargs):
+    if method == 'duplicated':
+        return df[~df.index.duplicated(keep=kwargs.pop('keep', 'first'))]
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    t = pd.DataFrame(index = np.linspace(0,10,10), data = np.linspace(0,10,10)**2)
+
+    plt.plot(t)
+    plt.plot(interpolate(t, np.linspace(0,10), method='akima'))
+
+    plt.show()

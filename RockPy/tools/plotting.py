@@ -171,7 +171,7 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
     ax.set_rmax(1)
 
 
-def plot_equal(xyz, ax=None, input='xyz', **kwargs):
+def plot_equal(xyz, ax=None, input='xyz', setup_plot=True, **kwargs):
     """
 
     Parameters
@@ -213,6 +213,8 @@ def plot_equal(xyz, ax=None, input='xyz', **kwargs):
     if ls:
         ax.plot(np.radians(pol[:, 0]), pol[:, 1], marker='', color=linecolor, ls=ls, **kwargs)
 
+    if setup_plot:
+        setup_stereonet(ax=ax)
     return ax
 
 

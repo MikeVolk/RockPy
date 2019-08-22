@@ -597,3 +597,13 @@ def rotmat(dec, inc):
          [np.cos(inc) * np.sin(dec), np.cos(dec), -np.sin(inc) * np.sin(dec)],
          [np.sin(inc), 0, np.cos(inc)]]
     return a
+
+
+def detect_outlier(x, y, order, threshold):
+    # fit data with polynomial
+    z, res, _, _, _ = np.polyfit(x, y, order, full=True)
+    rmse = np.sqrt(sum(res) / len(x))  # root mean squared error
+    p = np.poly1d(z)  # polynomial p(x)
+    outliers = [i for i, v in enumerate(y) if v < p(x[i]) - threshold * rmse] + \
+               [i for i, v in enumerate(y) if v > p(x[i]) + threshold * rmse]
+    return outliers
