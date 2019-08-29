@@ -18,30 +18,38 @@ class Cif(RockPy.core.ftype.Ftype):
             internally
         corrections (dict): A dictionary of the dec, inc values for all possible orientations (below, towards) when
             measuring in the UP position.
-
+        in_units (dict(:obj:`pint.ureg`)): units from used in the data file
+        out_units (dict(:obj:`pint.ureg`)): units used to export the data
+        units (dict(:obj:`pint.ureg`)): units used internally (should be SI units)
+        datacolumns (tuple(str)): names of all the columns should be the same as `self.data.columns`
+        
+    Notes:
+        Data columns:
+            `'mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
+                   'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time'`
     See Also:
         For more information on `attributes` see :py:class:`RockPy.core.ftype.Ftype`
     '''
-    datacolumns = ['mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
-                   'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time']
+    datacolumns = ('mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
+                   'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time')
 
-    corrections = {"TW": [0, 0],
-                   "TN": [90, 0],
-                   "TE": [180, 0],  #
-                   "TS": [270, 0],
-                   "ET": [0, 90],
-                   "ST": [90, 90],
-                   "WT": [180, 90],
-                   "NT": [270, 90],
-                   "BE": [0, 180],  #
-                   "BS": [90, 180],
-                   "BW": [180, 180],
-                   "BN": [270, 180],
+    corrections = {"TW": (0, 0),
+                   "TN": (90, 0),
+                   "TE": (180, 0),  #
+                   "TS": (270, 0),
+                   "ET": (0, 90),
+                   "ST": (90, 90),
+                   "WT": (180, 90),
+                   "NT": (270, 90),
+                   "BE": (0, 180),  #
+                   "BS": (90, 180),
+                   "BW": (180, 180),
+                   "BN": (270, 180),
                    ####
-                   "WB": [0, 270],
-                   "NB": [90, 270],
-                   "EB": [180, 270],
-                   "WS": [270, 270],
+                   "WB": (0, 270),
+                   "NB": (90, 270),
+                   "EB": (180, 270),
+                   "WS": (270, 270),
                    }
 
     in_units = {'geo_dec': ureg('degree'),
