@@ -231,7 +231,10 @@ class Ftype(object):
 
     @staticmethod
     def read_raw_data(dfile):
-        """
+        """ reads file from HD.
+
+        Reads the file from HD using:
+            >>> with open(dfile, 'r', encoding="ascii", errors="surrogateescape") as f:
 
         Args:
             dfile (str): full path to the file
@@ -256,6 +259,17 @@ class Ftype(object):
 
 
 def is_implemented(ftype):
+    """ Checks if ftype has been implemented.
+
+    Args:
+        ftype (str): name of the ftype
+
+    Returns:
+        bool: Returns `True` if implemented, `False` if not
+
+    Raises:
+        `log.error` No exception
+    """
     if ftype in RockPy.implemented_ftypes:
         return True
     else:

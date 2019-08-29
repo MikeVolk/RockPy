@@ -648,16 +648,22 @@ class Cif(RockPy.core.ftype.Ftype):
     @classmethod
     def _correct_core(cls, df, dip, strike):
         """
-        Wrapper function callinr RockPy
-        Parameters
-        ----------
-        df
-        dip
-        strike
+        Function corrects data for core orientation.
+        Wrapper function calling `RockPy.tools.compute.correct_dec_inc`
 
-        Returns
-        -------
-            pandas.DataFrame
+        Args:
+            df (:obj:`pandas.DataFrame`): Data to be corrected
+            dip (float): dip to be corrected for
+            strike (float): strike to be corrected for
+
+        See also:
+            :py:meth:`RockPy.ftypes.cif.Cif._correct_strat`
+
+            :py:func:`RockPy.tools.compute.correct_dec_inc`
+
+        Returns:
+            :obj:`pandas.DataFrame`: copy of corrected data
+
         """
 
         if isinstance(dip, pd.Series):
@@ -673,16 +679,21 @@ class Cif(RockPy.core.ftype.Ftype):
     @classmethod
     def _correct_strat(cls, df, dip, strike):
         """
-        Wrapper function callinr RockPy
-        Parameters
-        ----------
-        df
-        dip
-        strike
+        Function corrects data for stratigraphic orientation.
+        Wrapper function calling `RockPy.tools.compute.correct_dec_inc`.
 
-        Returns
-        -------
-            pandas.DataFrame
+        Args:
+            df (:obj:`pandas.DataFrame`): Data to be corrected
+            dip (float): dip to be corrected for
+            strike (float): strike to be corrected for
+
+        See also:
+            :py:meth:`RockPy.ftypes.cif.Cif._correct_core`
+
+            :py:func:`RockPy.tools.compute.correct_dec_inc`
+
+        Returns:
+            :obj:`pandas.DataFrame`: copy of corrected data
         """
         if isinstance(dip, pd.Series):
             dip = dip.values[0]

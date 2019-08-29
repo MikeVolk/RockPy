@@ -11,7 +11,8 @@ from matplotlib.collections import LineCollection
 import matplotlib.colors as colors
 from matplotlib.legend_handler import HandlerTuple
 
-from RockPy.tools.compute import convert_to_equal_area, maintain_n3_shape
+from RockPy.tools.compute import convert_to_equal_area
+from RockPy.core.utils import maintain_n3_shape
 from scipy.interpolate import griddata
 
 colorpalettes = {
