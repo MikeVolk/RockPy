@@ -30,7 +30,7 @@ class Mpms(Ftype):
         data = pd.read_csv(self.dfile, skiprows=data_start_index, comment='#',
                            squeeze=True)
 
-        self.get_comment_line_indices()
+        self._get_comment_line_indices()
         return data
 
     def group_by(self, what):
