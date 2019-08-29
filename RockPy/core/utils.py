@@ -385,3 +385,16 @@ def import_submodules(package, recursive=True):
         if recursive and is_pkg:
             results.update(import_submodules(full_name))
     return results
+
+import json
+import codecs
+
+_MagIC_codes = None
+
+def MagIC_codes():
+    if RockPy.core.utils._MagIC_codes is None:
+        data = json.load(codecs.open(os.path.join(RockPy.installation_directory, 'MagIC_method_codes.json'), 'r', 'utf-8-sig'))
+        _MagIC_codes = {n:{i['code']:i['definition'] if 'definition' in i else None for i in data[n]['codes']} for n in data.keys()}
+    return _MagIC_codes
+
+

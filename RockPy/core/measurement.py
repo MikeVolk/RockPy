@@ -26,7 +26,7 @@ class Measurement(object):
 
     1. measurement formatters
     -------------------------
-        The measurement formatter uses the data from the Package.ftypes.ftype and turns it into a RockPyData
+        The measurement formatter uses the data from the Package.ftypes.rst.ftype and turns it into a RockPyData
         object fitting the Measurement.data specifications of the measurement.
 
     2. results
@@ -59,6 +59,9 @@ class Measurement(object):
                           'zorder']
 
     _ftype_formatters = None
+
+    # should be added for consistency
+    MagIC_lab_protocol = 'LP'
 
     @classmethod
     def log(cls):
@@ -131,7 +134,7 @@ class Measurement(object):
         pass
 
     @classmethod
-    def from_file(cls, sobj,
+    def from_file(cls, sobj=None,
                   fpath=None, ftype='generic',  # file path and file type
                   idx=None, sample_name=None,
                   series=None, dialect=None,
@@ -177,7 +180,7 @@ class Measurement(object):
         else:
             cls.log().error('CANNOT IMPORT ')
             cls.log().error(
-                'ftype not in implemented ftypes: %s ' % ', '.join(RockPy.implemented_ftypes.keys()))
+                'ftype not in implemented ftypes.rst: %s ' % ', '.join(RockPy.implemented_ftypes.keys()))
 
         # check if the formatter for the ftype is implemented
         if ftype_data and ftype in cls.ftype_formatters():
@@ -279,6 +282,11 @@ class Measurement(object):
         ----
             when creating a new measurement it automatically calculates all results using the standard prameter set
         """
+        if not mdata:
+            self.log().error(f'No MDATA was passed to the {self.cls_mtype()} constructor')
+            if fpath:
+                self.log().error(f'fdata was passed to {self.cls_mtype()} constructor. if you are reading a file, you should use {self.cls_mtype()}.from_file()')
+            raise AttributeError(f'No mdata is passed to the {self.cls_mtype()} constructor. Try using \'from_\' methods')
 
         self.mtype = self.cls_mtype()
         self.mid = id(self)
@@ -342,6 +350,9 @@ class Measurement(object):
 
         if RockPy.auto_calc_results:
             self.calc_results()
+
+        ### magic lab protocol codes
+        self.MagIC_lab_protocol = options.pop('magic_lp', self.MagIC_lab_protocol)
 
     @property
     def sid(self):

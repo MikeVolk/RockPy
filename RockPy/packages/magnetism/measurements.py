@@ -974,7 +974,7 @@ class Paleointensity(Measurement):
         """
 
         # check if sample name in file
-        if not ftype_data.has_specimen(sobj_name):
+        if not ftype_data._has_specimen(sobj_name):
             return
 
         # read ftype
@@ -1551,7 +1551,6 @@ class Paleointensity(Measurement):
             result = q / np.sqrt((n - 2))
             self.set_result(result)
 
-
 class Dcd(Measurement):
     logger = logging.getLogger('RockPy.MEASUREMENT.Backfield')
     """
@@ -1647,6 +1646,7 @@ class Dcd(Measurement):
         """
         raise NotImplementedError
 
+    """ RESULTS """
     ####################################################################################################################
     ''' Mrs '''
 
@@ -1746,3 +1746,177 @@ class Dcd(Measurement):
 
             # set result so it can be accessed
             self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.abs(result)
+
+
+class Demagnetization(Measurement):
+
+    ####################################################################################################################
+    # FORMATTING
+
+    @staticmethod
+    def _format_cif(ftype_data, sobj_name=None):
+        '''
+        formats the data fro ftype.cryomag into paleointensity readable format
+
+        Parameters
+        ----------
+        ftype_data
+        sobj_name
+
+        Returns
+        -------
+
+        '''
+
+        data = ftype_data
+        # data.mean_levels()
+
+if __name__ == '__main__':
+    Demagnetization(fpath='/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/IRM(10000G)/MIL11', ftype='cif')
+    ####################################################################################################################
+    """ M1/2 """
+
+    # class mdf(Result):
+    #     def recipe_nonlinear(self, **non_method_parameters):
+    #         """
+    #         Magnetic Moment at first measurement point
+    #         """
+    #         m = self.mobj
+    #
+    #         # get magnetization limits for a calculation using the n points closest to 0
+    #         moment = sorted(abs(m.data['M'].values))[npoints - 1]
+    #
+    #         # filter data for fields higher than field_limit
+    #         data = m.data[m.data['M'].abs() <= moment]
+    #
+    #         # fit second order polynomial
+    #         fit = np.polyfit(data['M'].values, data.index, order)
+    #         result = np.poly1d(fit)(0)
+    #
+    #         if check:
+    #             y = np.linspace(data['M'].values[0], data['M'].values[-1])
+    #             x_new = np.poly1d(fit)(y)
+    #
+    #             plt.plot(-data.index, data['M'], '.', color=RockPy.colors[0], mfc='w', label='data')
+    #             plt.plot(-x_new, y, color=RockPy.colors[0], label='fit')
+    #             plt.plot(-result, 0, 'xk', label='B$_{cr}$')
+    #             plt.axhline(0, color='k', zorder=0)
+    #
+    #             plt.gca().text(0.05, 0.1, 'B$_{cr}$ = %.2f mT' % (abs(result) * 1000),
+    #                            verticalalignment='bottom', horizontalalignment='left',
+    #                            transform=plt.gca().transAxes,
+    #                            bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+    #                            color='k')
+    #
+    #             plt.xlabel('B [mT]')
+    #             plt.ylabel('M [Am$^2$]')
+    #             plt.legend(frameon=True)
+    #             plt.grid()
+    #             plt.show()
+    #
+    #         # set result so it can be accessed
+    #         self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.abs(result)
+    # @calculate
+    # def calculate_m05_NONLINEAR(self, no_points=4, component='mag', check=False, **non_method_parameters):
+    #     """
+    #     """
+    #     d = self.data['data'][component].v
+    #     # get maximal moment
+    #
+    #     mx_ind = np.argmax(np.fabs(d))
+    #     mx = d[mx_ind]
+    #
+    #     dnorm = d / mx
+    #     # get limits for a calculation using the no_points points closest to 0 fro each direction
+    #     ind = np.argmin(np.fabs(dnorm - 0.5))
+    #
+    #     if dnorm[ind] > 0.5:
+    #         max_idx = ind + no_points / 2
+    #         min_idx = max_idx - no_points
+    #     else:
+    #         min_idx = ind - no_points / 2
+    #         max_idx = min_idx + no_points
+    #
+    #     # convert index into an integer
+    #     min_idx, max_idx = int(min_idx), int(max_idx)
+    #
+    #     variables = self.data['data']['variable'].v[min_idx:max_idx]
+    #     data_points = dnorm[min_idx:max_idx]
+    #
+    #     try:
+    #         # generate new x from variables
+    #         x = np.linspace(min(variables), max(variables), 10000)
+    #         spl = UnivariateSpline(variables, data_points)
+    #         y_new = spl(x)
+    #         idx = np.argmin(abs(y_new - 0.5))
+    #         result = abs(x[idx])
+    #     except:
+    #         result = np.nan
+    #
+    #     if check:
+    #         plt.plot(self.data['data']['variable'].v, dnorm, '.')
+    #         plt.plot(x, y_new, '--')
+    #         plt.plot(result, 0.5, 'xk')
+    #         plt.grid()
+    #         plt.show()
+    #
+    #     # set result so it can be accessed
+    #     self.results['m05'] = [[(np.nanmean(result), np.nan)]]
+    #
+    # @result
+    # def result_m05(self, recipe='nonlinear', recalc=False, **non_method_parameters):
+    #     """
+    #     the variable, where the moment is 1/2 of the max moment
+    #     """
+    #     pass
+    #
+    # @correction
+    # def correct_last_step(self, recalc_mag=True):
+    #     """
+    #     Subtracts the x,y,z values of the last step from the rest of the data
+    #     """
+    #     last_step = self.get_last_step()
+    #     self.data['data']['m'] = self.data['data']['m'].v - last_step['m'].v
+    #     if recalc_mag:
+    #         self.data['data']['mag'] = self.data['data'].magnitude('m')
+    #     else:
+    #         self.data['data']['mag'] = self.data['data']['mag'].v - last_step['mag'].v
+    #
+    # @correction
+    # def correct_arbitrary_data(self, xyz, mag=None, recalc_mag=True):
+    #     self.data['data']['m'] = self.data['data']['m'].v - xyz
+    #     if recalc_mag:
+    #         self.data['data']['mag'] = self.data['data'].magnitude('m')
+    #     else:
+    #         self.data['data']['mag'] = self.data['data']['mag'].v - mag
+    #
+    # def get_last_step(self):
+    #     nsteps = len(self.data['data']['variable'].v)
+    #     # get the rPdata of the last step
+    #     last_step = self.data['data'].filter_idx(nsteps - 1)
+    #     return last_step
+
+#
+# class AfDemagnetization(Demagnetization):
+#     def __init__(self, **kwargs):
+#         super(AfDemagnetization, self).__init__(**kwargs)
+#         for dtype in self.data:
+#             self.data[dtype].define_alias('field', 'variable')
+#
+#     def format_cryomag(ftype_data, sobj_name=None):
+#         out = super(AfDemagnetization, AfDemagnetization).format_cryomag(ftype_data, sobj_name=sobj_name)
+#         if not out:
+#             return
+#         for dtype in out:
+#             out[dtype].define_alias('field', 'step')
+#             out[dtype].define_alias('variable', 'step')
+#         return out
+#
+#
+# class ThermalDemagnetization(Demagnetization):
+#     def format_cryomag(ftype_data, sobj_name=None):
+#         out = super(ThermalDemagnetization, ThermalDemagnetization).format_cryomag(ftype_data, sobj_name=sobj_name)
+#         for dtype in out:
+#             out[dtype].define_alias('temp', 'step')
+#             out[dtype].define_alias('variable', 'step')
+#         return out
