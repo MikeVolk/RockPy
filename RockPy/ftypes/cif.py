@@ -170,7 +170,7 @@ class Cif(RockPy.core.ftype.Ftype):
         return rows, header_rows
 
     @staticmethod
-    def _return_mean_from_UP_file(df):
+    def _return_mean_from_UP_file(df, subtract_holder=True):
         """ takes a DataFrame created from reading in an (UP) file (see. read_UP_files)
 
         This method subtracts the holder measurements and calculates the mean from the 4 measurement positions.
@@ -211,7 +211,8 @@ class Cif(RockPy.core.ftype.Ftype):
         # calculate Dec/Inc standard deviations # todo calculate this properly i.e. alpha 95 or something
         out['ang_err'] = stdevs['S']['D']
 
-        out[['x', 'y', 'z']] = Cif._correct_holder(means['S'][['x', 'y', 'z']], means['H'][['x', 'y', 'z']])
+        if subtract_holder:
+            out[['x', 'y', 'z']] = Cif._correct_holder(means['S'][['x', 'y', 'z']], means['H'][['x', 'y', 'z']])
         return out
 
     @staticmethod
@@ -484,6 +485,7 @@ class Cif(RockPy.core.ftype.Ftype):
                    bedding_strike=0., bedding_dip=0.,
                    core_volume_or_mass=1,
                    stratigraphic_level='', comment='', user='lancaster',
+                   subtract_holder=True,
                    reload=False):
         """
         reads Up files or folder containing Up-files and constructs a cif-like object.
@@ -541,7 +543,7 @@ class Cif(RockPy.core.ftype.Ftype):
         average_df = []
         for i, df in enumerate(raw_df):
             # print('averaging file {:>4} of {:>4}'.format(i, len(raw_df)), end='\r')
-            average_df.append(cls._return_mean_from_UP_file(df))
+            average_df.append(cls._return_mean_from_UP_file(df, subtract_holder=subtract_holder))
         if len(average_df) > 1:
             data = pd.concat(average_df)
         else:
