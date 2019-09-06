@@ -10,8 +10,9 @@ Welcome to RockPy's documentation!
    :maxdepth: 3
    :caption: Contents:
 
-   ftypes
-   tools
+   introduction
+
+   codebase
 
 Indices and tables
 ==================
