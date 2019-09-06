@@ -11,8 +11,9 @@ from matplotlib.collections import LineCollection
 import matplotlib.colors as colors
 from matplotlib.legend_handler import HandlerTuple
 
-from RockPy.tools.compute import convert_to_equal_area, maintain_n3_shape
-from matplotlib.mlab import griddata
+from RockPy.tools.compute import convert_to_equal_area
+from RockPy.core.utils import maintain_n3_shape
+from scipy.interpolate import griddata
 
 colorpalettes = {
     'cat10': ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
@@ -651,6 +652,19 @@ class TernaryDiagram(object):
 
         xy = np.array(list(zip(x, y)))
         return xy
+
+    def transform_2d(ab, ):
+        '''
+        transforms a 2D array into a 3D array using c = 1 - sqrt(a^2+b^2)
+
+        Returns
+        -------
+
+        '''
+        ab = np.array(ab)
+        c = 1 - np.linalg.norm(ab, axis=1)
+        abc = np.array([ab[:, 0], ab[:, 1], c]).T
+        return abc
 
     def label_corner(self, corner, name, formula=None, **kwargs):
         """

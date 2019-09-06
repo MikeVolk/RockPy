@@ -1,4 +1,6 @@
 import os
+from functools import partial, wraps
+
 import decorator
 import importlib
 import pkgutil
@@ -12,7 +14,7 @@ import inspect
 import logging
 
 from RockPy import installation_directory, ureg
-import pint
+
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
 
@@ -386,6 +388,118 @@ def import_submodules(package, recursive=True):
             results.update(import_submodules(full_name))
     return results
 
+
+def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
+    """
+    Decorator that transforms the input into an `XYZ` array of (n,3) shape. If keyword 'dim' id provided,
+    the data will first be converted to xyz values. Returns an array in its original form and coordinates.
+    Parameters
+    ----------
+    func wrapped function
+    internal_dtype: str
+        default: 'xyz'
+        tells the decorator what input data type is given
+    transform_output: bool
+        default: True
+        transforms the data type back to the original imput dtype
+        if False, calculated dtype will be returned
+    Returns
+    -------
+    np.array
+        maintains shape and coordinates
+    """
+    if func is None:
+        return partial(handle_shape_dtype, internal_dtype=internal_dtype, transform_output=transform_output)
+
+    @wraps(func)
+    def conversion(*args, **kwargs):
+
+        # get defaults for the kwd args
+        defaults = get_default_args(func)
+        defaults.update(kwargs)
+        kwargs = defaults
+
+        xyz = args[0]
+        ## maintain vector shape part
+        s = np.array(xyz).shape
+
+        xyz = maintain_n3_shape(xyz)
+
+        # handle input data
+        # if the input data is dim it needs to be converted for functions, where internal dtype == 'xyz'
+        if internal_dtype == 'dim':
+            # if input data dtype == 'xyz' (i.e. input = 'xyz')
+            if 'input' in kwargs and kwargs['input'] == 'xyz':
+                from RockPy.tools.compute import convert_to_dim
+                RockPy.log.debug(f'{func.__qualname__} uses \'dim\' for internal calculations: converting xyz -> dim')
+                xyz = convert_to_dim(xyz)
+        # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
+        elif internal_dtype == 'xyz':
+            # if input data dtype == 'xyz' (i.e. input = 'xyz')
+            if 'input' in kwargs and kwargs['input'] == 'dim':
+                from RockPy.tools.compute import convert_to_xyz
+                RockPy.log.debug(f'{func.__qualname__} uses \'xyz\' for internal calculations: converting dim -> xyz')
+                xyz = convert_to_xyz(xyz)
+
+        # calculate function
+        xyz = func(xyz, *args[1:], **kwargs)
+
+        if transform_output:
+            # return the same data type and shape as input
+            # for internal dtype == dim, the data up to here is dim. Needs to be converted, if input was xyz.
+            if internal_dtype == 'dim':
+                # if input data dtype == 'xyz' (i.e. input = 'xyz')
+                if 'input' in kwargs and kwargs['input'] == 'xyz':
+                    from RockPy.tools.compute import convert_to_xyz
+                    xyz = convert_to_xyz(xyz)
+
+            # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
+            elif internal_dtype == 'xyz':
+                # if input data dtype == 'xyz' (i.e. input = 'xyz')
+                if 'input' in kwargs and kwargs['input'] == 'dim':
+                    from RockPy.tools.compute import convert_to_dim
+                    xyz = convert_to_dim(xyz)
+
+        if np.shape(xyz) != s:
+            if len(s) == 1:
+                return xyz[0]
+            else:
+                return xyz.T
+        return xyz
+
+    return conversion
+
+
+def maintain_n3_shape(xyz):
+    """
+    Takes vector of (3,), (n,3) and (3,n) shape and transforms it into (n,3) shape used for ALL compute calculations.
+
+    Parameters
+    ----------
+    xyz array like
+        data to be returned
+
+    Returns
+    -------
+        array like
+        in the shape of (n,3)
+    """
+    ## maintain vector shape part
+    s = np.array(xyz).shape
+    # for [x,y,z] or [d,i,m]
+    if s == (3,):
+        xyz = np.array(xyz).reshape((1, 3))
+    # for array like [[x],[y],
+    elif s[0] == 3 and s[1] != 3:
+        xyz = np.array(xyz).T
+    elif s[1] == 3 and s[0] != 3:
+        xyz = np.array(xyz)
+    else:
+        RockPy.log.warning('Input cannot be interpreted, due to ambiguous shape. '
+                           'Input could be [[x1,x2,x3],[y1,y2,y3],[z1,z2,z3]] or [[x1,y1,z1],[x2,y2,z2],[x3,y3,z3]].'
+                           'Returning original shape')
+        xyz = np.array(xyz)
+    return xyz
 import json
 import codecs
 

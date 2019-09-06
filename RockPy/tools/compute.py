@@ -1,120 +1,7 @@
 import numpy as np
-from functools import wraps, partial
-import RockPy
-from RockPy.core.utils import get_default_args
+from RockPy.core.utils import handle_shape_dtype
 
-
-def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
-    """
-    Decorator that transforms the input into an `XYZ` array of (n,3) shape. If keyword 'dim' id provided,
-    the data will first be converted to xyz values. Returns an array in its original form and coordinates.
-    Parameters
-    ----------
-    func wrapped function
-    internal_dtype: str
-        default: 'xyz'
-        tells the decorator what input data type is given
-    transform_output: bool
-        default: True
-        transforms the data type back to the original imput dtype
-        if False, calculated dtype will be returned
-    Returns
-    -------
-    np.array
-        maintains shape and coordinates
-    """
-    if func is None:
-        return partial(handle_shape_dtype, internal_dtype=internal_dtype, transform_output=transform_output)
-
-    @wraps(func)
-    def conversion(*args, **kwargs):
-
-        # get defaults for the kwd args
-        defaults = get_default_args(func)
-        defaults.update(kwargs)
-        kwargs = defaults
-
-        xyz = args[0]
-        ## maintain vector shape part
-        s = np.array(xyz).shape
-
-        xyz = maintain_n3_shape(xyz)
-
-        # handle input data
-        # if the input data is dim it needs to be converted for functions, where internal dtype == 'xyz'
-        if internal_dtype == 'dim':
-            # if input data dtype == 'xyz' (i.e. input = 'xyz')
-            if 'input' in kwargs and kwargs['input'] == 'xyz':
-                RockPy.log.debug(f'{func.__qualname__} uses \'dim\' for internal calculations: converting xyz -> dim')
-                xyz = convert_to_dim(xyz)
-        # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
-        elif internal_dtype == 'xyz':
-            # if input data dtype == 'xyz' (i.e. input = 'xyz')
-            if 'input' in kwargs and kwargs['input'] == 'dim':
-                RockPy.log.debug(f'{func.__qualname__} uses \'xyz\' for internal calculations: converting dim -> xyz')
-                xyz = convert_to_xyz(xyz)
-
-        # calculate function
-        xyz = func(xyz, *args[1:], **kwargs)
-
-        if transform_output:
-            # return the same data type and shape as input
-            # for internal dtype == dim, the data up to here is dim. Needs to be converted, if input was xyz.
-            if internal_dtype == 'dim':
-                # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'input' in kwargs and kwargs['input'] == 'xyz':
-                    xyz = convert_to_xyz(xyz)
-
-            # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
-            elif internal_dtype == 'xyz':
-                # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'input' in kwargs and kwargs['input'] == 'dim':
-                    xyz = convert_to_dim(xyz)
-
-        # xyz = handle_near_zero(xyz)
-        if np.shape(xyz) != s:
-            if len(s) == 1:
-                return xyz[0]
-            else:
-                return xyz.T
-        return xyz
-
-    return conversion
-
-
-def maintain_n3_shape(xyz):
-    """
-    Takes vector of (3,), (n,3) and (3,n) shape and transforms it into (n,3) shape used for ALL compute calculations.
-
-    Parameters
-    ----------
-    xyz array like
-        data to be returned
-
-    Returns
-    -------
-        array like
-        in the shape of (n,3)
-    """
-    ## maintain vector shape part
-    s = np.array(xyz).shape
-    # for [x,y,z] or [d,i,m]
-    if s == (3,):
-        xyz = np.array(xyz).reshape((1, 3))
-    # for array like [[x],[y],
-    elif s[0] == 3 and s[1] != 3:
-        xyz = np.array(xyz).T
-    elif s[1] == 3 and s[0] != 3:
-        xyz = np.array(xyz)
-    else:
-        RockPy.log.warning('Input cannot be interpreted, due to ambiguous shape. '
-                           'Input could be [[x1,x2,x3],[y1,y2,y3],[z1,z2,z3]] or [[x1,y1,z1],[x2,y2,z2],[x3,y3,z3]].'
-                           'Returning original shape')
-        xyz = np.array(xyz)
-    return xyz
-
-
-### ROTATIONS
+""" ROTATIONS """
 def rx(angle):
     """
     Rotation matrix around X axis
@@ -173,6 +60,24 @@ def rz(angle):
           [np.sin(angle), np.cos(angle), 0],
           [0, 0, 1]]
     return RZ
+
+
+def rotmat(dec, inc):
+    """ Rotation matrix for given `dec` and `inc` values
+
+    Args:
+        dec (float): declination
+        inc (float): inclination
+
+    Returns:
+        :obj:`np.array`: Rotation matrix
+    """
+    inc = np.radians(inc)
+    dec = np.radians(dec)
+    a = [[np.cos(inc) * np.cos(dec), -np.sin(dec), -np.sin(inc) * np.cos(dec)],
+         [np.cos(inc) * np.sin(dec), np.cos(dec), -np.sin(inc) * np.sin(dec)],
+         [np.sin(inc), 0, np.cos(inc)]]
+    return np.array(a)
 
 
 @handle_shape_dtype
@@ -292,7 +197,8 @@ def rotate(xyz, *, axis='x', theta=0, input='xyz'):
     return out
 
 
-### CONVERSIONS
+""" CONVERSIONS """
+
 """
 NOTE: conversion functions generally transform data from one coordinate system into a different one.
 Therefor, the 'transform_output' value in the decorator has to be set to False, otherwise RockPy tries to 
@@ -335,8 +241,6 @@ def convert_to_xyz(dim, *, M=True):
     out = handle_near_zero(out)
 
     return out
-
-
 
 
 @handle_shape_dtype(transform_output=False)
@@ -590,13 +494,6 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
     return slope, sigma, y_intercept, x_intercept
 
 
-def rotmat(dec, inc):
-    inc = np.radians(inc)
-    dec = np.radians(dec)
-    a = [[np.cos(inc) * np.cos(dec), -np.sin(dec), -np.sin(inc) * np.cos(dec)],
-         [np.cos(inc) * np.sin(dec), np.cos(dec), -np.sin(inc) * np.sin(dec)],
-         [np.sin(inc), 0, np.cos(inc)]]
-    return a
 
 
 def detect_outlier(x, y, order, threshold):
@@ -607,3 +504,5 @@ def detect_outlier(x, y, order, threshold):
     outliers = [i for i, v in enumerate(y) if v < p(x[i]) - threshold * rmse] + \
                [i for i, v in enumerate(y) if v > p(x[i]) + threshold * rmse]
     return outliers
+
+

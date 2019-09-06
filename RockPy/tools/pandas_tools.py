@@ -130,7 +130,7 @@ def cool(df, tcol='index'):
 
 def gradient(*args, **kwargs):
     print('depricated, please change to derivative')
-    return gradient(*args, **kwargs)
+    return derivative(*args, **kwargs)
 
 
 def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm=False, **kwargs):

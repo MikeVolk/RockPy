@@ -13,4 +13,4 @@ class TestCif(TestCase):
                  'core_volume_or_mass': 1.0,
                  'comment': 'Sample just above tuff'}
 
-        self.assertEqual(['erb  1.0A    Sample just above tuff\n','  113.0 291.0  63.0  43.0  46.0   1.0\n'],Cif.write_header(**tdata))
+        self.assertEqual(['erb  1.0A    Sample just above tuff\n','  113.0 291.0  63.0  43.0  46.0   1.0\n'], Cif._write_header(**tdata))
