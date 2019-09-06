@@ -384,8 +384,8 @@ class Cif(RockPy.core.ftype.Ftype):
 
         sdata = out.loc[out.Sample == sample_id].copy()
 
-        # convert from emu to Am^2
-        sdata.loc[:, ['X', 'Y', 'Z']] *= 1e-3
+        # convert to cif file 10^-5 emu
+        sdata.loc[:, ['X', 'Y', 'Z']] *= 1e-5
 
         sdata = sdata.rename(columns={"X": "X_", "Y": "Y_", "Z": "Z_"})
         # create a copy of the Z values
@@ -736,8 +736,9 @@ class Cif(RockPy.core.ftype.Ftype):
         -------
 
         """
-        if np.isnan(stratigraphic_level):
+        if not stratigraphic_level:
             stratigraphic_level = ''
+
         comment += f' >> RockPy exported {datetime.now().strftime("%Y-%m-%d %H:%M")}'
 
         out = ['{:<4}{:<9}{}\n'.format(locality_id, sample_id, comment[:255]),
