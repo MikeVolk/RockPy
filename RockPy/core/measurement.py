@@ -7,7 +7,7 @@ import RockPy.core
 import RockPy.core.utils
 import RockPy.core.result
 from RockPy.core.ftype import Ftype
-# from RockPy.packages.generic.Measurement.Parameter import Parameter
+# from RockPy.Packages.generic.Measurement.Parameter import Parameter
 from RockPy.core.utils import to_tuple, tuple2list_of_tuples
 
 import numpy as np
@@ -282,7 +282,7 @@ class Measurement(object):
         ----
             when creating a new measurement it automatically calculates all results using the standard prameter set
         """
-        if not mdata:
+        if mdata is None:
             self.log().error(f'No MDATA was passed to the {self.cls_mtype()} constructor')
             if fpath:
                 self.log().error(f'fdata was passed to {self.cls_mtype()} constructor. if you are reading a file, you should use {self.cls_mtype()}.from_file()')
