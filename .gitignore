@@ -2,13 +2,13 @@
 .ipynb_checkpoints/
 *.pyc
 
-RockPy/Packages/Generic/Measurement/__pycache__/
-RockPy/Packages/Generic/__pycache__/
-RockPy/Packages/Mag/Measurement/Simulation/__pycache__/
-RockPy/Packages/Mag/Measurement/__pycache__/
-RockPy/Packages/Mag/__pycache__/
-RockPy/Packages/Mag/io/__pycache__/
-RockPy/Packages/__pycache__/
+RockPy/packages/generic/Measurement/__pycache__/
+RockPy/packages/generic/__pycache__/
+RockPy/packages/Mag/Measurement/Simulation/__pycache__/
+RockPy/packages/Mag/Measurement/__pycache__/
+RockPy/packages/Mag/__pycache__/
+RockPy/packages/Mag/io/__pycache__/
+RockPy/packages/__pycache__/
 RockPy/__pycache__/
 RockPy/core/__pycache__/
 RockPy/tests/__pycache__/
