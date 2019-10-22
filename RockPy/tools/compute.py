@@ -2,6 +2,8 @@ import numpy as np
 from RockPy.core.utils import handle_shape_dtype
 
 """ ROTATIONS """
+
+
 def rx(angle):
     """
     Rotation matrix around X axis
@@ -110,7 +112,6 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, input='xy
         if reshape = False: [[x1,y1,z1], [x2,y2,z2]]
         if reshape = True: [[x1,x1], [y2,y2], [z1,z2]]
     """
-
     if axis_di:
         axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
         axis_unit_vector = convert_to_xyz(axis_unit_vector)
@@ -131,6 +132,10 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, input='xy
 
     return out
 
+
+if __name__ == '__main__':
+    rot = [[0,1,1]]
+    rotate_around_axis(rot, axis_unit_vector=[100, 0, 0], input='dim', axis_di=True, theta=90 - 10)
 
 @handle_shape_dtype
 def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, input='xyz'):
@@ -197,6 +202,29 @@ def rotate(xyz, *, axis='x', theta=0, input='xyz'):
     return out
 
 
+@handle_shape_dtype(internal_dtype='dim')
+def rotate_360_deg(xyz, theta, input='xyz'):
+    """
+    draws a circle with angle theta around a point xyz
+
+    Returns:
+
+    """
+
+    circle = []
+    # rotate around z axis
+    for deg in np.arange(0, 360, 2):
+        circle.append(rotate([0, 90 - theta, 1], axis='z', input='dim', theta=deg)[0])
+    circle = np.array(circle)
+
+    # rotate that by 90-inc around 'y' axis (note: rotations are anticlockwise)
+    circle = rotate(circle, axis='y', input='dim', theta = -(90.-xyz[0][1]))
+
+    # rotate that by dec around 'z' axis
+    circle = rotate(circle, axis='z', input='dim', theta = -xyz[0][0])
+
+    return circle
+
 """ CONVERSIONS """
 
 """
@@ -206,7 +234,7 @@ bring the coordinates "back" into the original coordinate system, which will not
 """
 
 
-@handle_shape_dtype(transform_output=False)
+# @handle_shape_dtype(transform_output=False)
 def convert_to_xyz(dim, *, M=True):
     """
     Converts a numpy array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an numpy array with [[d1,i1,m1], [d2,i2,m2]].
@@ -223,6 +251,7 @@ def convert_to_xyz(dim, *, M=True):
         np.array
         The output array is in the same shape and type as the input array
     """
+    dim = np.array(dim)
 
     D = dim[:, 0]
     I = dim[:, 1]
@@ -238,7 +267,6 @@ def convert_to_xyz(dim, *, M=True):
     z = np.cos(np.radians(I)) * np.tan(np.radians(I)) * M
 
     out = np.array([x, y, z]).T
-    out = handle_near_zero(out)
 
     return out
 
@@ -412,6 +440,7 @@ def handle_near_zero(d):
     d[np.isclose(d, 0, atol=1e-15)] = 0
     return d
 
+
 # if __name__ == '__main__':
 #     from RockPy.tools.plotting import *
 #
@@ -494,8 +523,6 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
     return slope, sigma, y_intercept, x_intercept
 
 
-
-
 def detect_outlier(x, y, order, threshold):
     # fit data with polynomial
     z, res, _, _, _ = np.polyfit(x, y, order, full=True)
@@ -504,5 +531,3 @@ def detect_outlier(x, y, order, threshold):
     outliers = [i for i, v in enumerate(y) if v < p(x[i]) - threshold * rmse] + \
                [i for i, v in enumerate(y) if v > p(x[i]) + threshold * rmse]
     return outliers
-
-
