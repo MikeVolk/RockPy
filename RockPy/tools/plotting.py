@@ -222,11 +222,11 @@ def plot_equal(xyz, ax=None, input='xyz', setup_plot=True, **kwargs):
 """ LINES """
 
 
-def combined_label_legend(ax, pad=-1, bbox_to_anchor=[1, 1]):
+def combined_label_legend(ax, pad=-1, bbox_to_anchor=[1, 1], **legend_opts):
     h, l = ax.get_legend_handles_labels()
     labels = sorted(set(l))
     handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
-    ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor, handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)})
+    ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor, handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)}, **legend_opts)
 
 
 def log10_isolines(ax=None, angle=45):
