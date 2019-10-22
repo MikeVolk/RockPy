@@ -460,11 +460,11 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
                     from RockPy.tools.compute import convert_to_dim
                     xyz = convert_to_dim(xyz)
 
-        if np.shape(xyz) != s:
-            if len(s) == 1:
-                return xyz[0]
-            else:
-                return xyz.T
+        # if np.shape(xyz) != s:
+        #     if len(s) == 1:
+        #         return xyz[0]
+        #     else:
+        #         return xyz.T
         return xyz
 
     return conversion
