@@ -60,9 +60,9 @@ class Cif(RockPy.core.ftype.Ftype):
                 'ang_err': ureg('degree'),
                 'plate_dec': ureg('degree'),
                 'plate_inc': ureg('degree'),
-                'std_x': 1e-5 * ureg('emu'),
-                'std_y': 1e-5 * ureg('emu'),
-                'std_z': 1e-5 * ureg('emu'),
+                'std_x': ureg('emu'),
+                'std_y': ureg('emu'),
+                'std_z': ureg('emu'),
                 'x': ureg('emu'),
                 'y': ureg('emu'),
                 'z': ureg('emu')}
@@ -229,8 +229,7 @@ class Cif(RockPy.core.ftype.Ftype):
         corrected = sample_means - holder_means
         return corrected
 
-    @staticmethod
-    def _write_cif_line(series):
+    def _write_cif_line(self, series):
         """ Writes one cit formatted line.
 
         Args:
@@ -249,10 +248,15 @@ class Cif(RockPy.core.ftype.Ftype):
 
         # convert back to out_units
         level = int(series['level'] * 10000)
-        series[['std_x', 'std_y', 'std_z', 'intensity']] *= 1e3  # to emu
-        series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu
 
+        for l in series.index:
+            if not l in self.out_units:
+                continue
+            series[l] *= (1 * self.units[l]).to(self.out_units[l]).magnitude
         mtype = series['mtype']
+        # series[['std_x', 'std_y', 'std_z', 'intensity']] *= 1e3  # to emu
+        # series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu
+
 
         timedate = pd.to_datetime(series['date'] + ' ' + series['time'])
 
@@ -562,6 +566,7 @@ class Cif(RockPy.core.ftype.Ftype):
         data.loc[:, 'core_strike'] = core_strike
         data.loc[:, 'bedding_dip'] = bedding_dip
         data.loc[:, 'bedding_strike'] = bedding_strike
+        data.loc[:, ["std_x","std_y","std_z"]] *= 1e5
 
         data = cls._correct_core(data, core_dip, core_strike)
 
