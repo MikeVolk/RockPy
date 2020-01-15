@@ -298,7 +298,7 @@ class Sample(object):
 
     def add_measurement(
             self,
-            fpath=None, ftype='generic', dialect=None,  # file path and file type
+            fpath=None, ftype=None, dialect=None,  # file path and file type
             mtype=None,  # measurement type
             idx=None,
             mdata=None,
@@ -377,7 +377,7 @@ class Sample(object):
 
         # check for parameters in kwargs (i.e. mass = '12mg'
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
-        if any([k in parameters for k in kwargs.keys()]):
+        if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
             mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
             return mobj
 
@@ -431,15 +431,15 @@ class Sample(object):
     def _add_measurement_from_str(self, fpath, kwargs, mobj,
                                   mtype=None, series=None):
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
-        mtype = [k for k in kwargs.keys() if k in parameters][0]
+        mtype = [k for k in kwargs.keys() if k in parameters if kwargs[k] is not None][0]
         mobj = RockPy.implemented_measurements[mtype].from_string(sobj=self,
                                                                   string=kwargs[mtype],
                                                                   fpath=fpath,
                                                                   ftype='generic',
                                                                   series=series,
                                                                   )
-        print(mobj)
         return mobj
+
 
     def _del_mobj(self, mobj):
         """

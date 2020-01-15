@@ -633,3 +633,8 @@ class ImportHelper(object):
 
 def connect_to_IRMdb():
     pass
+
+
+if __name__ == '__main__':
+    ih = ImportHelper.from_file('/Users/mike/Dropbox/science/_projects/hexagonal_pyrrhotite/data/HYS/Phexa_MSM16667-6a_HYS_VSM##(T,200,C)_(cool,1,).026')
+    print(ih)
