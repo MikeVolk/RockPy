@@ -28,7 +28,14 @@ import RockPy.packages
 from RockPy.core.utils import to_tuple, welcome_message
 
 ''' PLOTTING '''
+<<<<<<< HEAD
 from RockPy.tools.plotting import colorpalettes, ls, marker
+=======
+from RockPy.tools.plotting import colorpalettes, ls, marker, figsize
+plotting_style = os.path.join(installation_directory, 'tools', 'RockPy.mplstyle')
+>>>>>>> c48944f... minor edits/comments
+
+from RockPy.tools.data import datamining
 
 colors = colorpalettes['cat10']
 

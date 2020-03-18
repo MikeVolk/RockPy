@@ -151,7 +151,6 @@ class Sample(object):
         self.study = study
 
         # add sample to study
-        # print(self.study.add_sample())
         # self.study.add_sample(sobj=self) #todo why does this not work
 
         # create a sample index number number of samples created at init

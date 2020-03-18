@@ -1774,6 +1774,7 @@ if __name__ == '__main__':
     RockPy.log.setLevel('ERROR')
     S = RockPy.Study('High T properties')
     S.import_folder('/Users/mike/Dropbox/science/_projects/hexagonal_pyrrhotite/data/HYS')
+    S.import_folder('/Users/mike/Dropbox/science/_projects/hexagonal_pyrrhotite/data/HYS')
     s = S.sample_list[0]
     # s = RockPy.Sample()
     # m= s.add_measurement('/Users/mike/Dropbox/science/_projects/hexagonal_pyrrhotite/data/HYS/Phexa_MSM16667-6a_HYS_VSM##(T,200,C)_(cool,1,).026')
