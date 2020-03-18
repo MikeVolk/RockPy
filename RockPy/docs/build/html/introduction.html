@@ -1,0 +1,192 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Introduction to RockPy &#8212; RockPy pyrite-alpha documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Code base" href="codebase.html" />
+    <link rel="prev" title="Welcome to RockPy’s documentation!" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="codebase.html" title="Code base"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to RockPy’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">RockPy pyrite-alpha documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction to RockPy</a><ul>
+<li><a class="reference internal" href="#design-philosophy">Design Philosophy</a><ul>
+<li><a class="reference internal" href="#top-down-user-approach">Top down user approach</a></li>
+<li><a class="reference internal" href="#bottom-up-code-approach">Bottom up code approach:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#study"><code class="docutils literal notranslate"><span class="pre">study</span></code></a><ul>
+<li><a class="reference internal" href="#the-rockpy-core-study-base-class">The <code class="docutils literal notranslate"><span class="pre">RockPy.core.study</span></code> base-class</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sample"><code class="docutils literal notranslate"><span class="pre">sample</span></code></a><ul>
+<li><a class="reference internal" href="#the-rockpy-core-sample-base-class">The <code class="docutils literal notranslate"><span class="pre">RockPy.core.sample</span></code> base-class</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#measurement"><code class="docutils literal notranslate"><span class="pre">measurement</span></code></a><ul>
+<li><a class="reference internal" href="#the-rockpy-core-measurement-base-class">The <code class="docutils literal notranslate"><span class="pre">RockPy.core.measurement</span></code> base-class</a></li>
+<li><a class="reference internal" href="#implemented-mtypes">implemented <code class="docutils literal notranslate"><span class="pre">mtypes</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ftype"><code class="docutils literal notranslate"><span class="pre">ftype</span></code></a><ul>
+<li><a class="reference internal" href="#the-rockpy-core-ftype-base-class">The <code class="docutils literal notranslate"><span class="pre">RockPy.core.ftype</span></code> base-class</a></li>
+<li><a class="reference internal" href="#implemented-ftypes">implemented ftypes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to RockPy’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="codebase.html"
+                        title="next chapter">Code base</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/introduction.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction-to-rockpy">
+<h1>Introduction to RockPy<a class="headerlink" href="#introduction-to-rockpy" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="design-philosophy">
+<h2>Design Philosophy<a class="headerlink" href="#design-philosophy" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="top-down-user-approach">
+<h3>Top down user approach<a class="headerlink" href="#top-down-user-approach" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">1.</span> <span class="n">Study</span>
+<span class="mf">2.</span> <span class="n">Sample</span>
+<span class="mf">3.</span> <span class="n">Measurement</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="bottom-up-code-approach">
+<h3>Bottom up code approach:<a class="headerlink" href="#bottom-up-code-approach" title="Permalink to this headline">¶</a></h3>
+<p>The lowest class contains the most important methods</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">1.</span> <span class="n">Measurement</span>
+<span class="mf">2.</span> <span class="n">Sample</span>
+<span class="mf">3.</span> <span class="n">Study</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="study">
+<h2><code class="docutils literal notranslate"><span class="pre">study</span></code><a class="headerlink" href="#study" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-rockpy-core-study-base-class">
+<h3>The <code class="docutils literal notranslate"><span class="pre">RockPy.core.study</span></code> base-class<a class="headerlink" href="#the-rockpy-core-study-base-class" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="sample">
+<h2><code class="docutils literal notranslate"><span class="pre">sample</span></code><a class="headerlink" href="#sample" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-rockpy-core-sample-base-class">
+<h3>The <code class="docutils literal notranslate"><span class="pre">RockPy.core.sample</span></code> base-class<a class="headerlink" href="#the-rockpy-core-sample-base-class" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="measurement">
+<h2><code class="docutils literal notranslate"><span class="pre">measurement</span></code><a class="headerlink" href="#measurement" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-rockpy-core-measurement-base-class">
+<h3>The <code class="docutils literal notranslate"><span class="pre">RockPy.core.measurement</span></code> base-class<a class="headerlink" href="#the-rockpy-core-measurement-base-class" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="implemented-mtypes">
+<h3>implemented <code class="docutils literal notranslate"><span class="pre">mtypes</span></code><a class="headerlink" href="#implemented-mtypes" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="ftype">
+<h2><code class="docutils literal notranslate"><span class="pre">ftype</span></code><a class="headerlink" href="#ftype" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-rockpy-core-ftype-base-class">
+<h3>The <code class="docutils literal notranslate"><span class="pre">RockPy.core.ftype</span></code> base-class<a class="headerlink" href="#the-rockpy-core-ftype-base-class" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="implemented-ftypes">
+<h3>implemented ftypes<a class="headerlink" href="#implemented-ftypes" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="codebase.html" title="Code base"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to RockPy’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">RockPy pyrite-alpha documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Michael Volk.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>
