@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
+import pint
 
 import RockPy
 from RockPy import ureg
@@ -67,6 +68,7 @@ class Cif(RockPy.core.ftype.Ftype):
                 'y': ureg('emu'),
                 'z': ureg('emu')}
     out_units = in_units
+
     units = {'geo_dec': ureg('degree'),
              'geo_inc': ureg('degree'),
              'strat_dec': ureg('degree'),

@@ -10,7 +10,7 @@ test_data_path = os.path.join(installation_directory, 'tests', 'test_data')
 # unit handling
 import pint
 ureg = pint.UnitRegistry()
-ureg.define('emu = 1 * (erg / gauss) = 1e-3 ampere /  metere ^2')
+ureg.define('emu = 1e-3 ampere * meter ^2')
 ureg.define('1 gauss = 1e-4 tesla')
 
 import RockPy.core.file_io

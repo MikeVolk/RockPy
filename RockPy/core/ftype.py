@@ -7,7 +7,8 @@ import RockPy.core.utils
 from RockPy.core.file_io import ImportHelper
 from copy import deepcopy
 from io import StringIO, BytesIO
-
+import pint
+from RockPy import ureg
 class Ftype(object):
     """ Delivers core functionality to all classes inheriting from it.
 
@@ -201,28 +202,30 @@ class Ftype(object):
         """
         for col in self.data.columns:
             if col in self.in_units:
-                if not col in self.internal_units:
+                if not col in self.units:
                     self.log().warning(
                         'Unit of data column << {} >> has no internal unit equivalent. The input unit is  << {:P} >>.'.format(
                             col, self.in_units[col]))
                     continue
-                if col in self.units:
+                if self.in_units[col] == self.units[col]:
                     self.log().debug(
                         'Data column << {} >> already in internal unit << {:P} >>.'.format(
                             col, self.in_units[col]))
                     continue
 
                 in_unit = self.in_units[col]
-                internal_unit = self.internal_units[col]
+                unit = self.units[col]
 
-                self.log().debug('converting to SI units')
                 # convert to internal unit
                 try:
-                    self.data.loc[:, col] *= (1 * in_unit).to(internal_unit).magnitude
+                    conv = (1 * in_unit).to(unit).magnitude
+                    self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
+                    self.data.loc[:, col] *= conv
                 except pint.DimensionalityError:
-                    if in_unit == ureg('gauss') and internal_unit == ureg('tesla'):
+                    self.log().warning(f'converting to SI units failed {in_unit} -> {unit}')
+                    if in_unit == ureg('gauss') and unit == ureg('tesla'):
                         self.data.loc[:, col] *= 1e-4
-                    if in_unit ==  ureg('tesla') and internal_unit == ureg('gauss'):
+                    if in_unit ==  ureg('tesla') and unit == ureg('gauss'):
                         print('Pint exception because gauss -- tesla conversion')
                         self.data.loc[:, col] *= 1e4
                 # if in_unit == 'emu' and internal_unit == 'tesla':
@@ -232,7 +235,7 @@ class Ftype(object):
 
 
                 # set unit
-                self.units[col] = internal_unit
+                self.units[col] = unit
 
     def read_file(self):
         """ Method for actual import of the file.
