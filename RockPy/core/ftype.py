@@ -6,17 +6,17 @@ import pandas as pd
 import RockPy.core.utils
 from RockPy.core.file_io import ImportHelper
 from copy import deepcopy
-
+from io import StringIO, BytesIO
 
 class Ftype(object):
     """ Delivers core functionality to all classes inheriting from it.
 
     Attributes:
-        in_units (dict(:obj:`pint.ureg`)): units from used in the data file
-        out_units (dict(:obj:`pint.ureg`)): units used to export the data
-        units (dict(:obj:`pint.ureg`)): units used internally (should be SI units)
+        in_units (dict(:obj:`pint.ureg`)): internal_units from used in the data file
+        out_units (dict(:obj:`pint.ureg`)): internal_units used to export the data
+        units (dict(:obj:`pint.ureg`)): internal_units used internally (should be SI internal_units)
         fid (int): internal id of the instance
-        _raw_data (list(str)): raw, imported data from the file. Note: has not been converted to SI units.
+        _raw_data (list(str)): raw, imported data from the file. Note: has not been converted to SI internal_units.
         snames (tuple(str)): tuple of all names in the datafile
         dfile (str): full path to the file on the HD
         dialect (str, optional): can change the behavior of the `Ftype.read_file` method
@@ -27,17 +27,19 @@ class Ftype(object):
         imported_files (dict): Secondary storage of a deepcopy of the `obj.data`, for possible recovery.
 
     Notes:
-        The units that the data is stored in are SI units. They can be converted using `RockPy.core.utils.convert`.
+        The internal_units that the data is stored in are SI internal_units. They can be converted using `RockPy.core.utils.convert`.
 
     TODO:
         - use `os.scandir` instead of `os.listdir`
     """
     imported_files = {}
-    # std units for import
+    # std internal_units for import
     in_units = {}
-    # std units for export
+    # std internal_units for export
     out_units = {}
-    # internal units
+    # desired internal internal_units
+    internal_units = {}
+    # actual internal internal_units
     units = {}
 
     def __init__(self, dfile,
@@ -75,10 +77,21 @@ class Ftype(object):
         self.snames = [str(i) for i in RockPy.core.utils.to_tuple(snames)] if snames else None
 
         self.dfile = dfile
+
+        dio = False
+        ## catch ERROR for StringIO and ByteIO
+        if isinstance(dfile, (StringIO, BytesIO)):
+            self.log().debug('impporting Byte/String data')
+            dfile = self.fid
+            dio = True
+
         self.dialect = dialect
 
-        # set attribute in case header is provided in **kwargs, default to None
-        self.header = kwargs.pop('header', None)
+        # only add header if it hasnt been defined already
+        ### the header should now be passed to the constructor
+        if getattr(self, 'header', None) is None:
+            # set attribute in case header is provided in **kwargs, default to None
+            self.header = kwargs.pop('header', None)
 
         if create_minfo:
             try:
@@ -93,9 +106,14 @@ class Ftype(object):
             self.__class__.imported_files[dfile] = mdata
 
         elif dfile not in self.__class__.imported_files or reload:
-            self.log().info('IMPORTING << %s , %s >> file: << ... %s >>' % (self.snames,
+            if not dio:
+                self.log().info('IMPORTING << %s , %s >> file: << ... %s >>' % (self.snames,
                                                                             type(self).__name__, dfile[-20:]))
+            else:
+                self.log().info('IMPORTING << %s , %s >> from Bytes' % (self.snames, type(self).__name__))
+
             self.__class__.imported_files[dfile] = self.read_file()
+
         else:
             self.log().info(
                 "LOADING previously imported file << {} , {} >> file: << {} >>\n\t>>> "
@@ -179,19 +197,42 @@ class Ftype(object):
             return True
 
     def to_si_units(self):
-        """ converts each numeric column in self.data to SI units TODO: write to out_units
+        """ converts each numeric column in self.data to SI internal_units TODO: write to out_units
         """
         for col in self.data.columns:
             if col in self.in_units:
-                if not col in self.units:
+                if not col in self.internal_units:
                     self.log().warning(
-                        'Unit of data column << {} >> has no internal equivalent. The input unit is  << {:P} >>.'.format(
+                        'Unit of data column << {} >> has no internal unit equivalent. The input unit is  << {:P} >>.'.format(
                             col, self.in_units[col]))
                     continue
-                inunit = self.in_units[col]
-                outunit = self.units[col]
+                if col in self.units:
+                    self.log().debug(
+                        'Data column << {} >> already in internal unit << {:P} >>.'.format(
+                            col, self.in_units[col]))
+                    continue
 
-                self.data.loc[:, col] *= (1 * inunit).to(outunit).magnitude
+                in_unit = self.in_units[col]
+                internal_unit = self.internal_units[col]
+
+                self.log().debug('converting to SI units')
+                # convert to internal unit
+                try:
+                    self.data.loc[:, col] *= (1 * in_unit).to(internal_unit).magnitude
+                except pint.DimensionalityError:
+                    if in_unit == ureg('gauss') and internal_unit == ureg('tesla'):
+                        self.data.loc[:, col] *= 1e-4
+                    if in_unit ==  ureg('tesla') and internal_unit == ureg('gauss'):
+                        print('Pint exception because gauss -- tesla conversion')
+                        self.data.loc[:, col] *= 1e4
+                # if in_unit == 'emu' and internal_unit == 'tesla':
+                #     self.data.loc[:, col] *= 1e-4
+                # if in_unit ==  'tesla' and internal_unit == 'gauss':
+                #     self.data.loc[:, col] *= 1e4
+
+
+                # set unit
+                self.units[col] = internal_unit
 
     def read_file(self):
         """ Method for actual import of the file.
@@ -257,7 +298,10 @@ class Ftype(object):
         out.fid = id(out)
         return out
 
+    def unit_label(self, quantity):
+        return '{:~P}'.format(self.units[quantity].units)
 
+### related functions
 def is_implemented(ftype):
     """ Checks if ftype has been implemented.
 

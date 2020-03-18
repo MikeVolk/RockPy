@@ -105,6 +105,8 @@ class Cif(RockPy.core.ftype.Ftype):
             level_unit(str, optional): defaults to 'G'. Determines the unit for the level. May be ˚C, G, ...
             **kwargs: arbitrary keyword arguments
         """
+
+        # set the level units
         if level_unit == 'gauss':
             self.in_units['level'] = ureg('gauss')
             self.units['level'] = ureg('tesla')
