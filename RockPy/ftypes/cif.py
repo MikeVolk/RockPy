@@ -67,6 +67,7 @@ class Cif(RockPy.core.ftype.Ftype):
                 'x': ureg('emu'),
                 'y': ureg('emu'),
                 'z': ureg('emu')}
+
     out_units = in_units
 
     units = {'geo_dec': ureg('degree'),

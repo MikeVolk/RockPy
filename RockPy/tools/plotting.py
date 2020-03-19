@@ -31,6 +31,9 @@ colorpalettes = {
 ls = ['-', '--', '-.', ':'] * 100
 marker = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X'] * 100
 
+# std figsize for AGU journals
+figsize = np.array([3.74, 5.91]) * 1.3
+
 """ AXIS """
 
 
@@ -82,7 +85,7 @@ def get_unique_axis(fig: plt.Figure):
     return unique_axes
 
 
-def enumerate_figure(fig: plt.figure, positions=None, **kwargs):
+def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
     """
     Takes a figure object and places n) on each of the axes.
 
@@ -103,6 +106,7 @@ def enumerate_figure(fig: plt.figure, positions=None, **kwargs):
 
     for i, ax in enumerate(axes):
 <<<<<<< HEAD
+<<<<<<< HEAD
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format('abcdefghijklmnopqrstuvwxyz'[i]),
 =======
         label = 'abcdefghijklmnopqrstuvwxyz'[i]
@@ -111,6 +115,14 @@ def enumerate_figure(fig: plt.figure, positions=None, **kwargs):
 
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
 >>>>>>> c48944f... minor edits/comments
+=======
+        label = 'abcdefghijklmnopqrstuvwxyz'[i]
+        print(label)
+        if label in ignore:
+            print(label)
+            continue
+        ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
+>>>>>>> 867b91f... adds figsize for AGU journals
 
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
@@ -477,12 +489,12 @@ def plot_square(x, y, d, center = True, center_label=None, ax=None, **plt_args):
     l, = ax.plot(x, y, 's', markersize=3, visible=False, label=f'{center_label}', **plt_args)
 
     if center:
-        ax.plot(x, y, '+', markersize=3, color = l.get_color(), mew=0.5)
+        ax.plot(x, y, '+', markersize=3, color = l.get_color(), mew=1)
 
-    ax.plot([x-d, x+d], [y-d, y-d], color = l.get_color(), lw=0.5)
-    ax.plot([x-d, x+d], [y+d, y+d], color = l.get_color(), lw=0.5)
-    ax.plot([x-d, x-d], [y-d, y+d], color = l.get_color(), lw=0.5)
-    ax.plot([x+d, x+d], [y-d, y+d], color = l.get_color(), lw=0.5)
+    ax.plot([x-d, x+d], [y-d, y-d], color = l.get_color(), lw=1)
+    ax.plot([x-d, x+d], [y+d, y+d], color = l.get_color(), lw=1)
+    ax.plot([x-d, x-d], [y-d, y+d], color = l.get_color(), lw=1)
+    ax.plot([x+d, x+d], [y-d, y+d], color = l.get_color(), lw=1)
 
     return ax
 
