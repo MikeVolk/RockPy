@@ -464,6 +464,7 @@ class Study(object):
             for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
                 if s.name != measurement_dict['sname']:
                     continue
+                print(measurement_dict)
                 m = s.add_measurement(create_parameters=False, **measurement_dict)
                 if m is not None:
                     mlist.append(m)
