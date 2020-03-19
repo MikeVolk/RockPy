@@ -10,8 +10,9 @@ test_data_path = os.path.join(installation_directory, 'tests', 'test_data')
 # unit handling
 import pint
 ureg = pint.UnitRegistry()
+
+# ureg.define('gauss = 1e-4 tesla')
 ureg.define('emu = 1e-3 ampere * meter ^2')
-ureg.define('1 gauss = 1e-4 tesla')
 
 import RockPy.core.file_io
 
@@ -28,18 +29,11 @@ import RockPy.packages
 from RockPy.core.utils import to_tuple, welcome_message
 
 ''' PLOTTING '''
-<<<<<<< HEAD
-from RockPy.tools.plotting import colorpalettes, ls, marker
-<<<<<<< HEAD
-=======
+
 from RockPy.tools.plotting import colorpalettes, ls, marker, figsize
 plotting_style = os.path.join(installation_directory, 'tools', 'RockPy.mplstyle')
->>>>>>> c48944f... minor edits/comments
 
 from RockPy.tools.data import datamining
-=======
-plotting_style = os.path.join(installation_directory, 'tools', 'RockPy.mplstyle')
->>>>>>> 867b91f... adds figsize for AGU journals
 
 colors = colorpalettes['cat10']
 

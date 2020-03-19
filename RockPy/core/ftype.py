@@ -39,8 +39,6 @@ class Ftype(object):
     # std internal_units for export
     out_units = {}
     # desired internal internal_units
-    internal_units = {}
-    # actual internal internal_units
     units = {}
 
     def __init__(self, dfile,
@@ -218,24 +216,20 @@ class Ftype(object):
 
                 # convert to internal unit
                 try:
+
                     conv = (1 * in_unit).to(unit).magnitude
                     self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
                     self.data.loc[:, col] *= conv
+
                 except pint.DimensionalityError:
-                    self.log().warning(f'converting to SI units failed {in_unit} -> {unit}')
+                    self.log().debug(f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
                     if in_unit == ureg('gauss') and unit == ureg('tesla'):
-                        self.data.loc[:, col] *= 1e-4
+                        conv  = 1e-4
                     if in_unit ==  ureg('tesla') and unit == ureg('gauss'):
-                        print('Pint exception because gauss -- tesla conversion')
-                        self.data.loc[:, col] *= 1e4
-                # if in_unit == 'emu' and internal_unit == 'tesla':
-                #     self.data.loc[:, col] *= 1e-4
-                # if in_unit ==  'tesla' and internal_unit == 'gauss':
-                #     self.data.loc[:, col] *= 1e4
+                        conv = 1e4
+                    self.data.loc[:, col] *= conv
+                    self.log().info(f'manual conversion to SI units {in_unit} -> {conv} {unit}')
 
-
-                # set unit
-                self.units[col] = unit
 
     def read_file(self):
         """ Method for actual import of the file.

@@ -105,25 +105,13 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
         positions = [positions for _, _ in enumerate(axes)]
 
     for i, ax in enumerate(axes):
-<<<<<<< HEAD
-<<<<<<< HEAD
-        ax.text(positions[i][0], positions[i][1], '{:>s})'.format('abcdefghijklmnopqrstuvwxyz'[i]),
-=======
+
         label = 'abcdefghijklmnopqrstuvwxyz'[i]
+
         if label in ignore:
             continue
 
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
->>>>>>> c48944f... minor edits/comments
-=======
-        label = 'abcdefghijklmnopqrstuvwxyz'[i]
-        print(label)
-        if label in ignore:
-            print(label)
-            continue
-        ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
->>>>>>> 867b91f... adds figsize for AGU journals
-
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
                 bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
