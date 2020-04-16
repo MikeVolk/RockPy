@@ -1,6 +1,8 @@
 import numpy as np
 from RockPy.core.utils import handle_shape_dtype
 from RockPy.core.utils import convert
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 """ ROTATIONS """
 
 
@@ -134,8 +136,9 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, input='xy
 
 
 if __name__ == '__main__':
-    rot = [[0,1,1]]
+    rot = [[0, 1, 1]]
     rotate_around_axis(rot, axis_unit_vector=[100, 0, 0], input='dim', axis_di=True, theta=90 - 10)
+
 
 @handle_shape_dtype
 def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, input='xyz'):
@@ -218,12 +221,13 @@ def rotate_360_deg(xyz, theta, input='xyz'):
     circle = np.array(circle)
 
     # rotate that by 90-inc around 'y' axis (note: rotations are anticlockwise)
-    circle = rotate(circle, axis='y', input='dim', theta = -(90.-xyz[0][1]))
+    circle = rotate(circle, axis='y', input='dim', theta=-(90. - xyz[0][1]))
 
     # rotate that by dec around 'z' axis
-    circle = rotate(circle, axis='z', input='dim', theta = -xyz[0][0])
+    circle = rotate(circle, axis='z', input='dim', theta=-xyz[0][0])
 
     return circle
+
 
 """ CONVERSIONS """
 
@@ -531,3 +535,30 @@ def detect_outlier(x, y, order, threshold):
     outliers = [i for i, v in enumerate(y) if v < p(x[i]) - threshold * rmse] + \
                [i for i, v in enumerate(y) if v > p(x[i]) + threshold * rmse]
     return outliers
+
+
+def crossing_1d(x1, y1, x2, y2, lim=None, **kwargs):
+    """
+    Calculates the crossing of two datasets
+    """
+    f1 = interp1d(x1, y1, kind='slinear', bounds_error=False)
+    f2 = interp1d(x2, y2, kind='slinear', bounds_error=False)
+
+    if lim is None:
+        xmin = min(np.append(x1, x2))
+        xmax = max(np.append(x1, x2))
+    else:
+        (xmin, xmax) = lim
+
+    xnew = np.arange(xmin, xmax, np.mean(np.diff(x1)) / 1000)
+
+    mnidx = np.argmin(abs(f1(xnew) - f2(xnew)))
+    mn = xnew[mnidx]
+    crossing = float(f1(mn))
+
+    if kwargs.pop('check', False):
+        plt.plot(xnew, f1(xnew), label='X1, Y1')
+        plt.plot(xnew, f2(xnew), label='X2, Y2')
+        plt.plot(xnew, abs(f1(xnew) - f2(xnew)), label='Y1, Y2')
+        plt.plot()
+    return [mn, crossing]
