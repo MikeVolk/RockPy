@@ -14,6 +14,7 @@ class Vsm(Ftype):
                          'Direct moment vs. field; Multiple segments\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',),
                          'Remanence curves:  IRM + DCD\n':('irm','dcd'),
+                         'Direct moment vs. field; First-order reversal curves\n':('forc',),
                          }
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
@@ -27,9 +28,12 @@ class Vsm(Ftype):
 
         self.mtype = self.mtype_translation[mtype]
         self.header = self.read_header(dfile, header_end)
-        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_end, segment_widths)
 
         super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header = self.header)
+
+        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_end, segment_widths)
+
+
 
         # check the calibration factor
         self.calibration_factor = float(self.header.loc['Calibration factor'])
@@ -129,12 +133,14 @@ class Vsm(Ftype):
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
                                         names=segment_header, encoding='latin-1',
                                         )
+            # add column with start indices for each segment
+            segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+            # add one to the final index because of empty row
+            segment_infos['Final Index'] = [v + i for i, v in enumerate(segment_infos['Final Index'])]
+
         else:
             # constructs segment header from file itself
             segment_infos = self._construct_segment_infos_from_data()
-
-        # add column with start indices for each segment
-        segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
 
         return segment_infos
 
@@ -148,7 +154,7 @@ class Vsm(Ftype):
                 with segment infos.
                 columns : 'Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment','Final Field', 'Pause', 'Final Index'
         """
-        segment_header = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
+        segment_infos = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
                                                'Final Field', 'Pause', 'Final Index'])
 
         # an empty row == only nan values separates the different segments
@@ -176,15 +182,17 @@ class Vsm(Ftype):
             else:
                 step.append(np.nan)
 
-        segment_header['Segment Number'] = np.arange(len(nanidx))
-        segment_header['Initial Field'] = Binit
-        segment_header['Field Increment'] = step
-        segment_header['Final Field'] = Bfin
-        segment_header['Final Index'] = nanidx
-        segment_header['Pause'] = self.header.loc['Averaging time'].iloc[0, 0]
-        segment_header['Averaging Time'] = self.header.loc['Averaging time'].iloc[0, 0]
+        segment_infos['Segment Number'] = np.arange(len(nanidx))
+        segment_infos['Initial Field'] = Binit
+        segment_infos['Field Increment'] = step
+        segment_infos['Final Field'] = Bfin
+        segment_infos['Final Index'] = nanidx
+        segment_infos['Pause'] = self.header.loc['Averaging time'].iloc[0, 0]
+        segment_infos['Averaging Time'] = self.header.loc['Averaging time'].iloc[0, 0]
 
-        return segment_header
+        # add column with start indices for each segment
+        segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+        return segment_infos
 
     def read_file(self):
 
@@ -247,7 +255,11 @@ if __name__ == '__main__':
     # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
     # print(Vsm(dfile='/Users/mike/Dropbox/science/_projects/RockPy/RockPy/tests/test_data/VSM/dcd_vsm.001').header)
 
-    s = RockPy.Sample('test')
-    m = s.add_measurement(
-        fpath='/Users/mike/Dropbox/science/_projects/Apollo15_kim/data/Apollo15_A15_hys_agm##(Bmax,500,mT)_(f,404,Hz)_(q,150.0,)#0.7(hr).012')
-    print(m.data)
+    # s = RockPy.Sample('test')
+    # m = s.add_measurement(
+    #     fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/dcd_irm_vsm.001')
+    # print(m.data)
+
+    d = Vsm('/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/forc_vsm.001')
+
+    d
