@@ -1,5 +1,5 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, to_tuple, tuple2list_of_tuples, series_to_dict, tuple2str, list_or_item
+from RockPy.core.utils import str2tuple, to_tuple, tuple2list_of_tuples, series_to_dict, tuple2str, list_or_item
 import os, re
 import warnings
 import logging
@@ -60,9 +60,9 @@ class ImportHelper(object):
             snames = snames.replace(",", ".")
             RockPy.log().debug("sample sname %s contains \",\" will be replaced with \".\"" % snames)
 
-        sgroups = RockPy.core.utils.extract_tuple(sgroups)
-        snames = RockPy.core.utils.extract_tuple(snames)
-        mtypes = RockPy.core.utils.extract_tuple(mtypes)
+        sgroups = RockPy.core.utils.str2tuple(sgroups)
+        snames = RockPy.core.utils.str2tuple(snames)
+        mtypes = RockPy.core.utils.str2tuple(mtypes)
         ftype = ftype.upper()#RockPy.abbrev_to_classname[ftype.lower()]
 
         mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in RockPy.to_tuple(mtypes))
@@ -125,7 +125,7 @@ class ImportHelper(object):
             """
             extracts a series tuple from a str
             """
-            s = RockPy.core.utils.extract_tuple(s)
+            s = RockPy.core.utils.str2tuple(s)
             s = tuple([s[0], float(s[1]), s[2]])
             return s
 

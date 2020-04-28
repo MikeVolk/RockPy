@@ -23,9 +23,9 @@ class TestTuple2list_of_tuples(TestCase):
 
 class TestExtract_tuple(TestCase):
     def test_extract_tuple(self):
-        self.assertEqual(('a',), extract_tuple('a'))
-        self.assertEqual(('a', 'b'), extract_tuple('(a,b)'))
-        self.assertEqual(('a', 'b'), extract_tuple('[a,b]'))
+        self.assertEqual(('a',), str2tuple('a'))
+        self.assertEqual(('a', 'b'), str2tuple('(a,b)'))
+        self.assertEqual(('a', 'b'), str2tuple('[a,b]'))
 
 
 class TestTuple2str(TestCase):
