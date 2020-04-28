@@ -13,6 +13,7 @@ from RockPy.core.utils import correction
 from RockPy.tools.compute import lin_regress
 import RockPy.packages.magnetism.simulations
 from RockPy.tools.pandas_tools import get_values_in_both
+import os
 
 class Hysteresis(Measurement):
 
@@ -1605,7 +1606,7 @@ class Dcd(Measurement):
     @staticmethod
     def _format_vsm(ftype_data, **kwargs):
         """
-        formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
+        formatting routine for VSM type backfield measurements. Indirectly called by the measurement.from_file method.
 
         Parameters
         ----------
@@ -1768,3 +1769,66 @@ class Demagnetization(Measurement):
         '''
 
         data = ftype_data
+
+class Acquisition(Measurement):
+
+    ####################################################################################################################
+    # FORMATTING
+
+    pass
+
+class Irm_Acquisition(Acquisition):
+    logger = logging.getLogger('RockPy.magnetism.IRM')
+    ####################################################################################################################
+    """ formatting functions """
+
+    @property
+    def data(self):
+        out = super().data
+        return out.set_index('B')
+
+    @staticmethod
+    def _format_vsm(ftype_data, **kwargs):
+        """
+        formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
+
+        Parameters
+        ----------
+        ftype_data: RockPy.io
+            data read by magnetism.ftypes.Vsm.vsm function.
+            Contains:
+              - data
+              - header
+              - segment_header
+
+
+        Returns
+        -------
+            data: pandas.Dataframe
+                columns = ['B','M']
+            ftype_data: ftypes object
+                ftypes object as read by magnetism.ftypes.Vsm.vsm
+
+
+        """
+
+        # expected column names for typical VSM hysteresis experiments
+        expected_columns = ['Field (T)', 'Remanence (Am2)']
+
+        if not all(i in expected_columns for i in ftype_data.data.columns):
+            Irm_Acquisition.log().error('ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
+
+        segment_index = ftype_data.mtype.index('irm')
+        data = ftype_data.get_segment_data(segment_index).rename(columns={"Field (T)": "B", "Remanence (Am2)": "M"})
+
+        return data
+
+
+if __name__ == '__main__':
+    S = RockPy.Study()
+    s = S.add_sample('test')
+    m = s.add_measurement(mtype=['dcd','irm'],
+                          fpath=os.path.join(RockPy.test_data_path, 'VSM', 'dcd_irm_vsm.001'),
+                          ftype='vsm')
+    print(m)
+    print(s.measurements)
