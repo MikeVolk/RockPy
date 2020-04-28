@@ -540,6 +540,16 @@ def detect_outlier(x, y, order, threshold):
 def crossing_1d(x1, y1, x2, y2, lim=None, **kwargs):
     """
     Calculates the crossing of two datasets
+
+    Args:
+        x1: array
+        y1: array
+        x2: array
+        y2: array
+        lim: tuple
+        **kwargs:
+            check: bool
+                creates a diagnostic plot
     """
     f1 = interp1d(x1, y1, kind='slinear', bounds_error=False)
     f2 = interp1d(x2, y2, kind='slinear', bounds_error=False)
@@ -552,13 +562,14 @@ def crossing_1d(x1, y1, x2, y2, lim=None, **kwargs):
 
     xnew = np.arange(xmin, xmax, np.mean(np.diff(x1)) / 1000)
 
-    mnidx = np.argmin(abs(f1(xnew) - f2(xnew)))
+    mnidx = np.nanargmin(abs(f1(xnew) - f2(xnew)))
     mn = xnew[mnidx]
     crossing = float(f1(mn))
 
     if kwargs.pop('check', False):
         plt.plot(xnew, f1(xnew), label='X1, Y1')
         plt.plot(xnew, f2(xnew), label='X2, Y2')
-        plt.plot(xnew, abs(f1(xnew) - f2(xnew)), label='Y1, Y2')
-        plt.plot()
+        plt.plot(xnew, abs(f1(xnew) - f2(xnew)), label='Y1-Y2')
+        plt.legend()
+        plt.show()
     return [mn, crossing]
