@@ -429,14 +429,14 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
         # if the input data is dim it needs to be converted for functions, where internal dtype == 'xyz'
         if internal_dtype == 'dim':
             # if input data dtype == 'xyz' (i.e. input = 'xyz')
-            if 'input' in kwargs and kwargs['input'] == 'xyz':
+            if 'intype' in kwargs and kwargs['intype'] == 'xyz':
                 from RockPy.tools.compute import convert_to_dim
                 RockPy.log.debug(f'{func.__qualname__} uses \'dim\' for internal calculations: converting xyz -> dim')
                 xyz = convert_to_dim(xyz)
         # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
         elif internal_dtype == 'xyz':
             # if input data dtype == 'xyz' (i.e. input = 'xyz')
-            if 'input' in kwargs and kwargs['input'] == 'dim':
+            if 'intype' in kwargs and kwargs['intype'] == 'dim':
                 from RockPy.tools.compute import convert_to_xyz
                 RockPy.log.debug(f'{func.__qualname__} uses \'xyz\' for internal calculations: converting dim -> xyz')
                 xyz = convert_to_xyz(xyz)
@@ -449,14 +449,14 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
             # for internal dtype == dim, the data up to here is dim. Needs to be converted, if input was xyz.
             if internal_dtype == 'dim':
                 # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'input' in kwargs and kwargs['input'] == 'xyz':
+                if 'intype' in kwargs and kwargs['intype'] == 'xyz':
                     from RockPy.tools.compute import convert_to_xyz
                     xyz = convert_to_xyz(xyz)
 
             # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
             elif internal_dtype == 'xyz':
                 # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'input' in kwargs and kwargs['input'] == 'dim':
+                if 'intype' in kwargs and kwargs['intype'] == 'dim':
                     from RockPy.tools.compute import convert_to_dim
                     xyz = convert_to_dim(xyz)
 
@@ -500,6 +500,7 @@ def maintain_n3_shape(xyz):
                            'Returning original shape')
         xyz = np.array(xyz)
     return xyz
+
 import json
 import codecs
 
