@@ -17,13 +17,12 @@
 
 # measurements
 trm: trm
-irm: irm
 arm: arm
 nrm: nrm
 
 # acqisition measurements
 acquisition:: acq
-irm_acquisition: iacq
+irm_acquisition: iacq, irm
 arm_acquisition: armacq
 parm_acquisition: parmacq
 trm_acquisition: trmacq
