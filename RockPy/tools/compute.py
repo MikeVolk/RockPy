@@ -17,7 +17,7 @@ def rx(angle):
 
     Returns
     -------
-    np.array
+    RX : np.array
         Rotationmatrix
     """
     RX = [[1, 0, 0],
@@ -37,7 +37,7 @@ def ry(angle):
 
     Returns
     -------
-    np.array
+    RY : np.array
         Rotationmatrix
     """
     RY = [[np.cos(angle), 0, np.sin(angle)],
@@ -57,7 +57,7 @@ def rz(angle):
 
     Returns
     -------
-    np.array
+    RZ : np.array
         Rotationmatrix
     """
     RZ = [[np.cos(angle), -np.sin(angle), 0],
@@ -74,7 +74,8 @@ def rotmat(dec, inc):
         inc (float): inclination
 
     Returns:
-        :obj:`np.array`: Rotation matrix
+    np.array
+        Rotation matrix for the given dec and inc
     """
     inc = np.radians(inc)
     dec = np.radians(dec)
@@ -135,11 +136,6 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, input='xy
     return out
 
 
-if __name__ == '__main__':
-    rot = [[0, 1, 1]]
-    rotate_around_axis(rot, axis_unit_vector=[100, 0, 0], input='dim', axis_di=True, theta=90 - 10)
-
-
 @handle_shape_dtype
 def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, input='xyz'):
     """
@@ -190,7 +186,7 @@ def rotate(xyz, *, axis='x', theta=0, input='xyz'):
 
     Returns
     -------
-        np.array
+    out: np.array
         The output array is in the same shape and type as the input array
     """
 
@@ -211,7 +207,7 @@ def rotate_360_deg(xyz, theta, input='xyz'):
     draws a circle with angle theta around a point xyz
 
     Returns:
-
+    circle: np.array
     """
 
     circle = []
@@ -252,7 +248,7 @@ def convert_to_xyz(dim, *, M=True):
 
     Returns
     -------
-        np.array
+    out: np.array
         The output array is in the same shape and type as the input array
     """
     dim = np.array(dim)
@@ -287,7 +283,7 @@ def convert_to_dim(xyz):
 
     Returns
     -------
-        np.array
+    out : np.array
         The output array is in the same shape and type as the input array
     """
 
@@ -328,7 +324,7 @@ def convert_to_stereographic(xyz, input='dim'):
 
     Returns
     -------
-        np.array
+    out : np.array
         The output array is in the same shape and type as the input array
 
     See Also
@@ -373,7 +369,7 @@ def convert_to_equal_area(xyz, input='xyz'):
 
     Returns
     -------
-        np.array
+    out : np.array
         The output array is in the same shape and type as the input array
 
     See Also
@@ -420,7 +416,7 @@ def convert_to_hvl(xyz, input='xyz'):
 
     Returns
     -------
-        np.array
+    np.array
         The output array is in the same shape and type as the input array
 
     See Also
@@ -478,10 +474,10 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
             input y-data. If not provided, it is asumed to be contained in pdd
         Returns
         -------
-            slope
-            sigma
-            y_intercept
-            x_intercept
+        slope: float
+        sigma: float
+        y_intercept: float
+        x_intercept: float
         """
     x = pdd[column_name_x].values
 
@@ -528,7 +524,18 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
 
 
 def detect_outlier(x, y, order, threshold):
-    # fit data with polynomial
+    """
+    fit data with polynomial
+    Args:
+        x:
+        y:
+        order:
+        threshold:
+
+    Returns:
+
+    """
+
     z, res, _, _, _ = np.polyfit(x, y, order, full=True)
     rmse = np.sqrt(sum(res) / len(x))  # root mean squared error
     p = np.poly1d(z)  # polynomial p(x)
