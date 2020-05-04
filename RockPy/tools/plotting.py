@@ -201,7 +201,7 @@ def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
 
             ax.axvline(r, ymin=ymin / ymx, ymax=y / ymx, color=color, lw=0.7)
 
-def plot_equal(xyz, ax=None, input='xyz', setup_plot=True, **kwargs):
+def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
     """
 
     Parameters
@@ -222,7 +222,7 @@ def plot_equal(xyz, ax=None, input='xyz', setup_plot=True, **kwargs):
         ax = plt.subplot(111, projection='polar')
 
     xyz = maintain_n3_shape(xyz)
-    pol = convert_to_equal_area(xyz, input=input)
+    pol = convert_to_equal_area(xyz, intype=intype)
 
     if len(pol.shape) == 1:
         pol = pol.reshape((1, 3))

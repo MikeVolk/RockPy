@@ -93,7 +93,7 @@ def ignored(*exceptions):
     """
     ignores certain exceptions
 
-    args:
+        Args:
     exceptions: errors
         the errors to be ignored
 
@@ -142,7 +142,7 @@ def tuple2list_of_tuples(item) -> list:
     """
     Takes a list of tuples or a tuple and returns a list of tuples
 
-    args:
+        Args:
        item(list, tuple):
 
     Returns:
@@ -169,7 +169,7 @@ def to_tuple(oneormoreitems):
     """
     converts one or more items to a tuple of elements
 
-    args:
+        Args:
         oneormoreitems(int, float, list, array, tuple): single number or string or list of numbers or strings
 
     Returns:
@@ -183,7 +183,7 @@ def to_list(oneormoreitems):
     """
     conversion_table argument to tuple of elements
 
-    args:
+        Args:
         oneormoreitems: single number or string or list of numbers or strings
 
     Returns:
@@ -200,7 +200,7 @@ def str2tuple(s: str) -> tuple:
     e.g. "(HYS, COE)" -> ('hys','coe')
     e.g. "[HYS, COE]" -> ('hys','coe')
 
-    args:
+        Args:
         s(str): string to be tupeled
 
     Returns:
@@ -239,7 +239,7 @@ def split_num_alph(item):
     """
     splits a string with numeric and str values into a float and a string
 
-    args:
+        Args:
         item(str): The string that to be split
 
     Returns:
@@ -266,7 +266,7 @@ def list_or_item(item):
     """
     Takes a list and returns a list if there is more than one element else it returns only that element.
 
-    args:
+        Args:
         item(list)
 
     Returns:
@@ -302,7 +302,7 @@ def series_to_dict(series_tuple):
     """
     Converts a series tuple (stype, sval, sunit) to dictionary {stype: (sval, sunit)}
 
-    args:
+        Args:
     series_tuple: tuple len(3)
 
     Returns:
@@ -340,7 +340,7 @@ def set_get_attr(obj, attr, value=None):
     """
     checks if attribute exists, if not, creates attribute with value None
 
-    args:
+        Args:
         obj (object):
         attr (str):
         value (str, int, float): default: None
@@ -390,7 +390,7 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
     Decorator that transforms the input into an `xyz` array of (n,3) shape. If keyword 'dim' id provided,
     the data will first be converted to xyz values. Returns an array in its original form and coordinates.
 
-    args:
+        Args:
         func wrapped function
         internal_dtype (str): tells the decorator what input data type is given
         transform_output (bool, True): transforms the data type back to the original input dtype.
@@ -464,7 +464,7 @@ def maintain_n3_shape(xyz):
     """
     Takes vector of (3,), (n,3) and (3,n) shape and transforms it into (n,3) shape used for ALL compute calculations.
 
-    args:
+        Args:
     xyz (ndarray): data to be returned
 
     Returns:

@@ -116,7 +116,7 @@ class Ftype(object):
         else:
             self.log().info(
                 "LOADING previously imported file << {} , {} >> file: << {} >>\n\t>>> "
-                "USE reload option if you want to read files from HD".format(self.snames, type(self).__name__, dfile))
+                "USE reload option if you want to read files from HD".format(self.snames, type(self).__name__, dfile[-40:]))
 
         self.data = self.__class__.imported_files[dfile]
         self.to_si_units()

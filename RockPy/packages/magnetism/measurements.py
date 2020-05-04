@@ -15,6 +15,7 @@ import RockPy.packages.magnetism.simulations
 from RockPy.tools.pandas_tools import get_values_in_both
 import os
 
+
 class Hysteresis(Measurement):
 
     @property
@@ -98,6 +99,7 @@ class Hysteresis(Measurement):
         data = ftype_data.data
         data = data.dropna(how='all')
         return data
+
     ####################################################################################################################
     ''' BRANCHES '''
 
@@ -287,17 +289,15 @@ class Hysteresis(Measurement):
 
         def recipe_linear(self, npoints=4, check=False):
             """
-            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield and down field slope.
+            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield
+            and down field slope.
 
-            Parameters
-            ----------
-                field_limit: float
-                    default_recipe: 0, 0mT
-                    the maximum/ minimum fields used for the linear regression
+                Args:
+                npoints(int, 4): Number of points to use for linear interpolation
 
             Note
             ----
-                Uses numpy.polyfit for calculation
+                Uses recipe_nonlinear with order=1 for calculation
             """
             self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
@@ -306,25 +306,15 @@ class Hysteresis(Measurement):
             Calculates the coercivity using a spline interpolation between the points crossing
             the x axis for upfield and down field slope.
 
-            Parameters
-            ----------
-                npoints: int
-                    default_recipe: 4
-                    number of points used for fit
+                Args:
+                npoints (int, 4): number of points used for fit
 
             Note
             ----
                 Uses numpy.polyfit for calculation
             """
+
             # retireve measurement instance
-            m = self.mobj
-
-            # initialize result
-            result = []
-
-            # the field_limit has to be set higher than the lowest field
-            # if not the field_limit will be chosen to be 2 points for uf and df separately
-
             m = self.mobj
 
             if npoints > len(m.data):
@@ -440,40 +430,18 @@ class Hysteresis(Measurement):
         Calculates the saturation magnetization from a hysteresis loop. The standard recipe is 'linear'.
 
         Recipes
-        -------
-            - simple:
+            - simple (default):
                 simple linear fit for fields higher than specified
+                    Args:
+                    saturation_percent (float, 75.): percent where saturation is assumed
+                    ommit_last_n (int, 0): omits the last n points
+                    check(bool, False): creates a plot to check the result
             - app2sat:
                 Uses approach to saturation to calculate Ms, Hf_sus
-
-        Parameters
-        ----------
-            recipe = simple
-            ---------------
-                saturation_percent: float
-                    percent where saturation is assumed
-                    default = 75.
-                ommit_last_n: int
-                    omits the last n points
-                    default = 0
-                check: bool
-                    creates a plot to check the result
-                    default:False
-
-            recipe = app2sat
-            ---------------
-                saturation_percent: float
-                    percent where saturation is assumed
-                    default = 75.
-                ommit_last_n: int
-                    omits the last n points
-                    default = 0
-                check: bool
-                    creates a plot to check the result
-                    default:False
-
-
-
+                    Args:
+                    saturation_percent (float, 75.): percent where saturation is assumed
+                    ommit_last_n: (int, 0): omits the last n points
+                    check: (bool, False):  creates a plot to check the result
         """
 
         default_recipe = 'simple'
@@ -482,23 +450,15 @@ class Hysteresis(Measurement):
         def approach2sat_func(h, ms, chi, alpha, beta=-2):
             """
             General approach to saturation function
+            :math:`M_s \chi * B + \\alpha * B^{\\beta = -2}`
 
-            Parameters
-            ----------
-               x: ndarray
-                  field
-               ms: float
-                  saturation magnetization
-               chi: float
-                  susceptibility
-               alpha: float
-               beta: float
-                  not fitted assumed -2
-
-            Returns
-            -------
-               ndarray:
-                  :math:`M_s \chi * B + \\alpha * B^{\\beta = -2}`
+                Args:
+               x (ndarray): field
+               ms (float): saturation magnetization
+               chi (float): susceptibility
+               alpha (float):
+               beta (float, -2): not fitted assumed to be -2
+            Returns: ndarray
             """
             return ms + chi * h + alpha * h ** beta
 
@@ -596,22 +556,16 @@ class Hysteresis(Measurement):
             """
             Calculates High-Field susceptibility using a simple linear regression on all branches
 
-            Parameters
-            ----------
-                saturation_percent: float
-                    default_recipe: 75.0
-                    Defines the field limit in percent of max(field) at which saturation is assumed.
-                     e.g. max field : 1T -> saturation asumed at 750mT
-                ommit_last_n: int, pos
-                    last n points of each branch are not used for the calculation
+                Args:
+                saturation_percent (float, 75): Defines the field limit in percent of max(field) at which saturation
+                    is assumed e.g. max field : 1T -> saturation assumed at 750mT.
+                ommit_last_n (+int,0): last n points of each branch are not used for the calculation
 
 
-            Calculation
-            -----------
-
+            Note:
                 calculates the slope using SciPy.linregress for each branch at positive and negative fields.
-                Giving four values for the slope.
-                The result is the mean for all four values, and the error is the standard deviation
+                Giving four values for the slope. The result is the mean for all four values, and the error is the
+                standard deviation
 
             """
 
@@ -690,18 +644,17 @@ class Hysteresis(Measurement):
         return data.sort_index()  # todo may fail for hysteresis loops with virgin branch
 
     @classmethod
-    def get_grid(cls, bmax=1, grid_points=30, tuning=10):
+    def get_grid(cls, bmax: float = 1, grid_points: int = 30, tuning: int = 10) -> np.array:
         """
         Creates a grid of field values
 
-        Parameters
-        ----------
-        bmax
-        grid_points
-        tuning
+        Args:
+            bmax:
+            grid_points:
+            tuning:
 
-        Returns
-        -------
+        Returns:
+            object:
 
         """
         grid = []
@@ -725,23 +678,20 @@ class Hysteresis(Measurement):
 
            B_{\text{grid}}(i) = \\frac{|i|}{i} \\frac{B_m}{\lambda} \\left[(\lambda + 1 )^{|i|/n} - 1 \\right]
 
-        Parameters
-        ----------
-
-           method: str
-              method with which the data is fitted between grid points.
-
-              first:
-                  data is fitted using a first order polinomial :math:`M(B) = a_1 + a2*B`
-              second:
-                  data is fitted using a second order polinomial :math:`M(B) = a_1 + a2*B +a3*B^2`
-
-           parameter: dict
-              Keyword arguments passed through
+        Args:
+            order (int, 2): order of the polynomial that is used to fit the data:
+                e.g. 1 = first order polinomial :math:`M(B) = a_1 + a2*B`
+            grid_points (int, 20):
+            tuning (int, 1):
+            ommit_n_points (int, 0):
+            check (bool, False):
+            **parameter: Keyword arguments passed through
 
         See Also
         --------
            get_grid
+
+
         """
 
         if any([len(i.index) <= 50 for i in [self.downfield, self.upfield]]):
@@ -753,7 +703,7 @@ class Hysteresis(Measurement):
         bmin = max([min(self.downfield.index), min(self.upfield.index)])
         bm = max([abs(bmax), abs(bmin)])
 
-        grid = self.get_grid(bmax=bm, grid_points=grid_points, tuning=tuning, **parameter)
+        grid = self.get_grid(bmax=bm, grid_points=grid_points, tuning=tuning)
 
         # interpolate the magnetization values M_int(Bgrid(i)) for i = -n+1 .. n-1
         # by fitting M_{measured}(B_{experimental}) individually in all intervals [Bgrid(i-1), Bgrid(i+1)]
@@ -900,6 +850,7 @@ class Hysteresis(Measurement):
 
         ax.plot(self.data['M'])
 
+
 class Paleointensity(Measurement):
 
     def equal_acqu_demag_steps(self, vmin=20, vmax=700):
@@ -922,8 +873,18 @@ class Paleointensity(Measurement):
         return x, y
 
     @classmethod
-    def from_simulation(cls, sobj, idx=0, series=None, **simparams):
+    def from_simulation(cls, sobj: RockPy.Sample, idx: int = 0, series: dict = None, **simparams: dict):
+        """
 
+        Args:
+            sobj:
+            idx:
+            series:
+            **simparams:
+
+        Returns:
+
+        """
         pressure_demag = simparams.pop('pressure_demag', False)
         method = simparams.pop('method', 'fabian')
 
@@ -1108,7 +1069,7 @@ class Paleointensity(Measurement):
             pandas.DataFrame
         """
 
-        equal_vals = get_values_in_both(self.if_steps, self.zf_steps, key = 'level')
+        equal_vals = get_values_in_both(self.if_steps, self.zf_steps, key='level')
 
         if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
         zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
@@ -1552,6 +1513,7 @@ class Paleointensity(Measurement):
             result = q / np.sqrt((n - 2))
             self.set_result(result)
 
+
 class Dcd(Measurement):
     logger = logging.getLogger('RockPy.MEASUREMENT.Backfield')
     """
@@ -1708,7 +1670,6 @@ class Dcd(Measurement):
                 Uses numpy.polyfit for calculation
             """
 
-            # raise NotImplementedError
             m = self.mobj
 
             if npoints > len(m.data):
@@ -1748,6 +1709,7 @@ class Dcd(Measurement):
             # set result so it can be accessed
             self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.abs(result)
 
+
 class Demagnetization(Measurement):
 
     ####################################################################################################################
@@ -1770,14 +1732,15 @@ class Demagnetization(Measurement):
 
         data = ftype_data
 
-class Acquisition(Measurement):
 
+class Acquisition(Measurement):
     ####################################################################################################################
     # FORMATTING
 
     pass
 
-class Irm_Acquisition(Acquisition):
+
+class IrmAcquisition(Acquisition):
     logger = logging.getLogger('RockPy.magnetism.IRM')
     ####################################################################################################################
     """ formatting functions """
@@ -1816,7 +1779,8 @@ class Irm_Acquisition(Acquisition):
         expected_columns = ['Field (T)', 'Remanence (Am2)']
 
         if not all(i in expected_columns for i in ftype_data.data.columns):
-            Irm_Acquisition.log().error('ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
+            IrmAcquisition.log().error(
+                'ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         segment_index = ftype_data.mtype.index('irm')
         data = ftype_data.get_segment_data(segment_index).rename(columns={"Field (T)": "B", "Remanence (Am2)": "M"})
@@ -1827,8 +1791,9 @@ class Irm_Acquisition(Acquisition):
 if __name__ == '__main__':
     S = RockPy.Study()
     s = S.add_sample('test')
-    m = s.add_measurement(mtype=['dcd','irm'],
+    m = s.add_measurement(mtype=['dcd', 'irm'],
                           fpath=os.path.join(RockPy.test_data_path, 'VSM', 'dcd_irm_vsm.001'),
                           ftype='vsm')
     print(m)
     print(s.measurements)
+    print(s.results)
