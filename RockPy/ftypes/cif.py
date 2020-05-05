@@ -257,7 +257,12 @@ class Cif(RockPy.core.ftype.Ftype):
         for l in series.index:
             if not l in self.out_units:
                 continue
-            series[l] *= (1 * self.units[l]).to(self.out_units[l]).magnitude
+            try:
+                series[l] *= (1 * self.units[l]).to(self.out_units[l]).magnitude
+            except pint.errors.DimensionalityError:
+                if self.units[l] == 'Tesla' and self.out_units[l] == 'gauss':
+                    series[l] *= 10000
+
         mtype = series['mtype']
         # series[['std_x', 'std_y', 'std_z', 'intensity']] *= 1e3  # to emu
         # series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu

@@ -1740,7 +1740,7 @@ class Acquisition(Measurement):
     pass
 
 
-class IrmAcquisition(Acquisition):
+class Irm_Acquisition(Acquisition):
     logger = logging.getLogger('RockPy.magnetism.IRM')
     ####################################################################################################################
     """ formatting functions """
