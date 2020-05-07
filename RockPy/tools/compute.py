@@ -7,15 +7,13 @@ from scipy.interpolate import interp1d
 
 
 def rx(angle):
-    """
-    Rotation matrix around X axis
+    """Rotation matrix around X axis
 
     Args:
         angle (ndarray): Angle in radians to calculate the rotation matrix for
 
     Returns:
         ndarray: Rotationmatrix
-
     """
     RX = [[1, 0, 0],
           [0, np.cos(angle), -np.sin(angle)],
@@ -24,15 +22,13 @@ def rx(angle):
 
 
 def ry(angle):
-    """
-    Rotation matrix around Y axis
+    """Rotation matrix around Y axis
 
     Args:
         angle (ndarray): Angle in radians to calculate the rotation matrix for
 
     Returns:
         ndarray: Rotationmatrix
-
     """
     RY = [[np.cos(angle), 0, np.sin(angle)],
           [0, 1, 0],
@@ -41,15 +37,13 @@ def ry(angle):
 
 
 def rz(angle):
-    """
-    Rotation matrix around Z axis
+    """Rotation matrix around Z axis
 
     Args:
         angle (ndarray): Angle in radians to calculate the rotation matrix for
 
     Returns:
         ndarray: Rotationmatrix
-
     """
     RZ = [[np.cos(angle), -np.sin(angle), 0],
           [np.sin(angle), np.cos(angle), 0],
@@ -58,12 +52,12 @@ def rz(angle):
 
 
 def rotmat(dec, inc):
-    """
-    Rotation matrix around Y axis
+    """Rotation matrix around Y axis
 
     Args:
-        inc (ndarray): Angle in radians to calculate the rotation matrix for
         dec (ndarray): Angle in radians to calculate the rotation matrix for
+        inc (ndarray): Angle in radians to calculate the rotation matrix for
+
     Returns:
         ndarray: Rotationmatrix
     """
@@ -77,20 +71,22 @@ def rotmat(dec, inc):
 
 @handle_shape_dtype
 def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='xyz'):
-    """
-    Rotates a vector [x,y,z] or array of vectors around an arbitrary axis.
+    """Rotates a vector [x,y,z] or array of vectors around an arbitrary axis.
 
     Args:
-        xyz(ndarray): data that shall get rotated
-        axis_unit_vector(ndarray): axis around which the rotation is supposed to happen
-        theta(float): angle of rotation in degrees
-        axis_di(bool, False): if True the axis_unit_vector array contains declination and inclination values
-        intype(str, 'xyz'): if 'dim' xyz array contains declination and inclination values.
-            Note: intype is passed exclusively to yhr `handle_shape_dtype` decorator and needs to be a parameter.
+        xyz (ndarray): data that shall get rotated
+        axis_unit_vector (ndarray): axis around which the rotation is supposed
+            to happen
+        theta (float): angle of rotation in degrees
+        axis_di (bool, False): if True the axis_unit_vector array contains
+            declination and inclination values
+        intype (str, 'xyz'): if 'dim' xyz array contains declination and
+            inclination values. Note: intype is passed exclusively to yhr
+            `handle_shape_dtype` decorator and needs to be a parameter.
 
     Returns:
-        ndarray: Vectors that has been rotated by `theta` degrees around the specified axis (`axis_di`).
-        if intype = 'dim' will return DIM values
+        ndarray: Vectors that has been rotated by `theta` degrees around the
+        specified axis ( `axis_di` ). if intype = 'dim' will return DIM values
     """
     
     if axis_di:
@@ -118,16 +114,17 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='x
 def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, intype='xyz'):
     """
     Args:
-        xyz(ndarray): data that shall get rotated 
-        alpha: 
-        beta: 
-        gamma: 
-        intype(str, 'xyz'): if 'dim' xyz array contains declination and inclination values.
-            Note: intype is passed exclusively to yhr `handle_shape_dtype` decorator and needs to be a parameter.
+        xyz (ndarray): data that shall get rotated
+        alpha:
+        beta:
+        gamma:
+        intype (str, 'xyz'): if 'dim' xyz array contains declination and
+            inclination values. Note: intype is passed exclusively to yhr
+            `handle_shape_dtype` decorator and needs to be a parameter.
 
     Returns:
-        ndarray: data rotated around arbitrary axis
-        if intype = 'dim' will return DIM values 
+        ndarray: data rotated around arbitrary axis if intype = 'dim' will
+        return DIM values
     """
 
     alpha, beta, gamma = np.radians([alpha, beta, gamma])
@@ -142,22 +139,20 @@ def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, intype='xyz'):
 
 @handle_shape_dtype
 def rotate(xyz, *, axis='x', theta=0., intype='xyz'):
-    """
-    Rotates the vector 'xyz' by 'theta' degrees around 'x','y', or 'z' axis.
+    """Rotates the vector 'xyz' by 'theta' degrees around 'x','y', or 'z' axis.
 
     Args:
-        xyz(ndarray): data that shall get rotated
-        axis(str): 'x', 'y', or 'z'
-        theta(float, 0): angle of rotation in degrees
-        axis_di(bool, False): if True the axis_unit_vector array contains declination and inclination values
-        intype(str, 'xyz'): if 'dim' xyz array contains declination and inclination values, where d = declination, 
-            i = inclination, and m = moment
-            Note: intype is passed exclusively to yhr `handle_shape_dtype` decorator and needs to be a parameter.
+        xyz (ndarray): data that shall get rotated
+        axis (str): 'x', 'y', or 'z'
+        theta (float, 0): angle of rotation in degrees
+        intype (str, 'xyz'): if 'dim' xyz array contains declination and
+            inclination values, where d = declination, i = inclination, and m =
+            moment Note: intype is passed exclusively to yhr
+            `handle_shape_dtype` decorator and needs to be a parameter.
 
-    Returns
-    -------
-    out: np.array
-        The output array is in the same shape and type as the intype array
+    Returns:
+        np.array: **out** -- The output array is in the same shape and type as
+        the intype array
     """
 
     theta = np.radians(theta)
@@ -175,16 +170,14 @@ def rotate(xyz, *, axis='x', theta=0., intype='xyz'):
 
 @handle_shape_dtype(internal_dtype='dim')
 def rotate_360_deg(xyz, theta, intype='xyz'):
-    """
-    draws a circle with angle theta around a point xyz
+    """draws a circle with angle theta around a point xyz
+
+    circle: np.array
 
     Args:
         xyz:
         theta:
         intype:
-
-    Returns:
-    circle: np.array
     """
 
     circle = []
@@ -213,20 +206,18 @@ bring the coordinates "back" into the original coordinate system, which will not
 
 @handle_shape_dtype(transform_output=False)
 def convert_to_xyz(dim, *, M=True):
-    """
-    Converts a numpy array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an numpy array with [[d1,i1,m1], [d2,i2,m2]].
-    Reshape allows to pass an [[x1,x2],[y1,y2],[z1,z2]] array instead.
-    Internally the data is handled in  the (n,3) format.
+    """Converts a numpy array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
+    into an numpy array with [[d1,i1,m1], [d2,i2,m2]]. Reshape allows to pass an
+    [[x1,x2],[y1,y2],[z1,z2]] array instead. Internally the data is handled in
+    the (n,3) format.
 
-    Parameters
-    ----------
-    dim: np.array, list
-        data either shape(n,3) of shape(3,n)
+    Args:
+        dim (np.array, list): data either shape(n,3) of shape(3,n)
+        M:
 
-    Returns
-    -------
-    out: np.array
-        The output array is in the same shape and type as the intype array
+    Returns:
+        np.array: **out** -- The output array is in the same shape and type as
+        the intype array
     """
     dim = np.array(dim)
 
@@ -249,18 +240,16 @@ def convert_to_xyz(dim, *, M=True):
 
 @handle_shape_dtype(transform_output=False)
 def convert_to_dim(xyz):
-    """
-    Converts a numpy array of [d,i,m] values (i.e. [[d1,i1,m1], [d2,i2,m2]]) into an numpy array with [[x1,y1,z1], [x2,y2,z2]]
-    Reshape allows to pass an [[d1,d2],[i1,i2],[m1,m2]] array instead.
+    """Converts a numpy array of [d,i,m] values (i.e. [[d1,i1,m1], [d2,i2,m2]])
+    into an numpy array with [[x1,y1,z1], [x2,y2,z2]] Reshape allows to pass an
+    [[d1,d2],[i1,i2],[m1,m2]] array instead.
 
-    Parameters
-    ----------
-    xyz array like
+    Args:
+        xyz:
 
-    Returns
-    -------
-    out : np.array
-        The output array is in the same shape and type as the intype array
+    Returns:
+        np.array: **out** -- The output array is in the same shape and type as
+        the intype array
     """
 
     x = xyz[:, 0]
@@ -279,33 +268,27 @@ def convert_to_dim(xyz):
 
 @handle_shape_dtype(internal_dtype='dim', transform_output=False)
 def convert_to_stereographic(xyz, intype='dim'):
-    """
-    Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an
-    numpy array with [d,r,neg], where:
-     d = declination,
-     r = radius in equal area projection and
-     neg = array of 0,1 values where 0 = i > 0 and 1 = i < 0
+    """Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
+    into an numpy array with [d,r,neg], where:
 
-    r is calculated according to Collinson, 1983 by
-    .. math:
-        R = 1 - ( R_0 * [ 1 - \tan(\frac{\pi}{4} - \frac{I}{2})]
+        d = declination, r = radius in equal area projection and neg = array of
+        0,1 values where 0 = i > 0 and 1 = i < 0
 
-    Parameters
-    ----------
-    xyz array like
-    intype str, optional
-        default 'xyz''
-        if 'xyz' intype data contains [x,y,z] values
-        if 'dim' intype data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
+    r is calculated according to Collinson, 1983 by .. math:
 
-    Returns
-    -------
-    out : np.array
-        The output array is in the same shape and type as the intype array
+        R = 1 - ( R_0 * [ 1 - tan(frac{pi}{4} - frac{I}{2})]
 
-    See Also
-    --------
-    convert_to_dim, convert_to_xyz, convert_to_equal_area
+    Args:
+        xyz:
+        intype:
+
+    Returns:
+        np.array: **out** -- The output array is in the same shape and type as
+        the intype array
+
+    See Also:
+        :func:`convert_to_dim`, :func:`convert_to_xyz`,
+        :func:`convert_to_equal_area`
     """
 
     # transformed by wrapper into DIM
@@ -324,33 +307,27 @@ def convert_to_stereographic(xyz, intype='dim'):
 
 @handle_shape_dtype(internal_dtype='xyz', transform_output=False)
 def convert_to_equal_area(xyz, intype='xyz'):
-    """
-    Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an
-    numpy array with [d,r,neg], where:
-     d = declination,
-     r = radius in equal area projection and
-     neg = array of 0,1 values where 0 = i > 0 and 1 = i < 0
+    """Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
+    into an numpy array with [d,r,neg], where:
 
-    r is calculated according to Collinson, 1983 by
-    .. math:
-        R = 1 - ( R_0 * [ 1 - \sqrt{1- \sin(I)}])
+        d = declination, r = radius in equal area projection and neg = array of
+        0,1 values where 0 = i > 0 and 1 = i < 0
 
-    Parameters
-    ----------
-    xyz array like
-    intype str, optional
-        default 'xyz''
-        if 'xyz' intype data contains [x,y,z] values
-        if 'dim' intype data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
+    r is calculated according to Collinson, 1983 by .. math:
 
-    Returns
-    -------
-    out : np.array
-        The output array is in the same shape and type as the intype array
+        R = 1 - ( R_0 * [ 1 - sqrt{1- sin(I)}])
 
-    See Also
-    --------
-    convert_to_dim, convert_to_xyz, convert_to_stereographic
+    Args:
+        xyz:
+        intype:
+
+    Returns:
+        np.array: **out** -- The output array is in the same shape and type as
+        the intype array
+
+    See Also:
+        :func:`convert_to_dim`, :func:`convert_to_xyz`,
+        :func:`convert_to_stereographic`
     """
 
     # transformed by wrapper into DIM
@@ -370,34 +347,26 @@ def convert_to_equal_area(xyz, intype='xyz'):
 
 @handle_shape_dtype(internal_dtype='dim', transform_output=False)
 def convert_to_hvl(xyz, intype='xyz'):
-    """
-    Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an
-    numpy array with [h,v,M], where:
-     h = horizontal moment,
-     v = vertical moment, and
-     M = total moment
+    """Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
+    into an numpy array with [h,v,M], where:
 
-    h, v are calculated by
-    .. math:
-        H = M * cos(I)
-        V = M * sin(I)
+        h = horizontal moment, v = vertical moment, and M = total moment
 
-    Parameters
-    ----------
-    xyz array like
-    intype str, optional
-        default 'xyz''
-        if 'xyz' intype data contains [x,y,z] values
-        if 'dim' intype data contains [d,i,m] values, where d = declination, i = inclination, and m = moment
+    h, v are calculated by .. math:
 
-    Returns
-    -------
-    np.array
-        The output array is in the same shape and type as the intype array
+        H = M * cos(I) V = M * sin(I)
 
-    See Also
-    --------
-    convert_to_dim, convert_to_xyz, convert_to_stereographic
+    Args:
+        xyz:
+        intype:
+
+    Returns:
+        np.array: The output array is in the same shape and type as the intype
+        array
+
+    See Also:
+        :func:`convert_to_dim`, :func:`convert_to_xyz`,
+        :func:`convert_to_stereographic`
     """
 
     # transformed by wrapper into DIM
@@ -413,6 +382,10 @@ def convert_to_hvl(xyz, intype='xyz'):
 
 
 def handle_near_zero(d):
+    """
+    Args:
+        d:
+    """
     d[np.isclose(d, 0, atol=1e-15)] = 0
     return d
 
@@ -435,26 +408,21 @@ def handle_near_zero(d):
 #
 #     print(rotate_arbitrary(np.array([[30, 40, 50, 40], [0, 0, 10, 20], [0.1, 1, 1, 1]]), 0, 0, 0, dim=True))
 def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
-    """
-        calculates a least squares linear regression for given x/y data
+    """calculates a least squares linear regression for given x/y data
 
-        Parameters
-        ----------
-           pdd: pandas.DataFrame
-            intype data
-           column_name_x: str
-            xcolumn name
-           column_name_y: str
-            ycolumn name
-           ypdd: pandas.DataFrame
-            intype y-data. If not provided, it is asumed to be contained in pdd
-        Returns
-        -------
-        slope: float
-        sigma: float
-        y_intercept: float
-        x_intercept: float
-        """
+    Args:
+        pdd (pandas.DataFrame): intype data
+        column_name_x (str): xcolumn name
+        column_name_y (str): ycolumn name
+        ypdd (pandas.DataFrame): intype y-data. If not provided, it is asumed to
+            be contained in pdd
+
+    Returns:
+        * **slope** (*float*)
+        * **sigma** (*float*)
+        * **y_intercept** (*float*)
+        * **x_intercept** (*float*)
+    """
     x = pdd[column_name_x].values
 
     if ypdd is not None:
@@ -500,16 +468,14 @@ def lin_regress(pdd, column_name_x, column_name_y, ypdd=None):
 
 
 def detect_outlier(x, y, order, threshold):
-    """
-    fit data with polynomial
+    """fit data with polynomial :param x: :param y: :param order: :param
+    threshold:
+
     Args:
         x:
         y:
         order:
         threshold:
-
-    Returns:
-
     """
 
     p, residual, rank, singular_values, rcond = np.polyfit(x, y, order, full=True)
@@ -521,22 +487,16 @@ def detect_outlier(x, y, order, threshold):
 
 
 def crossing_1d(x1, y1, x2, y2, lim=None, check=False, **kwargs):
-    """
-    Calculates the crossing of two datasets
+    """Calculates the crossing of two datasets
 
-
-
-    Parameters
-    ----------
-    x1
-    y1
-    x2
-    y2
-    lim
-
-    check: bool
-        (Default value = None)
-        creates a diagnostic plot
+    Args:
+        x1:
+        y1:
+        x2:
+        y2:
+        lim:
+        check (bool): (Default value = None) creates a diagnostic plot
+        **kwargs:
     """
     f1 = interp1d(x1, y1, kind='slinear', bounds_error=False)
     f2 = interp1d(x2, y2, kind='slinear', bounds_error=False)

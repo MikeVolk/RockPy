@@ -19,6 +19,13 @@ class Vsm(Ftype):
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+        """
         self._raw_data = self.read_raw_data(dfile=dfile)
 
         # get the file infos first -> line numbers needed ect.
@@ -54,9 +61,9 @@ class Vsm(Ftype):
 
 
     def read_basic_file_info(self):
-        '''
-        Opens the file and extracts the mtype, header lines, segment lines, segment widths, data lines, and data widths.
-        '''
+        """Opens the file and extracts the mtype, header lines, segment lines,
+        segment widths, data lines, and data widths.
+        """
         mtype, header_end, segment_start, segment_widths, data_start, data_widths = None, None, None, None, None, None
 
         empty = []
@@ -79,13 +86,12 @@ class Vsm(Ftype):
         return mtype, header_end, segment_start, segment_end, segment_widths
 
     def read_header(self, dfile, header_end):
-        '''
-        Function reads the header file
+        """Function reads the header file
 
-        Returns
-        -------
-
-        '''
+        Args:
+            dfile:
+            header_end:
+        """
         head = self.raw_data[:header_end]
         header = pd.read_fwf(io.StringIO(''.join(head)),
                              skiprows=2, skip_blank_lines=True,
@@ -113,17 +119,21 @@ class Vsm(Ftype):
     def read_segement_infos(self, dfile, mtype,
                             header_end, segment_start, segment_end, segment_widths,
                             ):
-        '''
-        reads the segments of the VSM file
+        """reads the segments of the VSM file
 
-        Notes
-        -----
-        VSM - FORC measurements do not have a segments part -> returns None
+        Args:
+            dfile:
+            mtype:
+            header_end:
+            segment_start:
+            segment_end:
+            segment_widths:
 
-        Returns
-        -------s
+        Notes:
+            VSM - FORC measurements do not have a segments part -> returns None
 
-        '''
+            Returns -------s
+        """
 
         if not 'First-order reversal curves' in mtype:
             # reading segments_tab data
@@ -145,14 +155,13 @@ class Vsm(Ftype):
         return segment_infos
 
     def _construct_segment_infos_from_data(self):
-        """
-        Uses the Nan rows in the data to construct the segment_info DataFrame.
+        """Uses the Nan rows in the data to construct the segment_info
+        DataFrame.
 
-        Returns
-        -------
-            pd.DataFrame
-                with segment infos.
-                columns : 'Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment','Final Field', 'Pause', 'Final Index'
+        Returns:
+            pd.DataFrame: with segment infos. columns : 'Segment Number',
+            'Averaging Time', 'Initial Field', 'Field Increment','Final Field',
+            'Pause', 'Final Index'
         """
         segment_infos = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
                                                'Final Field', 'Pause', 'Final Index'])
@@ -209,11 +218,8 @@ class Vsm(Ftype):
 
     @property
     def iter_segments(self):
-        """
-        Generator that cycles through the segments
-        Returns
-        -------
-            pandas.DataFrame
+        """Generator that cycles through the segments :returns: :rtype:
+        pandas.DataFrame
         """
 
         # iterate over individual rows (segments) in the header
@@ -223,30 +229,24 @@ class Vsm(Ftype):
 
     @property
     def segments(self):
-        """
-        returns a list of individual pandas DataFrames for segments
-        Returns
-        -------
-            list
+        """returns a list of individual pandas DataFrames for segments :returns:
+        :rtype: list
         """
         return list(self.iter_segments)
 
 
     def get_segment_data(self, segment_index):
-        """
-        Returns the segment of a measurement corresponding to the index (segment_index).
+        """Returns the segment of a measurement corresponding to the index
+        (segment_index).
 
-        This is used in read file functions such as DCD, if more than one measurement is stored in a single run,
-        e.g. (IRM,DCD).
+        This is used in read file functions such as DCD, if more than one
+        measurement is stored in a single run, e.g. (IRM,DCD).
 
-        Parameters
-        ----------
-        segment_index: int
-            the index of the segment
+        Args:
+            segment_index (int): the index of the segment
 
-        Returns
-        -------
-            pandas Dataframe
+        Returns:
+            pandas Dataframe:
         """
         return list(self.iter_segments)[segment_index]
 

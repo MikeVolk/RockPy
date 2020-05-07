@@ -3,16 +3,17 @@ from RockPy.core.ftype import Ftype
 
 
 def __implemented__(cls):  # todo move into RockPy core has nothing to do with measurement
-    """
-    Dictionary of all implemented filetypes.
+    """Dictionary of all implemented filetypes.
 
-    Looks for all subclasses of RockPy3.core.ftype.ftypes
-    generating a dictionary of implemented machines : {implemented out_* method : machine_class}
+    Looks for all subclasses of RockPy3.core.ftype.ftypes generating a
+    dictionary of implemented machines : {implemented out_* method :
+    machine_class}
 
-    Returns
-    -------
+    Args:
+        cls:
 
-    dict: classname:
+    Returns:
+        classname:: **dict**
     """
     implemented = {cl.__name__.lower(): cl for cl in extract_inheritors_from_cls(cls)}
     return implemented

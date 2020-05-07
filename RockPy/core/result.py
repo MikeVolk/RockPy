@@ -20,6 +20,11 @@ class Result():
 
     def set_result(self, result, result_name=None):
 
+        """
+        Args:
+            result:
+            result_name:
+        """
         if result_name is None:
             result_name = self.name
 
@@ -28,17 +33,14 @@ class Result():
 
 
     def get_result(self, result_name=None):
-        """
-        Helper function for easy retrieval of results from a measurement
-        
-        Parameters
-        ----------
-        result_name
+        """Helper function for easy retrieval of results from a measurement
 
-        Returns
-        -------
-            False if the mID is not in the result, yet
-            Otherwise it returns the result
+        Args:
+            result_name:
+
+        Returns:
+            * *False if the mID is not in the result, yet*
+            * *Otherwise it returns the result*
         """
         if result_name is None:
             result_name = self.name
@@ -46,25 +48,22 @@ class Result():
         return self.mobj.sobj._results.loc[self.mobj.mid, result_name]
 
     def get_stack(self, stack=None):
-        """
-        Method retrieves the all results that have to be calculated in order to maintain consistency 
-        
-        i.e. if parameters are changed and resultB is calculated using resultA, both have to be recalculated.
-           
-        Returns a list of result instances
-        
-        1. results dependent on result
-        1b results dependent on dependency
-        2. Result (self)
-        3. subjects to self
-        
-        Parameters
-        ----------
-        stack: passed to next result, so that results are not calculated multiple times
+        """Method retrieves the all results that have to be calculated in order
+        to maintain consistency
 
-        Returns
-        -------
-            list
+        i.e. if parameters are changed and resultB is calculated using
+        resultA, both have to be recalculated.
+
+        Returns a list of result instances
+
+        1. results dependent on result 1b results dependent on dependency 2.
+        Result (self) 3. subjects to self
+
+        Args:
+            stack (passed to next result, so that results are not calculated multiple times):
+
+        Returns:
+            list:
         """
         if stack is None:
             stack = []
@@ -85,22 +84,18 @@ class Result():
         return stack
 
     def get_recipe(self, recipe):
-        """
-        Sets the given recipe for the result. If recipe is None it uses the previously used recipe. If the result was
-        not calculated, yet, self.recipe is also None and it falls back to the default_recipe 
-        
-        Parameters
-        ----------
-        recipe: str
-            name of the recipe with or without 'recipe_'
-        
-        Returns
-        -------
-            str
-        
-        Raises
-        ------
-            KeyError if recipe is not in self._recipes().keys()
+        """Sets the given recipe for the result. If recipe is None it uses the
+        previously used recipe. If the result was not calculated, yet,
+        self.recipe is also None and it falls back to the default_recipe
+
+        Args:
+            recipe (str): name of the recipe with or without 'recipe_'
+
+        Returns:
+            str:
+
+        Raises:
+            * KeyError if recipe is not in self._recipes().keys()
         """
 
         if recipe == 'default':
@@ -120,13 +115,16 @@ class Result():
         return recipe
 
     def __call__(self, recipe=None, **parameters):
-        """
-        calling method for the result. iterates over the current worker of the mobj.
+        """calling method for the result. iterates over the current worker of
+        the mobj.
 
-        Returns
-        -------
-            Pandas.Series
-                the result that is actually calculated by the recipe. can be more than just the value, not sure if that is good
+        Args:
+            recipe:
+            **parameters:
+
+        Returns:
+            Pandas.Series: the result that is actually calculated by the recipe.
+            can be more than just the value, not sure if that is good
         """
         recipe = self.get_recipe(recipe=recipe)
 
@@ -185,6 +183,12 @@ class Result():
     @staticmethod
     def _needs_to_be_calculated(result, recipe, **parameters):
 
+        """
+        Args:
+            result:
+            recipe:
+            **parameters:
+        """
         if result.mobj.mid not in result.mobj.sobj.results.index:
             return True
         if parameters.pop('recalc', False):
@@ -201,11 +205,8 @@ class Result():
 
     @property
     def _is_calculated(self):
-        """
-        Checks if the result has been calculated e.g. checks in Measurement.results
-        Returns
-        -------
-
+        """Checks if the result has been calculated e.g. checks in
+        Measurement.results
         """
         if self.mobj.results is not None:
             if self.name in self.mobj.results:
@@ -219,6 +220,10 @@ class Result():
     def _parameters_changed(self, **params):
 
         # force recalculation for checking results and or forced recalculation with 'recalc'
+        """
+        Args:
+            **params:
+        """
         if 'check' in params or 'reclac' in params:
             self.log().debug('FORCED RECALCULATION')
             return True
@@ -239,6 +244,10 @@ class Result():
             return True
 
     def _recipe_changed(self, recipe):
+        """
+        Args:
+            recipe:
+        """
         if self.recipe == recipe:
             self.log().debug('NO recipe changed')
             return False
@@ -252,7 +261,7 @@ class Result():
 
     @classmethod
     def _recipes(cls):
-        ''' creates a list of recipes for this result'''
+        """creates a list of recipes for this result"""
         return {i.replace('recipe_', ''): getattr(cls, i) for i in dir(cls)
                 if i.startswith('recipe') if not i.endswith('recipes')}
 
@@ -261,6 +270,11 @@ class Result():
         return list(self._recipes().keys())
 
     def __init__(self, mobj, **kwargs):
+        """
+        Args:
+            mobj:
+            **kwargs:
+        """
         self.mobj = mobj
         self.log().debug('initializing instance %s' % self.name)
         self.recipe = None
@@ -268,9 +282,7 @@ class Result():
         self.set_default_recipe()
 
     def set_default_recipe(self):
-        """
-        Sets the default_recipe recipe if only one recipe exists.
-        """
+        """Sets the default_recipe recipe if only one recipe exists."""
         if self.default_recipe is None:
             if not len(self._recipes()) == 1:
                 self.log().error('Result << %s >> has more than one recipe, but no default_recipe recipe ' % (self.name))
@@ -282,9 +294,9 @@ class Result():
 
     @property
     def _dependencies(self):
-        '''
-        returns a list of the instances that need to be calculated before result can be calculated
-        '''
+        """returns a list of the instances that need to be calculated before
+        result can be calculated
+        """
 
         if not self.__deps:
             if self.dependencies is not None:

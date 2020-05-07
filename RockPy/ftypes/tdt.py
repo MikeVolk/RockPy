@@ -13,6 +13,14 @@ class tdt(Ftype):
     table = {'tdt':['NRM', '0', '1', '2', '3', '4']}
 
     def __init__(self, dfile, snames=None, volume= 1, dialect=None, reload=False):
+        """
+        Args:
+            dfile:
+            snames:
+            volume:
+            dialect:
+            reload:
+        """
         super().__init__(dfile, snames=snames, dialect='tdt', reload = reload)
 
         self.volume = volume
@@ -40,15 +48,10 @@ class tdt(Ftype):
 
     @staticmethod
     def add_tj_column(data):
-        """
-        calculates the tj values
-        Parameters
-        ----------
-        data
+        """calculates the tj values :param data:
 
-        Returns
-        -------
-
+        Args:
+            data:
         """
         for i, code in data['LT_code'].iteritems():
             if code in ('LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z'):
@@ -61,22 +64,16 @@ class tdt(Ftype):
             data.loc[i,'tj'] = tj
 
     def lookup_lab_treatment_code(self, item):
-        '''
-        looks up the treeatment code for an item. This is done to be compatible with MagIC
+        """looks up the treeatment code for an item. This is done to be
+        compatible with MagIC
 
-        Notes
-        -----
-        Every dialect has to get its own if clause #todo maybe implement dialect_XXX function that adds a new column
-        to the DataFrame
+        Args:
+            item:
 
-        Parameters
-        ----------
-        item
-
-        Returns
-        -------
-
-        '''
+        Notes:
+            Every dialect has to get its own if clause #todo maybe implement
+            dialect_XXX function that adds a new column to the DataFrame
+        """
 
         # call the 20 C step NRM
         if item == 20:

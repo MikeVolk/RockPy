@@ -57,4 +57,8 @@ implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
 auto_calc_results = True
 
 def debug_mode(on=False):
+    """
+    Args:
+        on:
+    """
     load_logging_conf(debug=on)

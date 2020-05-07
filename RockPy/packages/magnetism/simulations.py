@@ -20,22 +20,25 @@ class Fabian2001(object):
 
     @staticmethod
     def get_steps(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
-        """
-        Wrapper function that creates a pandas DataFrame and a list of measurement steps.
+        """Wrapper function that creates a pandas DataFrame and a list of
+        measurement steps.
 
         If filepath is provided a latex document is created
 
         Magic Lab-treatment codes :
-            'TH': 'LT-T-Z'
-            'PT': 'LT-T-I'
-            'CK': 'LT-PTRM-I'
-            'TR': 'LT-PTRM-MD'
-            'AC': 'LT-PTRM-Z'
-            'NRM': 'LT-NO'
+            'TH': 'LT-T-Z' 'PT': 'LT-T-I' 'CK': 'LT-PTRM-I' 'TR': 'LT-PTRM-MD'
+            'AC': 'LT-PTRM-Z' 'NRM': 'LT-NO'
 
-        Notes
-        -----
-            calls RockPy.packages.Magnetismnetism.Measurement.Simulation.utils.ThellierStepMaker
+        Args:
+            steps:
+            tmax:
+            ck_every:
+            tr_every:
+            ac_every:
+
+        Notes:
+            calls
+            RockPy.packages.Magnetismnetism.Measurement.Simulation.utils.ThellierStepMaker
         """
         out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every,
                                          ac_every=ac_every)
@@ -53,79 +56,48 @@ class Fabian2001(object):
         # todo alpha
         # todo high temperature tails
 
-        """
-        Standard parameters as used by Leonhard 2004, Fig.2c, a1t,a2t,a13,a23 are not specified in the paper
+        """Standard parameters as used by Leonhard 2004, Fig.2c, a1t,a2t,a13,a23
+        are not specified in the paper
 
-        Parameters
-        ----------
-            Distibution for tau_b < tau_ub
-            preset: str
-                A collection of models from the Fabian2001 and Leonhard2004 paper
-
-            a11: float
-                constant part of the distribution
-            a12: float
-                if 0: unblocking temperature distribution has same width for all tau_b
-            a1t: float
-                amplitude of distribution
-            a13: float
-                width
-
-            Distibution for tau_b >= tau_ub
-            a21: float
-                constant part of the distribution
-            a22: float
-                if 0: unblocking temperature distribution has same width for all tau_b
-            a2t: float
-                amplitude of distribution
-            a23: float
-                width of distribution
-
-            b1: float
-            b2: float
-            bt: float
-            b3: float
-                Characterizes the width of the remanence acquisition spectrum, small values indicate a sharp blocking
-
-            tc: float
-                Curie temperature of the simulation
-
-            # Pressure demagnetization parameters
-            d1: float
-                linear part of the pressure demagnetization
-            d2: float
-                ammount of non-linear demagnetization
-            d3: float
-                width of the demagnetization distribution
-            dt: float
-                center of the distribution
-
-            grid: int
-                default_recipe:100
-                the number of blocking and unblocking temperatures to be calculated
-            hpal: float
-                default_recipe: 1
-                reduced paleofield
-            hlab: float
-                default_recipe: 1
-                reduced labfield
-            ms: float
-                saturation magnetization of the simulated sample
-
-            # measurement simulation parameters e.g. how many points
-            temp_steps: int, arraylike, pd.DataFrame
-                int will create an evenly spaced number of measurement temperatures up to tmax
-                a list of temperatuires will create these temperatures
-                - if a DataFrame is passed (mostly for fitting) no new DF will be generated
-            tmax: float
-                maximum temperature of the experiment
-            ck_every: int
-                after how many thermal demag steps a pTRM check is done
-            tr_every: int
-                after how many thermal demag steps a tail check is done
-            ac_every: int
-                after how many thermal demag steps a additivity check is done
-
+        Args:
+            preset (str): A collection of models from the Fabian2001 and
+                Leonhard2004 paper
+            a11 (float): constant part of the distribution
+            a12 (float): if 0: unblocking temperature distribution has same
+                width for all tau_b
+            a13 (float): width
+            a1t (float): amplitude of distribution
+            a21 (float): constant part of the distribution
+            a22 (float): if 0: unblocking temperature distribution has same
+                width for all tau_b
+            a23 (float): width of distribution
+            a2t (float): amplitude of distribution
+            b1 (float):
+            b2 (float):
+            b3 (float): Characterizes the width of the remanence acquisition
+                spectrum, small values indicate a sharp blocking
+            bt (float):
+            d1 (float): linear part of the pressure demagnetization
+            d2 (float): ammount of non-linear demagnetization
+            d3 (float): width of the demagnetization distribution
+            dt (float): center of the distribution
+            grid (int): default_recipe:100 the number of blocking and unblocking
+                temperatures to be calculated
+            hpal (float): default_recipe: 1 reduced paleofield
+            hlab (float): default_recipe: 1 reduced labfield
+            ms (float): saturation magnetization of the simulated sample
+            tc (float): Curie temperature of the simulation
+            temp_steps (int, arraylike, pd.DataFrame): int will create an evenly
+                spaced number of measurement temperatures up to tmax a list of
+                temperatuires will create these temperatures - if a DataFrame is
+                passed (mostly for fitting) no new DF will be generated
+            tmax (float): maximum temperature of the experiment
+            ck_every (int): after how many thermal demag steps a pTRM check is
+                done
+            tr_every (int): after how many thermal demag steps a tail check is
+                done
+            ac_every (int): after how many thermal demag steps a additivity
+                check is done
         """
 
         passed_params = {'a11': a11, 'a12': a12, 'a13': a13, 'a1t': a1t,
@@ -174,11 +146,8 @@ class Fabian2001(object):
 
 
     def initialize_distributions(self):
-        """
-        calculates the distributions of lambda1, lambda2, beta, gamma and chi
-        Returns
-        -------
-
+        """calculates the distributions of lambda1, lambda2, beta, gamma and
+        chi
         """
 
         self.log().debug('Calculating simulation using these parameters:')
@@ -205,18 +174,11 @@ class Fabian2001(object):
         self.zf_steps = 1 - self.demag_dist
 
     def change_simparams(self, **new_params):
-        """
-        Method to change the simulation parameters for the simulation.
+        """Method to change the simulation parameters for the simulation.
         Recalculates the differnet distributions from new parameters.
 
-        Parameters
-        ----------
-        new_params: dict
-            dict with new parameters
-
-        Returns
-        -------
-
+        Args:
+            new_params (dict): dict with new parameters
         """
 
         for k,v in new_params.items():
@@ -226,31 +188,42 @@ class Fabian2001(object):
 
     @classmethod
     def cauchy(cls, x, s):
+        """
+        Args:
+            x:
+            s:
+        """
         if s == 0:
             s = 1e-16
         return 1 / (1 + (x / s) ** 2)
 
     def tau(self, t):
+        """
+        Args:
+            t:
+        """
         return (t - 20) / (self.simparams['tc'] - 20)
 
     def beta(self, tau):
-        """
-        Calculates the beta function for the distribution
-        Parameters
-        ----------
-        tau
+        """Calculates the beta function for the distribution :param tau:
 
-        Returns
-        -------
-            np.array
+        Args:
+            tau:
+
+        Returns:
+            np.array:
         """
         return self.simparams['b1'] + self.simparams['b2'] * \
                self.cauchy(tau - self.simparams['bt'], self.simparams['b3'])
 
     def lambda1(self, tau, call=''):
-        '''
-        controls the width of the width of the distribution chi(tb, ) for values of tub > tb
-        '''
+        """controls the width of the width of the distribution chi(tb, ) for
+        values of tub > tb
+
+        Args:
+            tau:
+            call:
+        """
 
         if self.simparams['a12'] > 0:
             return self.simparams['a11'] + self.simparams['a12'] * \
@@ -259,9 +232,13 @@ class Fabian2001(object):
             return np.ones(tau.shape) * self.simparams['a11']
 
     def lambda2(self, tau, call=''):
-        '''
-        controls the width of the width of the distribution chi(tb, ) for values of tub < tb
-        '''
+        """controls the width of the width of the distribution chi(tb, ) for
+        values of tub < tb
+
+        Args:
+            tau:
+            call:
+        """
         if self.simparams['a22'] > 0:
             return self.simparams['a21'] + self.simparams['a22'] * \
                    self.cauchy(tau - self.simparams['a2t'], self.simparams['a23'])
@@ -269,8 +246,10 @@ class Fabian2001(object):
             return np.ones(tau.shape) * self.simparams['a21']
 
     def gamma(self, tau_b):
-        """
-        normalizes the integral of chi(tau_b, )
+        """normalizes the integral of chi(tau_b, )
+
+        Args:
+            tau_b:
         """
 
         # get the index of tau_b
@@ -287,11 +266,11 @@ class Fabian2001(object):
         return beta * 1 / (int1 + int2)  # as described by Fabian2001
 
     def get_chi(self, tau_b):
-        """
-        Calculates the unblocking distribution for a given blocking temperature
-        Returns
-        -------
-            ndarray
+        """Calculates the unblocking distribution for a given blocking
+        temperature :returns: :rtype: ndarray
+
+        Args:
+            tau_b:
         """
         # get index of tb in array (tb == tub)
         # indices < idx -> tau_b < tau_ub
@@ -309,6 +288,12 @@ class Fabian2001(object):
 
     def FieldMatrix(self, tau_i, hlab, pressure_demag=False):
 
+        """
+        Args:
+            tau_i:
+            hlab:
+            pressure_demag:
+        """
         data = np.ones((self.tau_ub.size, self.tau_b.size)) * 10
 
         # the index is where ti == tau_b and tau_ub
@@ -332,17 +317,15 @@ class Fabian2001(object):
         return data
 
     def H(self, tau_i, tau_b, tau_ub, hlab, pressure_demag=False):
-        """
-        Calculates the potential field for a given tau_i and tau_b
-        Parameters
-        ----------
-        tau_i
-        tau_b
-        tau_ub
-        hlab
+        """Calculates the potential field for a given tau_i and tau_b :param
+        tau_i: :param tau_b: :param tau_ub: :param hlab:
 
-        Returns
-        -------
+        Args:
+            tau_i:
+            tau_b:
+            tau_ub:
+            hlab:
+            pressure_demag:
         """
 
         if tau_i >= tau_ub and tau_i >= tau_b and tau_i > 0:
@@ -359,13 +342,11 @@ class Fabian2001(object):
             return 0
 
     def get_chi_grid(self):
-        """
-        Method that calculates a matrix of chi values.
-        For each tb there is a distribution of tub, get_chi_grid calculates them for a given tb
+        """Method that calculates a matrix of chi values. For each tb there is a
+        distribution of tub, get_chi_grid calculates them for a given tb
 
-        Returns
-        -------
-            numpy ndarray with chi values (columns = blocking temperatures, indices = unblocking temperatures)
+        Returns:
+            numpy ndarray with chi values (columns = blocking temperatures, indices = unblocking temperatures):
         """
 
         # initialize array
@@ -380,66 +361,51 @@ class Fabian2001(object):
 
     def moment(self, tau_i, applied_field=1, pressure_demag=False):
         """
-
-        Parameters
-        ----------
-        tau_i: float
-        applied_field : float
-        pressure_demag: bool
-            default_recipe: False
-            if True a cauchy distributed demagnetization of unblocking temperatures is calculated
+        Args:
+            tau_i (float):
+            applied_field (float):
+            pressure_demag (bool): default_recipe: False if True a cauchy
+                distributed demagnetization of unblocking temperatures is
+                calculated
         """
         h = self.FieldMatrix(tau_i=tau_i, hlab=applied_field, pressure_demag=pressure_demag)
         return (h * self.chi).sum().sum()
 
     def get_zerofield_data(self, steps=None, pressure_demag=False, norm=False):
-        """
-        function calls Fabian2001.get_data and filters for TH ('LT-T-Z') steps and NRM ('LT-NO').
-        Parameters
-        ----------
-        steps
-        pressure_demag
-        norm
+        """function calls Fabian2001.get_data and filters for TH ('LT-T-Z')
+        steps and NRM ('LT-NO'). :param steps: :param pressure_demag: :param
+        norm:
 
-        Returns
-        -------
-
+        Args:
+            steps:
+            pressure_demag:
+            norm:
         """
         data = self.get_data(steps=steps, pressure_demag=pressure_demag, norm=norm)
         data = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])]
         return data.set_index('ti')
 
     def get_infield_data(self, steps=None, pressure_demag=False, norm=False):
-        """
-        function calls Fabian2001.get_data and filters for PT ('LT-T-I') steps and NRM ('LT-NO').
+        """function calls Fabian2001.get_data and filters for PT ('LT-T-I')
+        steps and NRM ('LT-NO').
 
-        Parameters
-        ----------
-        steps
-        pressure_demag
-        norm
-
-        Returns
-        -------
-
+        Args:
+            steps:
+            pressure_demag:
+            norm:
         """
         data = self.get_data(steps=steps, pressure_demag=pressure_demag, norm=norm)
         data = data[np.in1d(data['LT_code'], ['LT-T-I', 'LT-NO'])]
         return data.set_index('ti')
 
     def get_ptrm_data(self, steps=None, pressure_demag=False, norm=False):
-        """
-        function calls Fabian2001.get_data and filters for PT ('LT-T-I') steps and NRM ('LT-NO').
+        """function calls Fabian2001.get_data and filters for PT ('LT-T-I')
+        steps and NRM ('LT-NO').
 
-        Parameters
-        ----------
-        steps
-        pressure_demag
-        norm
-
-        Returns
-        -------
-
+        Args:
+            steps:
+            pressure_demag:
+            norm:
         """
         data = self.get_data(steps=steps, pressure_demag=pressure_demag, norm=norm)
         th = data[np.in1d(data['LT_code'], ['LT-T-Z', 'LT-NO'])].set_index('ti')
@@ -451,16 +417,10 @@ class Fabian2001(object):
 
     def get_data(self, steps=None, pressure_demag=False, norm=False):
         """
-
-        Parameters
-        ----------
-        steps
-        pressure_demag
-        norm
-
-        Returns
-        -------
-
+        Args:
+            steps:
+            pressure_demag:
+            norm:
         """
         # initiate data pd.DataFrame with LT_code and K ti,tj
         data = pd.DataFrame(index=('LT_code', 'x', 'y', 'z', 'm', 'level', 'ti', 'tj'))
@@ -534,6 +494,11 @@ class Fabian2001(object):
         #                                 [0,0,0,zback]])
         #         proj3d.persp_transformation = orthogonal_proj
 
+        """
+        Args:
+            ax:
+            title:
+        """
         if ax is None:
             fig = plt.figure(figsize=plt.figaspect(0.45))
             ax = fig.add_subplot(111, projection='3d')
@@ -558,6 +523,12 @@ class Fabian2001(object):
             ax.set_title(title)
 
     def plot_contour(self, ax=None, colorbar=False, **kwargs):
+        """
+        Args:
+            ax:
+            colorbar:
+            **kwargs:
+        """
         if ax is None:
             ax = plt.gca()
 
@@ -576,6 +547,15 @@ class Fabian2001(object):
 
     def plot_arai(self, steps=None, hlab=1, pressure_demag=False, norm=False, ax=None, **kwargs):
 
+        """
+        Args:
+            steps:
+            hlab:
+            pressure_demag:
+            norm:
+            ax:
+            **kwargs:
+        """
         if self.steps is None and steps is None:
             print('cant plot Arai diagram,')
             return
@@ -615,6 +595,15 @@ class Fabian2001(object):
 
     def plot_roquet(self, steps=None, hlab=1, pressure_demag=False, norm=False, ax=None, **kwargs):
 
+        """
+        Args:
+            steps:
+            hlab:
+            pressure_demag:
+            norm:
+            ax:
+            **kwargs:
+        """
         if self.steps is None and steps is None:
             print('cant plot Roquet plot,')
             return

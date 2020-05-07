@@ -2,18 +2,20 @@ import pandas as pd
 import numpy as np
 
 def ThellierStepMaker(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
-    """
-    Creates a pandas DataFrame and a list of measurement steps.
+    """Creates a pandas DataFrame and a list of measurement steps.
 
     If filepath is provided a latex document is created
 
     Magic Lab-treatment codes :
-        'TH': 'LT-T-Z'
-        'PT': 'LT-T-I'
-        'CK': 'LT-PTRM-I'
-        'TR': 'LT-PTRM-MD'
-        'AC': 'LT-PTRM-Z'
-        'NRM': 'LT-NO'
+        'TH': 'LT-T-Z' 'PT': 'LT-T-I' 'CK': 'LT-PTRM-I' 'TR': 'LT-PTRM-MD' 'AC':
+        'LT-PTRM-Z' 'NRM': 'LT-NO'
+
+    Args:
+        steps:
+        tmax:
+        ck_every:
+        tr_every:
+        ac_every:
     """
 
     if isinstance(steps, int):

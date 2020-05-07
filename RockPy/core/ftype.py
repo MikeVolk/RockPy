@@ -12,7 +12,7 @@ from RockPy import ureg
 class Ftype(object):
     """ Delivers core functionality to all classes inheriting from it.
 
-    Attributes:
+    Args:
         in_units (dict(:obj:`pint.ureg`)): internal_units from used in the data file
         out_units (dict(:obj:`pint.ureg`)): internal_units used to export the data
         units (dict(:obj:`pint.ureg`)): internal_units used internally (should be SI internal_units)
@@ -123,46 +123,22 @@ class Ftype(object):
 
     @classmethod
     def log(cls):
-        """ Class logger
-
-        Returns:
-            :obj:`logging.logger`
-        """
         # create and return a logger with the pattern RockPy.MTYPE
         return logging.getLogger('RockPy.%s' % cls.subclass_name().lower())
 
     @staticmethod
     def split_tab(line):
-        """
 
-        Parameters
-        ----------
-        line
-
-        Returns
-        -------
-
-        """
         return line.split('\t')
 
     @classmethod
     def subclass_name(cls):
-        """
 
-        Returns
-        -------
-
-        """
         return cls.__name__
 
     @classmethod
     def inheritors(cls):
-        """
 
-        Returns
-        -------
-
-        """
         return RockPy.core.utils.extract_inheritors_from_cls(cls)
 
     def _get_comment_line_indices(self):

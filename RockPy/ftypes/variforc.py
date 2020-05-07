@@ -13,12 +13,23 @@ class VariForc(Ftype):
                    'Backfield coercivity distribution f(x) = 1/2 dM(Hr,H)/dHr at Hr = -x and H = 0.':'Coercivity distribution on linear field scale (Hc, f(Hc), SE of f)'}
 
     def __init__(self, dfile, snames=None, dialect='processed', reload=False):
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+        """
         self.header = self.read_header(dfile)
 
         super().__init__(dfile, snames=snames, dialect=dialect, reload=reload)
 
     @classmethod
     def read_header(cls, dfile):
+        """
+        Args:
+            dfile:
+        """
         with open(dfile) as f:
             raw_header = f.readlines()
 
@@ -77,6 +88,10 @@ class VariForc(Ftype):
 
     def simple_plot(self, ax=None):
 
+        """
+        Args:
+            ax:
+        """
         if ax is None:
             ax = plt.gca()
 
@@ -103,9 +118,7 @@ class VariForc(Ftype):
             return ax
 
     def get_levels(self):
-        """
-        tryes to determin levels for plotting the forc contours
-        :return:
+        """tryes to determin levels for plotting the forc contours :return:
         list
         """
         sigdig = 0

@@ -8,6 +8,13 @@ from copy import deepcopy
 
 class Vftb(Ftype):
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+        """
         self.mass, self.header, self.segment_idx, self.header_idx = self.read_header(dfile)
         super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header=self.header)
 
@@ -21,17 +28,15 @@ class Vftb(Ftype):
             yield self.data.iloc[i[0]:i[1]]
 
     def read_header(self, dfile):
-        '''
-        Reads the header of the VFTB file
-        Parameters
-        ----------
-        dfile: str 
-            The location on your hard disk
+        """Reads the header of the VFTB file :param dfile: The location on your
+        hard disk :type dfile: str
 
-        Returns
-        -------
-            weight, segment_index, header_index    
-        '''
+        Args:
+            dfile:
+
+        Returns:
+            weight, segment_index, header_index:
+        """
 
         segment_idx = []
         header_idx = []

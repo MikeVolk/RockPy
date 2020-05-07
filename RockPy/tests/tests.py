@@ -7,7 +7,7 @@ import test_utils
 
 
 def suite():
-    '''Test suite'''
+    """Test suite"""
 
     suite = unittest.TestSuite()
 
