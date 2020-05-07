@@ -476,7 +476,7 @@ def maintain_n3_shape(xyz):
 
     Raises:
         ValueError:
-            - if not at least one dimension is length 3
+            - if not at least one dimension is len 3
             - if the number of elements is inconsistent (e.g. [[1, 2, 3], [1, 2], [1, 2]])
     """
     ## maintain vector shape part
