@@ -46,3 +46,15 @@ class TestConvert_units(TestCase):
         self.assertAlmostEqual(1, convert_units(1000, 'mT', 'T'))
         self.assertAlmostEqual(10, convert_units(1, 'mT', 'gauss'))
         self.assertAlmostEqual(2.20462, convert_units(1, 'kg', 'lbs'), delta=1e-3)
+
+
+class Test(TestCase):
+    def test_maintain_n3_shape(self):
+        np.testing.assert_array_equal(np.array([[1, 2, 3], [1, 2, 3]]), maintain_n3_shape([[1, 2, 3], [1, 2, 3]]))
+        np.testing.assert_array_equal(np.array([[1, 2, 3], [1, 2, 3]]), maintain_n3_shape([[1, 1], [2, 2], [3, 3]]))
+
+        with self.assertRaises(ValueError):
+            maintain_n3_shape([[1, 2], [1, 2, 3]])
+
+        with self.assertRaises(ValueError):
+            maintain_n3_shape([[1, 2], [1, 2]])

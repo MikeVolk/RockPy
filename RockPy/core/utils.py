@@ -385,13 +385,17 @@ def import_submodules(package, recursive=True):
     return results
 
 
+""" data related """
+
+
 def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
     """
-    Decorator that transforms the input into an `xyz` array of (n,3) shape. If keyword 'dim' id provided,
-    the data will first be converted to xyz values. Returns an array in its original form and coordinates.
+    Decorator that transforms the input into an `xyz` array of (n,3) shape. If keyword 'dim' is provided,
+    the data is assumed to be declination, inclination, and Moment and will first be converted to xyz
+    values. Returns an array in its original form and coordinates.
 
-        Args:
-        func wrapped function
+    Args:
+        func: wrapped function
         internal_dtype (str): tells the decorator what input data type is given
         transform_output (bool, True): transforms the data type back to the original input dtype.
             if False, calculated dtype will be returned
@@ -450,32 +454,43 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
                     from RockPy.tools.compute import convert_to_dim
                     xyz = convert_to_dim(xyz)
 
-        # if np.shape(xyz) != s:
-        #     if len(s) == 1:
-        #         return xyz[0]
-        #     else:
-        #         return xyz.T
         return xyz
 
     return conversion
+
+
+@handle_shape_dtype
+def handle_shape(xyz):
+    return xyz
 
 
 def maintain_n3_shape(xyz):
     """
     Takes vector of (3,), (n,3) and (3,n) shape and transforms it into (n,3) shape used for ALL compute calculations.
 
-        Args:
-    xyz (ndarray): data to be returned
+    Args:
+        xyz (ndarray): data to be returned
 
     Returns:
         ndarray: in the shape of (n,3)
+
+    Raises:
+        ValueError:
+            - if not at least one dimension is length 3
+            - if the number of elements is inconsistent (e.g. [[1, 2, 3], [1, 2], [1, 2]])
     """
     ## maintain vector shape part
     s = np.array(xyz).shape
+
+    if not any(i==3 for i in s):
+        raise ValueError('At least one dimension needs to be length 3')
     # for [x,y,z] or [d,i,m]
     if s == (3,):
+        if len(set(np.shape(elem) for elem in xyz)) != 1:
+            raise ValueError('Number of elements ix xyz is inconsistent')
         xyz = np.array(xyz).reshape((1, 3))
-    # for array like [[x],[y],
+
+    # for array like [[x1,x2,... ],[y1,y2,...],[z1,z2,...]],
     elif s[0] == 3 and s[1] != 3:
         xyz = np.array(xyz).T
     elif s[1] == 3 and s[0] != 3:
@@ -487,6 +502,11 @@ def maintain_n3_shape(xyz):
         xyz = np.array(xyz)
     return xyz
 
+
+if __name__ == '__main__':
+    a = handle_shape([[1, 2, 3], [1, 2, 3]])
+    print(a)
+    print(np.shape(a))
 
 import json
 import codecs
