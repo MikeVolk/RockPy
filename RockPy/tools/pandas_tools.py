@@ -4,42 +4,26 @@ import matplotlib.pyplot as plt
 import RockPy
 import pandas as pd
 from RockPy.tools import compute
-from RockPy.tools.compute import rotate
+from RockPy.tools.compute import rotate, convert_to_xyz
 
 
 def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     """
     adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
 
-    Parameters
-    ----------
-    df: pandas dataframe
-        data including columns of D, I and optionally M values
-    colD: str
-        name of column with declination input data
-    colI: str
-        name of column with inclination input data
-    colM: str
-        name of column with moment data (will be set to 1 if None)
-    colX: str
-        name of column for x data (will be created or overwritten)
-    colY: str
-        name of column for y data (will be created or overwritten)
-    colZ: str
-        name of column for z data (will be created or overwritten)
-
-    Returns
-    -------
-
+    Args:
+        df (pandas.DataFrame): data including columns of D, I and optionally M values
+        colD (str, 'D'): name of column with declination input data
+        colI (str, 'I'): name of column with inclination input data
+        colM (str, 'M'): name of column with moment data (will be set to 1 if None)
+        colX (str, 'X'): name of column for x data (will be created or overwritten)
+        colY (str, 'Y'): name of column for y data (will be created or overwritten)
+        colZ (str, 'Z'): name of column for z data (will be created or overwritten)
     """
     df = df.copy()
-    M = 1 if colM is None else df[colM]
-    col_i = df[colI].values.astype(float)
-    col_d = df[colD].values.astype(float)
-
-    df.loc[:, colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
-    df.loc[:, colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
-    df.loc[:, colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
+    dim = df[[colD, colI, colM]]
+    df_xyz = pd.DataFrame(columns=[colX, colY, colZ], data=convert_to_xyz(dim))
+    df = pd.concat([df, df_xyz], axis=1)
     return df
 
 
@@ -69,16 +53,9 @@ def xyz2dim(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
 
     """
     df = df.copy()
-
-    col_y_ = df[colY].values
-    col_x_ = df[colX].values
-    col_z_ = df[colZ].values
-
-    M = np.linalg.norm([col_x_, col_y_, col_z_], axis=0)  # calculate total moment for all rows
-    df.loc[:, colD] = np.degrees(np.arctan2(col_y_, col_x_)) % 360  # calculate D and map to 0-360 degree range
-    df.loc[:, colI] = np.degrees(np.arcsin(col_z_ / M))  # calculate I
-    if colM is not None:
-        df.loc[:, colM] = M  # set M
+    xyz = df[[colX, colY, colZ]]
+    df_dim = pd.DataFrame(columns=[colX, colY, colZ], data=convert_to_xyz(xyz))
+    df = pd.concat([df, df_dim], axis=1)
     return df
 
 
@@ -422,7 +399,8 @@ def get_values_in_both(a, b, key='level', return_sorted=True):  # todo TEST
     else:
         return equal_vals
 
-def interpolate(df, levels, retain_levels = True, **kwargs):
+
+def interpolate(df, levels, retain_levels=True, **kwargs):
     """
     Interpolates a dataframe to new index values.
 
@@ -441,7 +419,7 @@ def interpolate(df, levels, retain_levels = True, **kwargs):
     df = df.copy()
 
     if retain_levels:
-        levels_not_included = df.index[np.in1d(df.index,levels)].values
+        levels_not_included = df.index[np.in1d(df.index, levels)].values
         if any(levels_not_included):
             levels = np.concatenate([levels, levels_not_included])
             levels = np.sort(levels)
@@ -449,15 +427,18 @@ def interpolate(df, levels, retain_levels = True, **kwargs):
     df = df.interpolate(**kwargs)
     return df
 
+
 def remove_duplicate_index(df, method='duplicated', **kwargs):
     if method == 'duplicated':
         return df[~df.index.duplicated(keep=kwargs.pop('keep', 'first'))]
 
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    t = pd.DataFrame(index = np.linspace(0,10,10), data = np.linspace(0,10,10)**2)
+
+    t = pd.DataFrame(index=np.linspace(0, 10, 10), data=np.linspace(0, 10, 10) ** 2)
 
     plt.plot(t)
-    plt.plot(interpolate(t, np.linspace(0,10), method='akima'))
+    plt.plot(interpolate(t, np.linspace(0, 10), method='akima'))
 
     plt.show()
