@@ -482,7 +482,7 @@ def maintain_n3_shape(xyz):
     ## maintain vector shape part
     s = np.array(xyz).shape
 
-    if not any(i==3 for i in s):
+    if not any(i == 3 for i in s):
         raise ValueError('At least one dimension needs to be length 3')
     # for [x,y,z] or [d,i,m]
     if s == (3,):
