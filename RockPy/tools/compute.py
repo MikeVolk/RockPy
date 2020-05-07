@@ -95,11 +95,11 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='x
     
     if axis_di:
         axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
-        axis_unit_vector = convert_to_xyz(axis_unit_vector)
+        axis_unit_vector = convert_to_xyz(axis_unit_vector, M=False)
     # ensure the length of unit vector is 1
     axis_unit_vector = axis_unit_vector / np.linalg.norm(axis_unit_vector)
 
-    ux, uy, uz = axis_unit_vector
+    ux, uy, uz = axis_unit_vector[0]
 
     theta = np.radians(theta)
     cost = np.cos(theta)
@@ -211,7 +211,7 @@ bring the coordinates "back" into the original coordinate system, which will not
 """
 
 
-# @handle_shape_dtype(transform_output=False)
+@handle_shape_dtype(transform_output=False)
 def convert_to_xyz(dim, *, M=True):
     """
     Converts a numpy array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]]) into an numpy array with [[d1,i1,m1], [d2,i2,m2]].
@@ -244,7 +244,6 @@ def convert_to_xyz(dim, *, M=True):
     z = np.cos(np.radians(I)) * np.tan(np.radians(I)) * M
 
     out = np.array([x, y, z]).T
-
     return out
 
 
@@ -548,16 +547,18 @@ def crossing_1d(x1, y1, x2, y2, lim=None, check=False, **kwargs):
     else:
         (xmin, xmax) = lim
 
-    xnew = np.arange(xmin, xmax, np.mean(np.diff(x1)) / 1000)
+    xnew = np.arange(xmin, xmax, np.mean(np.diff(x1)) / 100)
 
     mnidx = np.nanargmin(abs(f1(xnew) - f2(xnew)))
     mn = xnew[mnidx]
     crossing = float(f1(mn))
 
-    if kwargs.pop('check', False):
+    if check:
         plt.plot(xnew, f1(xnew), label='X1, Y1')
         plt.plot(xnew, f2(xnew), label='X2, Y2')
         plt.plot(xnew, abs(f1(xnew) - f2(xnew)), label='Y1-Y2')
+        plt.plot(mn, crossing, 'rX')
         plt.legend()
         plt.show()
     return [mn, crossing]
+
