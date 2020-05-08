@@ -194,7 +194,7 @@ class Ftype(object):
                 try:
 
                     conv = (1 * in_unit).to(unit).magnitude
-                    self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
+                    self.log().debug(f'Converting << {col} >> to SI units {in_unit} -> {conv * unit}')
                     self.data.loc[:, col] *= conv
 
                 except pint.DimensionalityError:
