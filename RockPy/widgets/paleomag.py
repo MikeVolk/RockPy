@@ -11,6 +11,7 @@ from mpl_toolkits.axisartist.axislines import SubplotZero
 
 from IPython.display import clear_output, display
 
+import RockPy
 from RockPy.ftypes.cif import Cif
 from RockPy.tools.plotting import *
 
@@ -20,6 +21,7 @@ mpl.rcParams['toolbar'] = 'None'
 
 
 def paleomag():
+    RockPy.log.setLevel('ERROR')
     # for debug ( std_out)
     output = widgets.Output()
     plt.ioff()
@@ -29,16 +31,18 @@ def paleomag():
                                      justify_content='center',
                                      align_items='center'
                                      )
-    ### Site level info
-    site_grid = GridspecLayout(1, 5)
+    angle_layout = Layout(width='150px')
 
-    site_lat = widgets.FloatText(description='Lat:', width='10px')
+    ### Site level info
+    site_grid = GridspecLayout(1, 5, layout=Layout(width='auto'))
+
+    site_lat = widgets.FloatText(description='Lat:', layout=Layout(width='150px'))
     site__lat = widgets.Label('˚N')
 
-    site_long = widgets.FloatText(description='Long:')
+    site_long = widgets.FloatText(description='Long:', layout=Layout(width='150px'))
     site__long = widgets.Label('˚E')
 
-    site_dec = widgets.FloatText(description='Mag. Decl.:')
+    site_dec = widgets.FloatText(description='Decl.:', layout=Layout(width='150px'))
     site__dec = widgets.Label('˚')
 
     site_grid[0, 0] = widgets.HBox([site_lat, site__lat])
@@ -48,7 +52,6 @@ def paleomag():
     header = site_grid
 
     ### Sample level infos
-    angle_layout = Layout(width='250px')
 
     sample_core_dec = widgets.FloatText(description='Core dec:', value=0, layout=angle_layout)
     sample__core_dec = widgets.Label('˚')
@@ -97,9 +100,7 @@ def paleomag():
             sample_core_inc.value = sample_data[s]['cif'].header['core_dip'].values[0]
             sample_strat_dec.value = sample_data[s]['cif'].header['bedding_strike'].values[0]
             sample_strat_inc.value = sample_data[s]['cif'].header['bedding_dip'].values[0]
-            # except:
-            #     print(f'something went wrong assigning footer values of {s}')
-            #     print(sample_data[s]['cif'].header)
+
 
     global_sample_list.observe(_sample_data_change_selection, names='value')
 
@@ -158,7 +159,6 @@ def paleomag():
             if s is None:
                 return
             _redraw_figures_info(s)
-            _redraw_figures_info(s)
 
     """ BACK - NEXT buttons """
     prev_button = widgets.Button(description='back')
@@ -181,17 +181,13 @@ def paleomag():
     back_next_buttons = widgets.HBox([prev_button, next_button], layout=centered_layout)
 
     def _on_upload(change):
-        new_d = change['new']
-        with output:
-            clear_output()
-            for s in new_d:
-                fit_parameter.setdefault(s, fit_parameter[None])
-                try:
-                    new_d[s]['cif'] = Cif(BytesIO(new_d[s]['content']))
-                except:
-                    print(f'something went wrong while importing {s}')
+        upload_data = change['new']
 
-        sample_data.update(change['new'])
+        for s in upload_data:
+            fit_parameter.setdefault(s, fit_parameter[None])
+            upload_data[s]['cif'] = Cif(BytesIO(upload_data[s]['content']))
+
+        sample_data.update(upload_data)
         global_sample_list.options = list(sample_data.keys())
         global_sample_list.notify_change(
             {'name': 'value', 'old': global_sample_list.value, 'new': global_sample_list.options[-1],
