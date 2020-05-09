@@ -332,6 +332,7 @@ def convert_to_equal_area(xyz, intype='xyz'):
 
     # transformed by wrapper into DIM
     dim = convert_to_dim(xyz)
+    print(xyz)
 
     d = dim[:, 0]
     i = dim[:, 1]

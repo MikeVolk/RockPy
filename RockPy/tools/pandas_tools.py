@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import RockPy
 import pandas as pd
 from RockPy.tools import compute
-from RockPy.tools.compute import rotate, convert_to_xyz
+from RockPy.tools.compute import rotate, convert_to_xyz, convert_to_dim
 
 
 def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
@@ -22,7 +22,9 @@ def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
     """
     df = df.copy()
     dim = df[[colD, colI, colM]]
-    df_xyz = pd.DataFrame(columns=[colX, colY, colZ], data=convert_to_xyz(dim))
+
+    xyz = convert_to_xyz(dim)
+    df_xyz = pd.DataFrame(columns=[colX, colY, colZ], data=xyz, index=df.index)
     df = pd.concat([df, df_xyz], axis=1)
     return df
 
@@ -41,7 +43,8 @@ def xyz2dim(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
     """
     df = df.copy()
     xyz = df[[colX, colY, colZ]]
-    df_dim = pd.DataFrame(columns=[colX, colY, colZ], data=convert_to_xyz(xyz))
+    dim = convert_to_dim(xyz)
+    df_dim = pd.DataFrame(columns=[colX, colY, colZ], data=dim, index=df.index)
     df = pd.concat([df, df_dim], axis=1)
     return df
 
@@ -357,4 +360,3 @@ def remove_duplicate_index(df, method='duplicated', **kwargs):
     """
     if method == 'duplicated':
         return df[~df.index.duplicated(keep=kwargs.pop('keep', 'first'))]
-
