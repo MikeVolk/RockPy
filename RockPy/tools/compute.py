@@ -307,15 +307,23 @@ def convert_to_stereographic(xyz, intype='dim'):
 
 @handle_shape_dtype(internal_dtype='xyz', transform_output=False)
 def convert_to_equal_area(xyz, intype='xyz'):
-    """Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
+    """
+    Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
     into an numpy array with [d,r,neg], where:
 
         d = declination, r = radius in equal area projection and neg = array of
         0,1 values where 0 = i > 0 and 1 = i < 0
 
-    r is calculated according to Collinson, 1983 by .. math:
+    r is calculated according to Collinson, 1983 by
 
-        R = 1 - ( R_0 * [ 1 - sqrt{1- sin(I)}])
+    .. math:
+        r = 1 - ( R_0 * [ 1 - sqrt{1- sin(I)}])
+
+    in the equal- area projection, where R0 is the radius of the projected circle.
+    In polar projections it is usual to project the lower hemisphere only, and points on the upper hemisphere
+    (negative inclinations) are transferred to the lower hemisphere (by changing the sign of I) and a different
+    symbol used to distinguish them from positive inclinations.
+    Conventionally, positive and negative inclinations are shown by full and open circles respectively.
 
     Args:
         xyz:
@@ -332,17 +340,16 @@ def convert_to_equal_area(xyz, intype='xyz'):
 
     # transformed by wrapper into DIM
     dim = convert_to_dim(xyz)
-    print(xyz)
 
     d = dim[:, 0]
     i = dim[:, 1]
     neg = i < 0
 
-    r = 1 - np.abs(i) / 90
-    # i = np.radians(np.abs(i))
-    # r = np.sqrt((1 - np.sin(i)) ** 2 + np.cos(i) ** 2) / np.sqrt(2) ?? why is this wrong???
-    L0 = 1 / np.linalg.norm(xyz[:, [1, 2]])
-    out = np.array([d, r, neg]).T
+    r0 = 1
+    i = np.radians(np.abs(i))
+    r = r0 * (1 - np.sqrt(1 - np.abs(xyz[:,2])))
+
+    out = np.array([d, r0-r, neg]).T
     return out
 
 

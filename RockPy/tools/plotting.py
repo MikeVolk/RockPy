@@ -40,10 +40,10 @@ figsize = np.array([3.74, 5.91]) * 1.3
 def force_aspect(ax=None, aspect=1):
     """
     Changes the aspect of an axes to be `aspect`. Not by data
-    Parameters
-    ----------
-    ax: matplotlib.axes
-    aspect: float
+
+    Args:
+        ax: matplotlib.axes
+        aspect: float
     """
 
     if ax is None:
@@ -158,15 +158,21 @@ def max_zorder(ax):
 
 def setup_stereonet(ax=None, grid=True, rtickwidth=1):
     if ax is None:
-        ax = plt.gca()
+        ax = plt.subplot(1, 1, 1, projection='polar')
 
     ax.grid(grid)
 
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
-    ticks = ax.set_rticks(np.arange(0, 1, 1 / 9))  # Less radial ticks
+
+    radial_ticks = np.array([np.ones(10) * 0, np.linspace(0, 90, 10), np.ones(10)]).T.reshape(10, 3)
+    radial_ticks = convert_to_equal_area(radial_ticks, intype='dim')
+
+    ticks = ax.set_rticks(radial_ticks[::2,1])  # Less radial ticks
+
     for t in ticks:
         t.set_alpha(0)
+
     ax.set_yticklabels([])  # Less radial ticks
 
     maxz = max_zorder(ax)
@@ -174,14 +180,15 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
     ## plot the grids
     # crosses
     for d in [0, 90, 180, 270]:
-        ax.plot(np.ones(10) * np.radians(d), np.linspace(0, 1, 10), 'k+')
+        marker = np.array([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)]).T.reshape(10, 3)
+        marker = convert_to_equal_area(marker, intype='dim')
+        ax.plot(np.radians(marker[:, 0]), marker[:, 1], 'k+')
     # outer ticks
     for t in np.deg2rad(np.arange(0, 360, 5)):
         ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=-1)
 
-
-
     ax.set_rmax(1)
+    return ax
 
 
 def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
@@ -200,6 +207,7 @@ def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
                 y = ymax
 
             ax.axvline(r, ymin=ymin / ymx, ymax=y / ymx, color=color, lw=0.7)
+
 
 def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
     """
@@ -249,6 +257,8 @@ def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
 
 
 """ LINES """
+
+
 def combined_label_legend(ax=None, pad=-1, bbox_to_anchor=[1, 1], **legend_opts):
     """
     Combines labels that are the same into one label
@@ -269,10 +279,10 @@ def combined_label_legend(ax=None, pad=-1, bbox_to_anchor=[1, 1], **legend_opts)
     handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
 
     mxlen = max([len(i) for i in handles])
-    print(mxlen)
+
     ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor,
               handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)},
-              handletextpad = mxlen *pad,
+              handletextpad=mxlen * pad,
               **legend_opts)
 
 
@@ -381,6 +391,7 @@ def add_zerolines(ax=None, **kwargs):
     ax.axhline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
     ax.axvline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
 
+
 def make_spines_zero(a, xlabel='', ylabel=''):
     a.set_xlabel()
     a.set_ylabel('N/up ($10^{-9}$ Am$^2$)', rotation=-90)
@@ -395,6 +406,7 @@ def make_spines_zero(a, xlabel='', ylabel=''):
     a.yaxis.set_ticks_position('left')
     a.xaxis.set_label_coords(1.0, -0.005)
     a.yaxis.set_label_coords(1., 0.5)
+
 
 def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
     """
@@ -452,7 +464,8 @@ def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
     else:
         RockPy.log.error('%s not a valid direction: choose either \'up\' or \'down\'' % direction)
 
-def plot_square(x, y, d, center = True, center_label=None, ax=None, **plt_args):
+
+def plot_square(x, y, d, center=True, center_label=None, ax=None, **plt_args):
     """
     plots a square with center = (x,y) and width = d
 
@@ -477,14 +490,15 @@ def plot_square(x, y, d, center = True, center_label=None, ax=None, **plt_args):
     l, = ax.plot(x, y, 's', markersize=3, visible=False, label=f'{center_label}', **plt_args)
 
     if center:
-        ax.plot(x, y, '+', markersize=3, color = l.get_color(), mew=1)
+        ax.plot(x, y, '+', markersize=3, color=l.get_color(), mew=1)
 
-    ax.plot([x-d, x+d], [y-d, y-d], color = l.get_color(), lw=1)
-    ax.plot([x-d, x+d], [y+d, y+d], color = l.get_color(), lw=1)
-    ax.plot([x-d, x-d], [y-d, y+d], color = l.get_color(), lw=1)
-    ax.plot([x+d, x+d], [y-d, y+d], color = l.get_color(), lw=1)
+    ax.plot([x - d, x + d], [y - d, y - d], color=l.get_color(), lw=1)
+    ax.plot([x - d, x + d], [y + d, y + d], color=l.get_color(), lw=1)
+    ax.plot([x - d, x - d], [y - d, y + d], color=l.get_color(), lw=1)
+    ax.plot([x + d, x + d], [y - d, y + d], color=l.get_color(), lw=1)
 
     return ax
+
 
 def label_line(line, label, x, y, color='0.5', size=12):
     """Add a label to a line, at the proper angle.
@@ -574,6 +588,7 @@ class MidpointNormalize(colors.Normalize):
 def plot_metamorphic_facies(ax=None, facies_list=None, text=None, **kwargs):
     """
     Plots metamorphic fascies into ax.
+
     Parameters
     ----------
     ax
