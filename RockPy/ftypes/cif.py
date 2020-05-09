@@ -1,4 +1,7 @@
 import os
+import io
+from io import StringIO, BytesIO
+
 from datetime import datetime
 
 import pandas as pd
@@ -798,9 +801,15 @@ class Cif(RockPy.core.ftype.Ftype):
         -------
             pd.DataFrame
         """
+        if not self.dio:
+            with open(self.dfile) as f:
+                raw_data = f.readlines()
+        else:
+            raw_data = self.dfile
+            if isinstance(self.dfile, BytesIO):
+                raw_data = io.TextIOWrapper(raw_data, encoding='utf-8')
+            raw_data = raw_data.readlines()
 
-        with open(self.dfile) as f:
-            raw_data = f.readlines()
 
         rows, raw_header_rows = self._separate_row(raw_data)
 
@@ -961,3 +970,5 @@ class Cif(RockPy.core.ftype.Ftype):
             for row in data.iterrows():
                 row = self._write_cif_line(row)
                 f.write(row + '\n')
+
+

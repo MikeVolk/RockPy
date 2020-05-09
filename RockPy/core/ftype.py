@@ -77,12 +77,13 @@ class Ftype(object):
 
         self.dfile = dfile
 
-        dio = False
         ## catch ERROR for StringIO and ByteIO
         if isinstance(dfile, (StringIO, BytesIO)):
-            self.log().debug('impporting Byte/String data')
+            self.log().debug('importing Byte/String data')
             dfile = self.fid
-            dio = True
+            self.dio = True
+        else:
+            self.dio = False
 
         self.dialect = dialect
 
@@ -105,7 +106,7 @@ class Ftype(object):
             self.__class__.imported_files[dfile] = mdata
 
         elif dfile not in self.__class__.imported_files or reload:
-            if not dio:
+            if not self.dio:
                 self.log().info('IMPORTING << %s , %s >> file: << ... %s >>' % (self.snames,
                                                                             type(self).__name__, dfile[-20:]))
             else:
