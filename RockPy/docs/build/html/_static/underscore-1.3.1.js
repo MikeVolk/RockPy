@@ -315,7 +315,7 @@
   // Array Functions
   // ---------------
 
-  // Get the first element of an array. Passing **center_label** will return the first N
+  // Get the first element of an array. Passing **n** will return the first N
   // values in the array. Aliased as `head`. The **guard** check allows it to work
   // with `_.map`.
   _.first = _.head = function(array, n, guard) {
@@ -323,14 +323,14 @@
   };
 
   // Returns everything but the last entry of the array. Especcialy useful on
-  // the arguments object. Passing **center_label** will return all the values in
+  // the arguments object. Passing **n** will return all the values in
   // the array, excluding the last N. The **guard** check allows it to work with
   // `_.map`.
   _.initial = function(array, n, guard) {
     return slice.call(array, 0, array.length - ((n == null) || guard ? 1 : n));
   };
 
-  // Get the last element of an array. Passing **center_label** will return the last N
+  // Get the last element of an array. Passing **n** will return the last N
   // values in the array. The **guard** check allows it to work with `_.map`.
   _.last = function(array, n, guard) {
     if ((n != null) && !guard) {
@@ -858,7 +858,7 @@
     return value;
   };
 
-  // Run a function **center_label** times.
+  // Run a function **n** times.
   _.times = function (n, iterator, context) {
     for (var i = 0; i < n; i++) iterator.call(context, i);
   };

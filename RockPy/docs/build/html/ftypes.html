@@ -1,51 +1,130 @@
+<!DOCTYPE html>
 
 
-<!doctype html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Implemented file types &#8212; RockPy pyrite-alpha documentation</title>
-    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
+    <title>Implemented file types &mdash; RockPy pyrite-alpha documentation</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    
+
+<link rel="stylesheet" href="_static/css/basicstrap-base.css" type="text/css" />
+<link rel="stylesheet" id="current-theme" href="_static/css/bootstrap3/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" id="current-adjust-theme" type="text/css" />
+
+<link rel="stylesheet" href="_static/css/font-awesome.min.css">
+
+<style type="text/css">
+  body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+</style>
+
+<link rel="stylesheet" href="_static/css/basicstrap.css" type="text/css" />
+<link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+<script type="text/javascript">
+  var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:    './',
+            VERSION:     'pyrite-alpha',
+            COLLAPSE_INDEX: false,
+            FILE_SUFFIX: '.html',
+            HAS_SOURCE:  true
+  };
+</script>
+    <script type="text/javascript" src="_static/js/jquery.min.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <script type="text/javascript" src="_static/js/bootstrap3.min.js"></script>
+<script type="text/javascript" src="_static/js/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="_static/js/basicstrap.js"></script>
+<script type="text/javascript">
+</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="RockPy pyrite-alpha documentation" href="index.html" />
+    <link rel="up" title="Code base" href="codebase.html" />
     <link rel="next" title="Tools" href="tools.html" />
-    <link rel="prev" title="Code base" href="codebase.html" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <!--[if lt IE 9]>
-    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
-    <![endif]-->
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="tools.html" title="Tools"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="codebase.html" title="Code base"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">RockPy pyrite-alpha documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="codebase.html" accesskey="U">Code base</a> &#187;</li> 
-      </ul>
+    <link rel="prev" title="Code base" href="codebase.html" /> 
+  </head>
+  <body role="document">
+    <div id="navbar-top" class="navbar navbar-fixed-top navbar-default" role="navigation" aria-label="top navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">RockPy pyrite-alpha documentation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown visible-xs">
+                <a role="button" id="localToc" data-toggle="dropdown" data-target="#" href="#">Table Of Contents <b class="caret"></b></a>
+                <ul class="dropdown-menu localtoc sp-localtoc" role="menu" aria-labelledby="localToc">
+                <ul>
+<li><a class="reference internal" href="#">Implemented file types</a><ul>
+<li><a class="reference internal" href="#module-RockPy.core.ftype">RockPy.core</a></li>
+<li><a class="reference internal" href="#module-RockPy.ftypes.cif">RockPy.ftype.cif</a></li>
+<li><a class="reference internal" href="#writing-ftypes">writing ftypes</a><ul>
+<li><a class="reference internal" href="#necessary-functions">necessary functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                </ul>
+              </li>
+
+            
+              <li><a href="codebase.html" title="Code base" accesskey="P">previous </a></li>
+              <li><a href="tools.html" title="Tools" accesskey="N">next </a></li>
+              <li><a href="py-modindex.html" title="Python Module Index" >modules </a></li>
+              <li><a href="genindex.html" title="General Index" accesskey="I">index </a></li>
+              <li><a href="codebase.html" accesskey="U">Code base</a></li>
+            
+            <li class="visible-xs"><a href="_sources/ftypes.rst.txt" rel="nofollow">Show Source</a></li>
+
+            <li class="visible-xs">
+                <form class="search form-search form-inline navbar-form navbar-right sp-searchbox" action="search.html" method="get">
+                  <div class="input-append input-group">
+                    <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+                    <span class="input-group-btn">
+                    <input type="submit" class="btn" value="Go" />
+                    </span>
+                  </div>
+                  <input type="hidden" name="check_keywords" value="yes" />
+                  <input type="hidden" name="area" value="default" />
+                </form>
+            </li>
+
+            
+
+          </ul>
+
+        </div>
+      </div>
     </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
+    
+
+    <!-- container -->
+    <div class="container-fluid">
+
+      <!-- row -->
+      <div class="row">
+         
+<div class="col-md-3 hidden-xs" id="sidebar-wrapper">
+  <div class="sidebar hidden-xs" role="navigation" aria-label="main navigation">
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Implemented file types</a><ul>
@@ -72,169 +151,63 @@
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
+<div id="searchbox" role="search">
+  <h3>Quick search</h3>
+  <form class="search form-inline" action="search.html" method="get">
+      <div class="input-append input-group">
+        <input type="text" class="search-query form-control" name="q" placeholder="Search...">
+        <span class="input-group-btn">
+        <input type="submit" class="btn" value="Go" />
+        </span>
       </div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+  </div>
+</div> 
+        
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
+        <div class="col-md-9" id="content-wrapper">
+          <div class="document" role="main">
+            <div class="documentwrapper">
+              <div class="bodywrapper">
+                <div class="body">
+                  
   <div class="section" id="implemented-file-types">
 <h1>Implemented file types<a class="headerlink" href="#implemented-file-types" title="Permalink to this headline">¶</a></h1>
 <p>Here importing of different file-types (ftypes) is discussed.</p>
 <div class="section" id="module-RockPy.core.ftype">
 <span id="rockpy-core"></span><h2>RockPy.core<a class="headerlink" href="#module-RockPy.core.ftype" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="RockPy.core.ftype.Ftype">
-<em class="property">class </em><code class="sig-prename descclassname">RockPy.core.ftype.</code><code class="sig-name descname">Ftype</code><span class="sig-paren">(</span><em class="sig-param">dfile</em>, <em class="sig-param">snames=None</em>, <em class="sig-param">dialect=None</em>, <em class="sig-param">reload=False</em>, <em class="sig-param">create_minfo=True</em>, <em class="sig-param">mdata=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">RockPy.core.ftype.</code><code class="sig-name descname">Ftype</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dfile</span></em>, <em class="sig-param"><span class="n">snames</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dialect</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reload</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">create_minfo</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">mdata</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delivers core functionality to all classes inheriting from it.</p>
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.in_units">
-<code class="sig-name descname">in_units</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.in_units" title="Permalink to this definition">¶</a></dt>
-<dd><p>units from used in the data file</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict(<code class="xref py py-obj docutils literal notranslate"><span class="pre">pint.ureg</span></code>)</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_units</strong> (dict(<code class="xref py py-obj docutils literal notranslate"><span class="pre">pint.ureg</span></code>)) – internal_units from used in the data file</p></li>
+<li><p><strong>out_units</strong> (dict(<code class="xref py py-obj docutils literal notranslate"><span class="pre">pint.ureg</span></code>)) – internal_units used to export the data</p></li>
+<li><p><strong>units</strong> (dict(<code class="xref py py-obj docutils literal notranslate"><span class="pre">pint.ureg</span></code>)) – internal_units used internally (should be SI internal_units)</p></li>
+<li><p><strong>fid</strong> (<em>int</em>) – internal id of the instance</p></li>
+<li><p><strong>_raw_data</strong> (<em>list</em><em>(</em><em>str</em><em>)</em>) – raw, imported data from the file. Note: has not been converted to SI internal_units.</p></li>
+<li><p><strong>snames</strong> (<em>tuple</em><em>(</em><em>str</em><em>)</em>) – tuple of all names in the datafile</p></li>
+<li><p><strong>dfile</strong> (<em>str</em>) – full path to the file on the HD</p></li>
+<li><p><strong>dialect</strong> (<em>str</em><em>, </em><em>optional</em>) – can change the behavior of the <cite>Ftype.read_file</cite> method</p></li>
+<li><p><strong>header</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, optional) – header data generated from the data file. May not exist for certain ftypes</p></li>
+<li><p><strong>importhelper</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">RockPy.core.file_io.ImportHelper</span></code>, optional) – Object that helps importing files using
+the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</cite> is True</p></li>
+<li><p><strong>file_infos</strong> (<em>dict</em><em>, </em><em>optional</em>) – Information on the file. Only created if <cite>create_minfo</cite> = True</p></li>
+<li><p><strong>imported_files</strong> (<em>dict</em>) – Secondary storage of a deepcopy of the <cite>obj.data</cite>, for possible recovery.</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.out_units">
-<code class="sig-name descname">out_units</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.out_units" title="Permalink to this definition">¶</a></dt>
-<dd><p>units used to export the data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict(<code class="xref py py-obj docutils literal notranslate"><span class="pre">pint.ureg</span></code>)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.units">
-<code class="sig-name descname">units</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.units" title="Permalink to this definition">¶</a></dt>
-<dd><p>units used internally (should be SI units)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict(<code class="xref py py-obj docutils literal notranslate"><span class="pre">pint.ureg</span></code>)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.fid">
-<code class="sig-name descname">fid</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.fid" title="Permalink to this definition">¶</a></dt>
-<dd><p>internal id of the instance</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype._raw_data">
-<code class="sig-name descname">_raw_data</code><a class="headerlink" href="#RockPy.core.ftype.Ftype._raw_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>raw, imported data from the file. Note: has not been converted to SI units.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>list(str)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.snames">
-<code class="sig-name descname">snames</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.snames" title="Permalink to this definition">¶</a></dt>
-<dd><p>tuple of all names in the datafile</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>tuple(str)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.dfile">
-<code class="sig-name descname">dfile</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.dfile" title="Permalink to this definition">¶</a></dt>
-<dd><p>full path to the file on the HD</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.dialect">
-<code class="sig-name descname">dialect</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.dialect" title="Permalink to this definition">¶</a></dt>
-<dd><p>can change the behavior of the <cite>Ftype.read_file</cite> method</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>str, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.header">
-<code class="sig-name descname">header</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.header" title="Permalink to this definition">¶</a></dt>
-<dd><p>header data generated from the data file. May not exist for certain ftypes</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.importhelper">
-<code class="sig-name descname">importhelper</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.importhelper" title="Permalink to this definition">¶</a></dt>
-<dd><p>Object that helps importing files using
-the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</cite> is True</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">RockPy.core.file_io.ImportHelper</span></code>, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.file_infos">
-<code class="sig-name descname">file_infos</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.file_infos" title="Permalink to this definition">¶</a></dt>
-<dd><p>Information on the file. Only created if <cite>create_minfo</cite> = True</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="RockPy.core.ftype.Ftype.imported_files">
-<code class="sig-name descname">imported_files</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.imported_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Secondary storage of a deepcopy of the <cite>obj.data</cite>, for possible recovery.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
 <p class="rubric">Notes</p>
-<p>The units that the data is stored in are SI units. They can be converted using <cite>RockPy.core.utils.convert</cite>.</p>
-<dl class="method">
+<p>The internal_units that the data is stored in are SI internal_units. They can be converted using <cite>RockPy.core.utils.convert</cite>.</p>
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype._get_comment_line_indices">
 <code class="sig-name descname">_get_comment_line_indices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype._get_comment_line_indices" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks for commented lines in the file and returns the indices of those lines. Comments are ‘#’</p>
@@ -248,9 +221,9 @@ the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</c
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype._has_specimen">
-<code class="sig-name descname">_has_specimen</code><span class="sig-paren">(</span><em class="sig-param">specimen</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype._has_specimen" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_has_specimen</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">specimen</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype._has_specimen" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if specimen is contained in file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -265,7 +238,7 @@ the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</c
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype.copy">
 <code class="sig-name descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns a deepcopy of itself, with new <cite>id</cite></p>
@@ -279,30 +252,14 @@ the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</c
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="RockPy.core.ftype.Ftype.inheritors">
-<em class="property">classmethod </em><code class="sig-name descname">inheritors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.inheritors" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="RockPy.core.ftype.Ftype.log">
-<em class="property">classmethod </em><code class="sig-name descname">log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.log" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class logger</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.logger</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype.raw_data">
 <em class="property">property </em><code class="sig-name descname">raw_data</code><a class="headerlink" href="#RockPy.core.ftype.Ftype.raw_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>raw data of the file.</p>
 <p>If _raw_data is None (initialized in constructor, <cite>read_raw_data</cite> is called and assigned to <cite>_raw_data</cite>.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype.read_file">
 <code class="sig-name descname">read_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.read_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for actual import of the file.</p>
@@ -313,12 +270,12 @@ the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</c
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype.read_raw_data">
-<em class="property">static </em><code class="sig-name descname">read_raw_data</code><span class="sig-paren">(</span><em class="sig-param">dfile</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.read_raw_data" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">read_raw_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.read_raw_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>reads file from HD.</p>
 <dl>
-<dt>Reads the file from HD using:</dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;ascii&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;surrogateescape&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<dt>Reads the file from HD using:</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;ascii&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;surrogateescape&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 </pre></div>
 </div>
 </dd>
@@ -336,40 +293,25 @@ the <cite>RockPy</cite> naming convention. Only created if <cite>create_minfo</c
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype.rename_file_using_RockPy_convention">
-<code class="sig-name descname">rename_file_using_RockPy_convention</code><span class="sig-paren">(</span><em class="sig-param">backup=True</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.rename_file_using_RockPy_convention" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">rename_file_using_RockPy_convention</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">backup</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.rename_file_using_RockPy_convention" title="Permalink to this definition">¶</a></dt>
 <dd><p>Renames the file using the NEW RockPy naming convention.</p>
 <p>The function tries to create the new style RockPy file name from the internal file infos.
 By default it creates a copy of the original file, that is commented by using ‘#’ in from of the name.</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="RockPy.core.ftype.Ftype.split_tab">
-<em class="property">static </em><code class="sig-name descname">split_tab</code><span class="sig-paren">(</span><em class="sig-param">line</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.split_tab" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>line</strong> – </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="RockPy.core.ftype.Ftype.subclass_name">
-<em class="property">classmethod </em><code class="sig-name descname">subclass_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.subclass_name" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.core.ftype.Ftype.to_si_units">
 <code class="sig-name descname">to_si_units</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.Ftype.to_si_units" title="Permalink to this definition">¶</a></dt>
-<dd><p>converts each numeric column in self.data to SI units TODO: write to out_units</p>
+<dd><p>converts each numeric column in self.data to SI internal_units TODO: write to out_units</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="RockPy.core.ftype.is_implemented">
-<code class="sig-prename descclassname">RockPy.core.ftype.</code><code class="sig-name descname">is_implemented</code><span class="sig-paren">(</span><em class="sig-param">ftype</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.is_implemented" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">RockPy.core.ftype.</code><code class="sig-name descname">is_implemented</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ftype</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.core.ftype.is_implemented" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if ftype has been implemented.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -390,11 +332,11 @@ By default it creates a copy of the original file, that is commented by using �
 </div>
 <div class="section" id="module-RockPy.ftypes.cif">
 <span id="rockpy-ftype-cif"></span><h2>RockPy.ftype.cif<a class="headerlink" href="#module-RockPy.ftypes.cif" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="RockPy.ftypes.cif.Cif">
-<em class="property">class </em><code class="sig-prename descclassname">RockPy.ftypes.cif.</code><code class="sig-name descname">Cif</code><span class="sig-paren">(</span><em class="sig-param">dfile</em>, <em class="sig-param">snames=None</em>, <em class="sig-param">reload=False</em>, <em class="sig-param">mdata=None</em>, <em class="sig-param">create_minfo=True</em>, <em class="sig-param">level_unit='gauss'</em>, <em class="sig-param">dialect=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">RockPy.ftypes.cif.</code><code class="sig-name descname">Cif</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dfile</span></em>, <em class="sig-param"><span class="n">snames</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reload</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mdata</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">create_minfo</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">level_unit</span><span class="o">=</span><span class="default_value">'gauss'</span></em>, <em class="sig-param"><span class="n">dialect</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif" title="Permalink to this definition">¶</a></dt>
 <dd><p>Ftype object that contains data read in from ‘cif’ files.</p>
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="RockPy.ftypes.cif.Cif.data">
 <code class="sig-name descname">data</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Data contained in the cif (or. UP) files. Note: units are converted to SI
@@ -406,7 +348,7 @@ internally</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="RockPy.ftypes.cif.Cif.corrections">
 <code class="sig-name descname">corrections</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.corrections" title="Permalink to this definition">¶</a></dt>
 <dd><p>A dictionary of the dec, inc values for all possible orientations (below, towards) when
@@ -418,7 +360,7 @@ measuring in the UP position.</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="RockPy.ftypes.cif.Cif.in_units">
 <code class="sig-name descname">in_units</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.in_units" title="Permalink to this definition">¶</a></dt>
 <dd><p>units from used in the data file</p>
@@ -429,7 +371,7 @@ measuring in the UP position.</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="RockPy.ftypes.cif.Cif.out_units">
 <code class="sig-name descname">out_units</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.out_units" title="Permalink to this definition">¶</a></dt>
 <dd><p>units used to export the data</p>
@@ -440,7 +382,7 @@ measuring in the UP position.</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="RockPy.ftypes.cif.Cif.units">
 <code class="sig-name descname">units</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.units" title="Permalink to this definition">¶</a></dt>
 <dd><p>units used internally (should be SI units)</p>
@@ -451,7 +393,7 @@ measuring in the UP position.</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py attribute">
 <dt id="RockPy.ftypes.cif.Cif.datacolumns">
 <code class="sig-name descname">datacolumns</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.datacolumns" title="Permalink to this definition">¶</a></dt>
 <dd><p>names of all the columns should be the same as <cite>self.data.columns</cite></p>
@@ -474,9 +416,9 @@ measuring in the UP position.</p>
 <p class="admonition-title">See also</p>
 <p>For more information on <cite>attributes</cite> see <a class="reference internal" href="#RockPy.core.ftype.Ftype" title="RockPy.core.ftype.Ftype"><code class="xref py py-class docutils literal notranslate"><span class="pre">RockPy.core.ftype.Ftype</span></code></a></p>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._add_missing_levels">
-<em class="property">classmethod </em><code class="sig-name descname">_add_missing_levels</code><span class="sig-paren">(</span><em class="sig-param">data</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._add_missing_levels" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_add_missing_levels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._add_missing_levels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds the correct level for a UAFX measurement.</p>
 <p>Adds the correct level for a UAFX measurement, assuming it is the same level as the previous AF measurement.</p>
 <dl class="field-list simple">
@@ -493,9 +435,9 @@ measuring in the UP position.</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._correct_core">
-<em class="property">classmethod </em><code class="sig-name descname">_correct_core</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">dip</em>, <em class="sig-param">strike</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_core" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_correct_core</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">dip</span></em>, <em class="sig-param"><span class="n">strike</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_core" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function corrects data for core orientation.
 Wrapper function calling <cite>RockPy.tools.compute.correct_dec_inc</cite></p>
 <dl class="field-list simple">
@@ -522,9 +464,9 @@ Wrapper function calling <cite>RockPy.tools.compute.correct_dec_inc</cite></p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._correct_holder">
-<em class="property">static </em><code class="sig-name descname">_correct_holder</code><span class="sig-paren">(</span><em class="sig-param">sample_means</em>, <em class="sig-param">holder_means</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_holder" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">_correct_holder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sample_means</span></em>, <em class="sig-param"><span class="n">holder_means</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_holder" title="Permalink to this definition">¶</a></dt>
 <dd><p>subtracts holder measurement</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -542,9 +484,9 @@ Wrapper function calling <cite>RockPy.tools.compute.correct_dec_inc</cite></p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._correct_strat">
-<em class="property">classmethod </em><code class="sig-name descname">_correct_strat</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">dip</em>, <em class="sig-param">strike</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_strat" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_correct_strat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">dip</span></em>, <em class="sig-param"><span class="n">strike</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_strat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function corrects data for stratigraphic orientation.
 Wrapper function calling <cite>RockPy.tools.compute.correct_dec_inc</cite>.</p>
 <dl class="field-list simple">
@@ -571,15 +513,15 @@ Wrapper function calling <cite>RockPy.tools.compute.correct_dec_inc</cite>.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._correct_wrong_direction">
-<em class="property">classmethod </em><code class="sig-name descname">_correct_wrong_direction</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">core_dip</em>, <em class="sig-param">core_strike</em>, <em class="sig-param">bedding_dip</em>, <em class="sig-param">bedding_strike</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_wrong_direction" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_correct_wrong_direction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">core_dip</span></em>, <em class="sig-param"><span class="n">core_strike</span></em>, <em class="sig-param"><span class="n">bedding_dip</span></em>, <em class="sig-param"><span class="n">bedding_strike</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._correct_wrong_direction" title="Permalink to this definition">¶</a></dt>
 <dd><p>corrects the measurement, in case the up/down measurement directions were wrongly chosen.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._mean_levels">
-<em class="property">classmethod </em><code class="sig-name descname">_mean_levels</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">core_dip</em>, <em class="sig-param">core_strike</em>, <em class="sig-param">strat_dip</em>, <em class="sig-param">strat_strike</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._mean_levels" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_mean_levels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">core_dip</span></em>, <em class="sig-param"><span class="n">core_strike</span></em>, <em class="sig-param"><span class="n">strat_dip</span></em>, <em class="sig-param"><span class="n">strat_strike</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._mean_levels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates mean of AF, UAFX … measurement with the same level.</p>
 <p>Calculates the average for (AF, UAFX1, UAFX2, …) of the same level. Recalcuates the plate, core and strat
 declination and inclinations.</p>
@@ -604,9 +546,9 @@ declination and inclinations.</p>
 <p>Is called by <a href="#id3"><span class="problematic" id="id4">`</span></a>mean_levels’ resets self.data with the means.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._read_UP_file">
-<em class="property">classmethod </em><code class="sig-name descname">_read_UP_file</code><span class="sig-paren">(</span><em class="sig-param">dfile</em>, <em class="sig-param">sample_id</em>, <em class="sig-param">reload=False</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._read_UP_file" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_read_UP_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dfile</span></em>, <em class="sig-param"><span class="n">sample_id</span></em>, <em class="sig-param"><span class="n">reload</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._read_UP_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read function for Up files.</p>
 <p>This function reads in the UP file and returns a pandas.DataFrame with the data in SI units.</p>
 <dl class="field-list simple">
@@ -628,9 +570,9 @@ If <cite>False</cite> the file will be read only from the cached copy in
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._read_header">
-<em class="property">classmethod </em><code class="sig-name descname">_read_header</code><span class="sig-paren">(</span><em class="sig-param">header_rows</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._read_header" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_read_header</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">header_rows</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._read_header" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads the header of a cif file.</p>
 <p>In the first line the first four characters are the locality id, the next 9 the sample id, and the remainder
 (to 255) is a sample comment.</p>
@@ -646,9 +588,9 @@ is unused.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._read_raw_UP_file">
-<em class="property">classmethod </em><code class="sig-name descname">_read_raw_UP_file</code><span class="sig-paren">(</span><em class="sig-param">dfile</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._read_raw_UP_file" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_read_raw_UP_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._read_raw_UP_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads the raw UP file and formats the values</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -663,9 +605,9 @@ is unused.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._return_mean_from_UP_file">
-<em class="property">static </em><code class="sig-name descname">_return_mean_from_UP_file</code><span class="sig-paren">(</span><em class="sig-param">df</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._return_mean_from_UP_file" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">_return_mean_from_UP_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">subtract_holder</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._return_mean_from_UP_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>takes a DataFrame created from reading in an (UP) file (see. read_UP_files)</p>
 <p>This method subtracts the holder measurements and calculates the mean from the 4 measurement positions.
 It returns a new <code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> with the data.</p>
@@ -676,9 +618,9 @@ It returns a new <code class="xref py py-obj docutils literal notranslate"><span
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._rotate_UP_measurements">
-<em class="property">classmethod </em><code class="sig-name descname">_rotate_UP_measurements</code><span class="sig-paren">(</span><em class="sig-param">sdata</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._rotate_UP_measurements" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_rotate_UP_measurements</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sdata</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._rotate_UP_measurements" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rotates the 2,3,4 measurement of an UP file so they align with the 1st.</p>
 <p>Due to the sample handler rotation, the raw data of the 2,3, and 4 th positions in the UP file are rotated.
 This method rotates 2,3,4 into the same orientation as 1.</p>
@@ -700,9 +642,9 @@ This method rotates 2,3,4 into the same orientation as 1.</p>
 </ul>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._separate_row">
-<em class="property">static </em><code class="sig-name descname">_separate_row</code><span class="sig-paren">(</span><em class="sig-param">raw_data</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._separate_row" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">_separate_row</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw_data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._separate_row" title="Permalink to this definition">¶</a></dt>
 <dd><p>Strips each line of the ‘cif’ file into its values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -712,9 +654,9 @@ This method rotates 2,3,4 into the same orientation as 1.</p>
 <p>Returns:</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._write_cif_line">
-<em class="property">static </em><code class="sig-name descname">_write_cif_line</code><span class="sig-paren">(</span><em class="sig-param">series</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._write_cif_line" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_write_cif_line</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._write_cif_line" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes one cit formatted line.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -733,9 +675,9 @@ This method rotates 2,3,4 into the same orientation as 1.</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif._write_header">
-<em class="property">classmethod </em><code class="sig-name descname">_write_header</code><span class="sig-paren">(</span><em class="sig-param">core_strike</em>, <em class="sig-param">core_dip</em>, <em class="sig-param">bedding_strike</em>, <em class="sig-param">bedding_dip</em>, <em class="sig-param">sample_id</em>, <em class="sig-param">core_volume_or_mass=1</em>, <em class="sig-param">locality_id=''</em>, <em class="sig-param">stratigraphic_level=''</em>, <em class="sig-param">comment=''</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._write_header" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">_write_header</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">core_strike</span></em>, <em class="sig-param"><span class="n">core_dip</span></em>, <em class="sig-param"><span class="n">bedding_strike</span></em>, <em class="sig-param"><span class="n">bedding_dip</span></em>, <em class="sig-param"><span class="n">sample_id</span></em>, <em class="sig-param"><span class="n">core_volume_or_mass</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">locality_id</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">stratigraphic_level</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">comment</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif._write_header" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of strings with the correct Cit formatting. Line 1 = locality and sample info,
 line 2 = orientation info</p>
 <dl class="field-list simple">
@@ -755,18 +697,18 @@ line 2 = orientation info</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.export">
-<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">sample_id=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.export" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">export</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">sample_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.export" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exports a cif file from the data
 :param fname str: where the data should be stored
 :param sample_id:
 :type sample_id: name of the sample for the cif file</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.from_rapid">
-<em class="property">classmethod </em><code class="sig-name descname">from_rapid</code><span class="sig-paren">(</span><em class="sig-param">files_or_folder</em>, <em class="sig-param">sample_id</em>, <em class="sig-param">locality_id=''</em>, <em class="sig-param">core_strike=0.0</em>, <em class="sig-param">core_dip=0.0</em>, <em class="sig-param">bedding_strike=0.0</em>, <em class="sig-param">bedding_dip=0.0</em>, <em class="sig-param">core_volume_or_mass=1</em>, <em class="sig-param">stratigraphic_level=''</em>, <em class="sig-param">comment=''</em>, <em class="sig-param">user='lancaster'</em>, <em class="sig-param">reload=False</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.from_rapid" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">from_rapid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files_or_folder</span></em>, <em class="sig-param"><span class="n">sample_id</span></em>, <em class="sig-param"><span class="n">locality_id</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">core_strike</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">core_dip</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">bedding_strike</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">bedding_dip</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">core_volume_or_mass</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stratigraphic_level</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">comment</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">user</span><span class="o">=</span><span class="default_value">'lancaster'</span></em>, <em class="sig-param"><span class="n">subtract_holder</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">reload</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.from_rapid" title="Permalink to this definition">¶</a></dt>
 <dd><p>reads Up files or folder containing Up-files and constructs a cif-like object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -808,19 +750,19 @@ method is called. If True, a cached version of the file is used, speeding up the
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.geo_dim">
 <em class="property">property </em><code class="sig-name descname">geo_dim</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.geo_dim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns <code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> of the geographic (dec, inc, intensity)</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.geo_xyz">
 <em class="property">property </em><code class="sig-name descname">geo_xyz</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.geo_xyz" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns <code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> of the geographic (x,y,z)</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.mean_levels">
 <code class="sig-name descname">mean_levels</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.mean_levels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the mean of a level by from AF, UAFX1, UAFX2… measuements.</p>
@@ -839,19 +781,19 @@ copy of the Dataframe.</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.plate_dim">
 <em class="property">property </em><code class="sig-name descname">plate_dim</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.plate_dim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns <code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> of the plate (dec, inc, intensity)</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.plate_xyz">
 <em class="property">property </em><code class="sig-name descname">plate_xyz</code><a class="headerlink" href="#RockPy.ftypes.cif.Cif.plate_xyz" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns <code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> of the plate (x,y,z)</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.read_file">
 <code class="sig-name descname">read_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.read_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>The sample format is illustrated by the following fragment:</p>
@@ -892,9 +834,9 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.reset_geo">
-<code class="sig-name descname">reset_geo</code><span class="sig-paren">(</span><em class="sig-param">dip=None</em>, <em class="sig-param">strike=None</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_geo" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">reset_geo</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">strike</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_geo" title="Permalink to this definition">¶</a></dt>
 <dd><p>resets dec and inc in geographic coordinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -919,7 +861,7 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.reset_plate">
 <code class="sig-name descname">reset_plate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_plate" title="Permalink to this definition">¶</a></dt>
 <dd><p>resets dec and inc in machine coordinates</p>
@@ -940,9 +882,9 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.reset_strat">
-<code class="sig-name descname">reset_strat</code><span class="sig-paren">(</span><em class="sig-param">dip=None</em>, <em class="sig-param">strike=None</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_strat" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">reset_strat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">strike</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_strat" title="Permalink to this definition">¶</a></dt>
 <dd><p>resets dec and inc in stratigraphic coordinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -979,33 +921,45 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 </div>
 
 
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="clearer"></div>
+        
+        
+      </div><!-- /row -->
+
+      <!-- row -->
+      <div class="row footer-relbar">
+<div id="navbar-related" class=" related navbar navbar-default" role="navigation" aria-label="related navigation">
+  <div class="navbar-inner">
+    <ul class="nav navbar-nav ">
+        <li><a href="index.html">RockPy pyrite-alpha documentation</a></li>
+    </ul>
+<ul class="nav navbar-nav pull-right hidden-xs hidden-sm">
+      
+        <li><a href="codebase.html" title="Code base" >previous</a></li>
+        <li><a href="tools.html" title="Tools" >next</a></li>
+        <li><a href="py-modindex.html" title="Python Module Index" >modules</a></li>
+        <li><a href="genindex.html" title="General Index" >index</a></li>
+        <li><a href="codebase.html" >Code base</a></li>
+        <li><a href="#">top</a></li> 
+      
+    </ul>
+  </div>
+</div>
+      </div><!-- /row -->
+
+      <!-- footer -->
+      <footer role="contentinfo">
+          &copy; Copyright 2019, Michael Volk.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 3.0.3.
+      </footer>
+      <!-- /footer -->
+
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="tools.html" title="Tools"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="codebase.html" title="Code base"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">RockPy pyrite-alpha documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="codebase.html" >Code base</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2019, Michael Volk.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
-    </div>
+    <!-- /container -->
+
   </body>
 </html>

@@ -10,7 +10,7 @@ Welcome to RockPy's documentation!
    :maxdepth: 3
    :caption: Contents:
 
-   introduction
+   Introduction
 
    codebase
 
