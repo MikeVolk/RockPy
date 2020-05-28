@@ -150,6 +150,16 @@ def add_twiny(label, ax=None, conversion=75.34):
 
 
 def max_zorder(ax):
+    """
+
+    Parameters
+    ----------
+    ax
+
+    Returns
+    -------
+        maximum z order of any line in ax.
+    """
     return max(_.zorder for _ in ax.get_children())
 
 
@@ -157,6 +167,18 @@ def max_zorder(ax):
 
 
 def setup_stereonet(ax=None, grid=True, rtickwidth=1):
+    """
+
+    Parameters
+    ----------
+    ax
+    grid
+    rtickwidth
+
+    Returns
+    -------
+
+    """
     if ax is None:
         ax = plt.gca()
 
@@ -168,8 +190,6 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
     for t in ticks:
         t.set_alpha(0)
     ax.set_yticklabels([])  # Less radial ticks
-
-    maxz = max_zorder(ax)
 
     ## plot the grids
     # crosses
