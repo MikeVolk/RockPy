@@ -27,7 +27,6 @@ import RockPy.ftypes.tools
 import RockPy.packages
 
 from RockPy.core.utils import to_tuple, welcome_message
-
 ''' PLOTTING '''
 
 from RockPy.tools.plotting import colorpalettes, ls, marker, figsize
