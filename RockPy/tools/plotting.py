@@ -274,7 +274,8 @@ def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
 
 
 """ LINES """
-def combined_label_legend(ax=None, pad=-1, bbox_to_anchor=[1, 1], **legend_opts):
+def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1], **legend_opts):
+
     """
     Combines labels that are the same into one label
 
@@ -296,7 +297,7 @@ def combined_label_legend(ax=None, pad=-1, bbox_to_anchor=[1, 1], **legend_opts)
     mxlen = max([len(i) for i in handles])
     print(mxlen)
     ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor,
-              handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)},
+              handler_map={tuple: HandlerTuple(ndivide=None, pad=-1*pad)},
               handletextpad = mxlen *pad,
               **legend_opts)
 

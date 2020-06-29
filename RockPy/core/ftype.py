@@ -187,12 +187,14 @@ class Ftype(object):
                             col, self.in_units[col]))
                     continue
 
+                if col == 'level':
+                    self.data.loc[:, 'old_level'] = self.data.loc[:, 'level'].values
+
                 in_unit = self.in_units[col]
                 unit = self.units[col]
 
                 # convert to internal unit
                 try:
-
                     conv = (1 * in_unit).to(unit).magnitude
                     self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
                     self.data.loc[:, col] *= conv

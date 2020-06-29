@@ -264,7 +264,7 @@ class Cif(RockPy.core.ftype.Ftype):
                     series[l] *= 10000
 
         mtype = series['mtype']
-        # series[['std_x', 'std_y', 'std_z', 'intensity']] *= 1e3  # to emu
+        # series[['std_x', 'std_y', 'std_z', 'intensity']] *=  # to emu
         # series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu
 
 
@@ -272,6 +272,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
         columns = ['geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user']
+        # todo check the formatting
         formats = {'mtype': '{:<2}', 'level': '{:>4}',
                    'geo_dec': '{:>5.1f}', 'geo_inc': '{:>5.1f}', 'strat_dec': '{:>5.1f}', 'strat_inc': '{:>5.1f}',
                    'intensity': '{:.2E}', 'ang_err': '{:05.1f}', 'plate_dec': '{:>5.1f}', 'plate_inc': '{:>5.1f}',
@@ -350,12 +351,12 @@ class Cif(RockPy.core.ftype.Ftype):
 
         AF_index = [(i, v) for i, v in enumerate(data['mtype']) if v == 'AF']
 
-        old_levels = data['level'].values
+        new_levels = data['level'].values
+        #
+        # # just in case make a copy of the old levels for reference
+        # data['old_levels'] = old_levels
 
-        # just in case make a copy of the old levels for reference
-        data['old_levels'] = old_levels
-
-        new_levels = old_levels
+        # new_levels = old_levels
         for idx, level in enumerate(new_levels):
             # if 'ARM'  in data['mtype'].iloc[idx]:
             #     level = 0
@@ -961,3 +962,7 @@ class Cif(RockPy.core.ftype.Ftype):
             for row in data.iterrows():
                 row = self._write_cif_line(row)
                 f.write(row + '\n')
+
+
+if __name__ == '__main__':
+    Cif('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM_ARM_IRM/MIL14_IRM')
