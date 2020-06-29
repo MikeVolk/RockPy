@@ -295,14 +295,15 @@ def regularize_data(df, order=2, grid_spacing=2, ommit_n_points=0, check=False, 
     return interp_data
 
 
-def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
+def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I', correct_xyz = False) -> pd.DataFrame:
     """Function that corrects the Dec and Inc values of a DataFrame by
     dip/strike
 
-    1. rotates aroud y-axis by -dip (i.e. counter clockwise)
+    1. rotates around y-axis by -dip (i.e. counter clockwise)
     2. rotates around z axis by -strike (i.e. counter clockwise)
 
-    Args:
+    Parameters
+    ----------
         df (pd.DataFrame):
         dip (float): dip of the 'core', 'plate'...
         strike (float): strike of the 'core', 'plate' ...
@@ -310,6 +311,8 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
         newD (str): name of the corrected inclination column
         colD (str): name of the uncorrected inclination column
         colI (str): name of the uncorrected inclination column
+        correct_xyz: bool
+            if True replaces x y z values with the corrected values
     """
     df = df.copy()
     DI = df[[colD, colI]]
@@ -325,6 +328,7 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
 
     df[newI] = corrected[newI]
     df[newD] = corrected[newD]
+    df[['x', 'y', 'z']] = corrected[['x', 'y', 'z']] * np.linalg.norm(df[['x', 'y', 'z']])
     return df
 
 
