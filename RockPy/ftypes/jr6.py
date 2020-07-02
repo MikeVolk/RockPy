@@ -13,6 +13,14 @@ class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
     imported_files = dict()
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False, volume=10 ** -5):
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+            volume:
+        """
         super().__init__(dfile, snames=snames, dialect=dialect, reload = reload )
         self.volume = volume
 
@@ -46,9 +54,9 @@ class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
 
 
     def read_file(self):
-        ''' 
-        Method that does the actual reading of the whole file. All specimens are in the file
-        '''
+        """Method that does the actual reading of the whole file. All specimens
+        are in the file
+        """
 
         data = pd.read_fwf(self.dfile, widths=(10, 8, 6, 6, 6, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 4, 2),
                            names=['specimen', 'step', 'magn_x', 'magn_y', 'magn_z', 'exp',
@@ -64,21 +72,15 @@ class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
         return data
 
     def lookup_lab_treatment_code(self, item):
-        """
-        looks up the treatment code for an item. This is done to be compatible with MagIC
+        """looks up the treatment code for an item. This is done to be
+        compatible with MagIC
 
-        Notes
-        -----
-        Every dialect has to get its own if clause #todo maybe implement dialect_XXX function that adds a new column
-        to the DataFrame
+        Args:
+            item:
 
-        Parameters
-        ----------
-        item
-
-        Returns
-        -------
-
+        Notes:
+            Every dialect has to get its own if clause #todo maybe implement
+            dialect_XXX function that adds a new column to the DataFrame
         """
         out = None
 

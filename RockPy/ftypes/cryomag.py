@@ -15,6 +15,13 @@ class CryoMag(ftype.Ftype):
     table = {'tdt': ['NRM', 'TH', 'PT', 'CK', 'AC', 'TR']}
 
     def __init__(self, dfile, snames=None, dialect='tdt', reload=False):
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+        """
         super().__init__(dfile=dfile, snames=snames, dialect=dialect, reload=reload)
 
         # filter only results
@@ -39,22 +46,16 @@ class CryoMag(ftype.Ftype):
         return data
 
     def lookup_lab_treatment_code(self, item):
-        '''
-        looks up the treeatment code for an item. This is done to be compatible with MagIC
+        """looks up the treeatment code for an item. This is done to be
+        compatible with MagIC
 
-        Notes
-        -----
-        Every dialect has to get its own if clause #todo maybe implement dialect_XXX function that adds a new column
-        to the DataFrame
+        Args:
+            item:
 
-        Parameters
-        ----------
-        item
-
-        Returns
-        -------
-
-        '''
+        Notes:
+            Every dialect has to get its own if clause #todo maybe implement
+            dialect_XXX function that adds a new column to the DataFrame
+        """
         if self.dialect == 'tdt':
             try:
                 idx = CryoMag.table[self.dialect].index(item)

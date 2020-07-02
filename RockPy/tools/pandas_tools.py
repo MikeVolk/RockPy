@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import RockPy
 import pandas as pd
 from RockPy.tools import compute
-from RockPy.tools.compute import rotate
+from RockPy.tools.compute import rotate, convert_to_xyz
 
 
 def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
@@ -83,19 +83,15 @@ def xyz2dim(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
 
 
 def heat(df, tcol='index'):
-    """
-    returns only values where temperature in Tcol is increasing
+    """returns only values where temperature in tcol is increasing
 
-    Parameters
-    ----------
-    df: pandas dataframe
-        data including columns of D, I and optionally M values
-    tcol: str
-        name of column with temperature input data, may be the index
+    Args:
+        df (pandas dataframe): data including columns of D, I and optionally M
+            values
+        tcol (str): name of column with temperature input data, may be the index
 
-    Returns
-    -------
-    pandas dataframe with only the heating data
+    Returns:
+        pandas dataframe with only the heating data:
     """
 
     if tcol == 'index':
@@ -106,19 +102,15 @@ def heat(df, tcol='index'):
 
 
 def cool(df, tcol='index'):
-    """
-    returns only values where temperature in Tcol is decreasing
+    """returns only values where temperature in Tcol is decreasing
 
-    Parameters
-    ----------
-    df: pandas dataframe
-        data including columns of D, I and optionally M values
-    tcol: str
-        name of column with temperature input data, may be the index
+    Args:
+        df (pandas dataframe): data including columns of D, I and optionally M
+            values
+        tcol (str): name of column with temperature input data, may be the index
 
-    Returns
-    -------
-    pandas dataframe with only the heating data
+    Returns:
+        pandas dataframe with only the heating data:
     """
 
     if tcol == 'index':
@@ -129,50 +121,36 @@ def cool(df, tcol='index'):
 
 
 def gradient(*args, **kwargs):
+    """
+    Args:
+        *args:
+        **kwargs:
+    """
     print('depricated, please change to derivative')
     return derivative(*args, **kwargs)
 
 
 def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_order=1, norm=False, **kwargs):
-    """
-    Calculates the derivative of the pandas dataframe. The xcolumn and ycolumn have to be specified.
-    Rolling adds a rolling mean BEFORE differentiation is done. The kwargs can be used to change the rolling.
+    """Calculates the derivative of the pandas dataframe. The xcolumn and
+    ycolumn have to be specified. Rolling adds a rolling mean BEFORE
+    differentiation is done. The kwargs can be used to change the rolling.
 
-    Parameters
-    ----------
-    df: pandas.DataFrame
-        data to be differentiated
+    Args:
+        df (pandas.DataFrame): data to be differentiated
+        ycol (str): column name of the y column
+        xcol (str): column name of the x values. Can be index then index.name is
+            used. Default: 'index'
+        n (1 or 2): Degree of differentiation. Default:1
+        append (bool):
+        rolling (bool): Uses a rolling mean before differentiation. if integer
+            is given, the int is used as ''window'' parameter in
+            DataFrame.rolling
+        edge_order (int):
+        norm (bool): returns data normalized to the maximum
+        **kwargs:
 
-    xcol: str
-        column name of the x values. Can be index then index.name is used. Default: 'index'
-
-    ycol: str
-        column name of the y column
-
-    # append: bool #todo implement
-    #     - if True: the column is appended to the original dataframe
-    #     - if False: the column is returned individually
-    #     Default: False
-
-    rolling: bool, int
-        Uses a rolling mean before differentiation. Default: False
-        if integer is given, the int is used as ''window'' parameter in DataFrame.rolling
-
-    n: ({1, 2}, optional)
-        Degree of differentiation. Default:1
-
-    edgeorder: ({1, 2}, optional)
-        Gradient is calculated using N-th order accurate differences at the boundaries. Default: 1
-
-    norm: bool
-        returns data normalized to the maximum
-
-    kwargs:
-        passed to rolling
-
-    Returns
-    -------
-        Pandas dataframe
+    Returns:
+        Pandas dataframe:
     """
     # use index column if specified, if index is unnemaded, use 'index'
     if xcol == 'index' and df.index.name is not None:
@@ -213,48 +191,36 @@ def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_or
 
 
 def detect_outlier(df, column, threshold=3, order=4):
-    """
-    Detects Outliers by first fitting a polynomial p(x) of order <order. to the data. Then calculates the root mean
-    square error from the residuals. The data is then compared to the fit ± the threshold * RMSe.
-    All points that are outside this boundary, are considered an outlier.
+    """Detects Outliers by first fitting a polynomial p(x) of order <order. to
+    the data. Then calculates the root mean square error from the residuals. The
+    data is then compared to the fit ± the threshold * RMSe. All points that are
+    outside this boundary, are considered an outlier.
 
-    Parameters
-    ----------
-    df: pandas.Dataframe
-    column: str
-        column to detect outliers in
-    threshold: int
-        default: 3
-        multiples of the RMSerror
-    order: int
-        default: 4
-        order of the polynomial
+    Args:
+        df (pandas.Dataframe):
+        column (str): name of column to detect outliers in
+        threshold (int): multiples of the RMSerror
+        order (int): order of the polynomial
 
-    Returns
-    -------
-    list
-        list of indices
+    Returns:
+        list of indices: **list**
     """
     x, y = (df.index, df[column])
     return compute.detect_outlier(x, y, order, threshold)
 
 
 def remove_outliers(df, column, threshold=3, order=4, **kwargs):
-    """
-    Removes outliers from pandas.DataFrame using detect_outliers.
+    """Removes outliers from pandas.DataFrame using detect_outliers.
 
-    Parameters
-    ----------
-    df: pandas.DataFrame
-    column: str
-        column to detect outliers in
-    threshold: int
-        default: 3
-        multiples of the RMSerror
+    Args:
+        df (pandas.DataFrame):
+        column (str): column to detect outliers in
+        threshold (int): multiples of the RMSerror
+        order (int):
+        **kwargs:
 
-    Returns
-    -------
-    DataFrame without outliers
+    Returns:
+        DataFrame without outliers:
     """
     outliers = detect_outlier(df, column, threshold, order)
     RockPy.log.info(
@@ -267,23 +233,13 @@ def remove_outliers(df, column, threshold=3, order=4, **kwargs):
 
 def regularize_data(df, order=2, grid_spacing=2, ommit_n_points=0, check=False, **parameter):
     """
-        Parameters
-    ----------
-
-       method: str
-          method with which the data is fitted between grid points.
-
-          first:
-              data is fitted using a first order polinomial :math:`M(B) = a_1 + a2*B`
-          second:
-              data is fitted using a second order polinomial :math:`M(B) = a_1 + a2*T +a3*B^2`
-
-       parameter: dict
-          Keyword arguments passed through
-
-    See Also
-    --------
-       get_grid
+    Args:
+        df:
+        order:
+        grid_spacing:
+        ommit_n_points:
+        check:
+        parameter (dict): Keyword arguments passed through
     """
 
     d = df
@@ -340,35 +296,20 @@ def regularize_data(df, order=2, grid_spacing=2, ommit_n_points=0, check=False, 
 
 
 def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
-    """
-    Function that corrects the Dec and Inc values of a DataFrame by dip/strike
+    """Function that corrects the Dec and Inc values of a DataFrame by
+    dip/strike
 
     1. rotates aroud y-axis by -dip (i.e. counter clockwise)
     2. rotates around z axis by -strike (i.e. counter clockwise)
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-    dip: float
-        dip of the 'core', 'plate'...
-    strike: float
-        strike of the 'core', 'plate' ...
-    newI: str
-        default 'I_'
-        name of the corrected inclination column
-    newD: str
-        default 'D_'
-        name of the corrected inclination column
-    colI: str
-        default 'I'
-        name of the uncorrected inclination column
-    colD: str
-        default 'D'
-        name of the uncorrected inclination column
-
-    Returns
-    -------
-
+    Args:
+        df (pd.DataFrame):
+        dip (float): dip of the 'core', 'plate'...
+        strike (float): strike of the 'core', 'plate' ...
+        newI (str): name of the corrected inclination column
+        newD (str): name of the corrected inclination column
+        colD (str): name of the uncorrected inclination column
+        colI (str): name of the uncorrected inclination column
     """
     df = df.copy()
     DI = df[[colD, colI]]
@@ -388,25 +329,19 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
 
 
 def get_values_in_both(a, b, key='level', return_sorted=True):  # todo TEST
-    '''
-    Looks through pd.DataFrame(a)[key] and pd.DataFrame(b)[key] to find values in both
+    """Looks through pd.DataFrame(a)[key] and pd.DataFrame(b)[key] to find
+    values in both
 
-    Parameters
-    ----------
-    a: pd.DataFrame
-        first DataFrame
-    b: pd.DataFrame
-        second DataFrame
-    key: str
+    Args:
+        a (pd.DataFrame): first DataFrame
+        b (pd.DataFrame): second DataFrame
+        key (str):
+        return_sorted (bool): if True the values are returned sorted if False
+            values are returned as is
 
-    return_sorted: bool, optional
-        default: True
-        if True the values are returned sorted
-        if False values are returned as is
-    Returns
-    -------
-        sorted(list) of items
-    '''
+    Returns:
+        sorted(list) of items:
+    """
 
     if key == 'index':
         aval = a.index
@@ -422,26 +357,25 @@ def get_values_in_both(a, b, key='level', return_sorted=True):  # todo TEST
     else:
         return equal_vals
 
-def interpolate(df, levels, retain_levels = True, **kwargs):
-    """
-    Interpolates a dataframe to new index values.
 
-    Parameters
-    ----------
-    df
-    levels
-    retain_levels
-    kwargs: dict
-        passed on to pandas.DataFrame.interpolate
-    Returns
-    -------
-        pandas.DataFrame
+def interpolate(df, levels, retain_levels=True, **kwargs):
+    """Interpolates a dataframe to new index values.
+
     a copy of the original DataFrame with the interpolated values
+
+    Args:
+        df:
+        levels:
+        retain_levels:
+        kwargs (dict): passed on to pandas.DataFrame.interpolate):
+
+    Returns:
+        pandas.DataFrame:
     """
     df = df.copy()
 
     if retain_levels:
-        levels_not_included = df.index[np.in1d(df.index,levels)].values
+        levels_not_included = df.index[np.in1d(df.index, levels)].values
         if any(levels_not_included):
             levels = np.concatenate([levels, levels_not_included])
             levels = np.sort(levels)
@@ -449,15 +383,13 @@ def interpolate(df, levels, retain_levels = True, **kwargs):
     df = df.interpolate(**kwargs)
     return df
 
+
 def remove_duplicate_index(df, method='duplicated', **kwargs):
+    """
+    Args:
+        df:
+        method:
+        **kwargs:
+    """
     if method == 'duplicated':
         return df[~df.index.duplicated(keep=kwargs.pop('keep', 'first'))]
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    t = pd.DataFrame(index = np.linspace(0,10,10), data = np.linspace(0,10,10)**2)
-
-    plt.plot(t)
-    plt.plot(interpolate(t, np.linspace(0,10), method='akima'))
-
-    plt.show()

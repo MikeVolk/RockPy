@@ -14,10 +14,18 @@ class Vsm(Ftype):
                          'Direct moment vs. field; Multiple segments\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',),
                          'Remanence curves:  IRM + DCD\n':('irm','dcd'),
+                         'Direct moment vs. field; First-order reversal curves\n':('forc',),
                          }
 
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
 
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+        """
         self._raw_data = self.read_raw_data(dfile=dfile)
 
         # get the file infos first -> line numbers needed ect.
@@ -27,9 +35,12 @@ class Vsm(Ftype):
 
         self.mtype = self.mtype_translation[mtype]
         self.header = self.read_header(dfile, header_end)
-        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_end, segment_widths)
 
         super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header = self.header)
+
+        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_end, segment_widths)
+
+
 
         # check the calibration factor
         self.calibration_factor = float(self.header.loc['Calibration factor'])
@@ -50,9 +61,9 @@ class Vsm(Ftype):
 
 
     def read_basic_file_info(self):
-        '''
-        Opens the file and extracts the mtype, header lines, segment lines, segment widths, data lines, and data widths.
-        '''
+        """Opens the file and extracts the mtype, header lines, segment lines,
+        segment widths, data lines, and data widths.
+        """
         mtype, header_end, segment_start, segment_widths, data_start, data_widths = None, None, None, None, None, None
 
         empty = []
@@ -75,13 +86,12 @@ class Vsm(Ftype):
         return mtype, header_end, segment_start, segment_end, segment_widths
 
     def read_header(self, dfile, header_end):
-        '''
-        Function reads the header file
+        """Function reads the header file
 
-        Returns
-        -------
-
-        '''
+        Args:
+            dfile:
+            header_end:
+        """
         head = self.raw_data[:header_end]
         header = pd.read_fwf(io.StringIO(''.join(head)),
                              skiprows=2, skip_blank_lines=True,
@@ -109,17 +119,21 @@ class Vsm(Ftype):
     def read_segement_infos(self, dfile, mtype,
                             header_end, segment_start, segment_end, segment_widths,
                             ):
-        '''
-        reads the segments of the VSM file
+        """reads the segments of the VSM file
 
-        Notes
-        -----
-        VSM - FORC measurements do not have a segments part -> returns None
+        Args:
+            dfile:
+            mtype:
+            header_end:
+            segment_start:
+            segment_end:
+            segment_widths:
 
-        Returns
-        -------s
+        Notes:
+            VSM - FORC measurements do not have a segments part -> returns None
 
-        '''
+            Returns -------s
+        """
 
         if not 'First-order reversal curves' in mtype:
             # reading segments_tab data
@@ -129,26 +143,27 @@ class Vsm(Ftype):
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
                                         names=segment_header, encoding='latin-1',
                                         )
+            # add column with start indices for each segment
+            segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+            # add one to the final index because of empty row
+            segment_infos['Final Index'] = [v + i for i, v in enumerate(segment_infos['Final Index'])]
+
         else:
             # constructs segment header from file itself
             segment_infos = self._construct_segment_infos_from_data()
 
-        # add column with start indices for each segment
-        segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
-
         return segment_infos
 
     def _construct_segment_infos_from_data(self):
-        """
-        Uses the Nan rows in the data to construct the segment_info DataFrame.
+        """Uses the Nan rows in the data to construct the segment_info
+        DataFrame.
 
-        Returns
-        -------
-            pd.DataFrame
-                with segment infos.
-                columns : 'Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment','Final Field', 'Pause', 'Final Index'
+        Returns:
+            pd.DataFrame: with segment infos. columns : 'Segment Number',
+            'Averaging Time', 'Initial Field', 'Field Increment','Final Field',
+            'Pause', 'Final Index'
         """
-        segment_header = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
+        segment_infos = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
                                                'Final Field', 'Pause', 'Final Index'])
 
         # an empty row == only nan values separates the different segments
@@ -176,15 +191,17 @@ class Vsm(Ftype):
             else:
                 step.append(np.nan)
 
-        segment_header['Segment Number'] = np.arange(len(nanidx))
-        segment_header['Initial Field'] = Binit
-        segment_header['Field Increment'] = step
-        segment_header['Final Field'] = Bfin
-        segment_header['Final Index'] = nanidx
-        segment_header['Pause'] = self.header.loc['Averaging time'].iloc[0, 0]
-        segment_header['Averaging Time'] = self.header.loc['Averaging time'].iloc[0, 0]
+        segment_infos['Segment Number'] = np.arange(len(nanidx))
+        segment_infos['Initial Field'] = Binit
+        segment_infos['Field Increment'] = step
+        segment_infos['Final Field'] = Bfin
+        segment_infos['Final Index'] = nanidx
+        segment_infos['Pause'] = self.header.loc['Averaging time'].iloc[0, 0]
+        segment_infos['Averaging Time'] = self.header.loc['Averaging time'].iloc[0, 0]
 
-        return segment_header
+        # add column with start indices for each segment
+        segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+        return segment_infos
 
     def read_file(self):
 
@@ -201,11 +218,8 @@ class Vsm(Ftype):
 
     @property
     def iter_segments(self):
-        """
-        Generator that cycles through the segments
-        Returns
-        -------
-            pandas.DataFrame
+        """Generator that cycles through the segments :returns: :rtype:
+        pandas.DataFrame
         """
 
         # iterate over individual rows (segments) in the header
@@ -215,30 +229,24 @@ class Vsm(Ftype):
 
     @property
     def segments(self):
-        """
-        returns a list of individual pandas DataFrames for segments
-        Returns
-        -------
-            list
+        """returns a list of individual pandas DataFrames for segments :returns:
+        :rtype: list
         """
         return list(self.iter_segments)
 
 
     def get_segment_data(self, segment_index):
-        """
-        Returns the segment of a measurement corresponding to the index (segment_index).
+        """Returns the segment of a measurement corresponding to the index
+        (segment_index).
 
-        This is used in read file functions such as DCD, if more than one measurement is stored in a single run,
-        e.g. (IRM,DCD).
+        This is used in read file functions such as DCD, if more than one
+        measurement is stored in a single run, e.g. (IRM,DCD).
 
-        Parameters
-        ----------
-        segment_index: int
-            the index of the segment
+        Args:
+            segment_index (int): the index of the segment
 
-        Returns
-        -------
-            pandas Dataframe
+        Returns:
+            pandas Dataframe:
         """
         return list(self.iter_segments)[segment_index]
 
@@ -247,7 +255,11 @@ if __name__ == '__main__':
     # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
     # print(Vsm(dfile='/Users/mike/Dropbox/science/_projects/RockPy/RockPy/tests/test_data/VSM/dcd_vsm.001').header)
 
-    s = RockPy.Sample('test')
-    m = s.add_measurement(
-        fpath='/Users/mike/Dropbox/science/_projects/Apollo15_kim/data/Apollo15_A15_hys_agm##(Bmax,500,mT)_(f,404,Hz)_(q,150.0,)#0.7(hr).012')
-    print(m.data)
+    # s = RockPy.Sample('test')
+    # m = s.add_measurement(
+    #     fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/dcd_irm_vsm.001')
+    # print(m.data)
+
+    d = Vsm('/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/forc_vsm.001')
+
+    d

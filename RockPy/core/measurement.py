@@ -201,7 +201,7 @@ class Measurement(object):
                    series=series, idx=idx, ftype_data=ftype_data, **options)
 
     @classmethod
-    def from_simulation(cls, sobj=None, idx=None, **parameter):
+    def from_simulation(cls, sobj: RockPy.Sample, idx: int = 0, series: dict = None, **simparams: dict):
         """
         pseudo abstract method that should be overridden in subclasses to return a simulated measurement
         based on given parameters
@@ -709,7 +709,7 @@ class Measurement(object):
 
         '''
         try:
-            return self.sobj.results.loc[self.mid, :]
+            return self.sobj.results.loc[self.mid, :].dropna()
         except KeyError:
             return
 

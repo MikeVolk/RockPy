@@ -150,6 +150,16 @@ def add_twiny(label, ax=None, conversion=75.34):
 
 
 def max_zorder(ax):
+    """
+
+    Parameters
+    ----------
+    ax
+
+    Returns
+    -------
+        maximum z order of any line in ax.
+    """
     return max(_.zorder for _ in ax.get_children())
 
 
@@ -157,24 +167,39 @@ def max_zorder(ax):
 
 
 def setup_stereonet(ax=None, grid=True, rtickwidth=1):
+    """
+
+    Parameters
+    ----------
+    ax
+    grid
+    rtickwidth
+
+    Returns
+    -------
+
+    """
     if ax is None:
-        ax = plt.gca()
+        ax = plt.subplot(111, projection='polar')
 
     ax.grid(grid)
 
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
-    ticks = ax.set_rticks(np.arange(0, 1, 1 / 9))  # Less radial ticks
-    for t in ticks:
-        t.set_alpha(0)
-    ax.set_yticklabels([])  # Less radial ticks
 
-    maxz = max_zorder(ax)
+
+    ax.set_yticklabels([])  # Less radial ticks
 
     ## plot the grids
     # crosses
     for d in [0, 90, 180, 270]:
-        ax.plot(np.ones(10) * np.radians(d), np.linspace(0, 1, 10), 'k+')
+        d = convert_to_equal_area([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)], intype='dim')
+        ax.plot(np.radians(d[:,0]), d[:,1], 'k+')
+
+    ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+    for t in ticks:
+        t.set_alpha(0)
+
     # outer ticks
     for t in np.deg2rad(np.arange(0, 360, 5)):
         ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=-1)
@@ -201,7 +226,7 @@ def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
 
             ax.axvline(r, ymin=ymin / ymx, ymax=y / ymx, color=color, lw=0.7)
 
-def plot_equal(xyz, ax=None, input='xyz', setup_plot=True, **kwargs):
+def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
     """
 
     Parameters
@@ -222,7 +247,7 @@ def plot_equal(xyz, ax=None, input='xyz', setup_plot=True, **kwargs):
         ax = plt.subplot(111, projection='polar')
 
     xyz = maintain_n3_shape(xyz)
-    pol = convert_to_equal_area(xyz, input=input)
+    pol = convert_to_equal_area(xyz, intype=intype)
 
     if len(pol.shape) == 1:
         pol = pol.reshape((1, 3))

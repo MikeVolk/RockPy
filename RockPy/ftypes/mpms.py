@@ -7,16 +7,19 @@ from copy import deepcopy
 
 class Mpms(Ftype):
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
+        """
+        Args:
+            dfile:
+            snames:
+            dialect:
+            reload:
+        """
         super().__init__(dfile, snames=snames, dialect=dialect, reload = reload)
 
     def get_data_index(self):
-        '''
-        Opens the file and searches for the `[Data]` line , returns the index f that line.
-
-        Returns
-        -------
-
-        '''
+        """Opens the file and searches for the `[Data]` line , returns the index
+        f that line.
+        """
 
         with open(self.dfile) as f:
             for i, l in enumerate(f.readlines()):
@@ -34,22 +37,18 @@ class Mpms(Ftype):
         return data
 
     def group_by(self, what):
-        '''
-        iterator that returns a pandas.DataFrame for each entry of `what`
+        """iterator that returns a pandas.DataFrame for each entry of `what`
 
-        Parameters
-        ----------
-        what: to be grouped by
+        Examples:
+            This is usefull to quickly looking at field or amplitude dependent
+            susceptibilities
 
-        Returns
-        -------
-        iterator - pandas.DataFrame
+        Args:
+            what (to be grouped by):
 
-        Examples
-        --------
-
-        This is usefull to quickly looking at field or amplitude dependent susceptibilities
-        '''
+        Returns:
+            iterator - pandas.DataFrame:
+        """
 
         if not what in self.data.columns:
             raise KeyError('Value << %s >> not in data.columns. Chose from: %s'%(what, ', '.join(self.data.columns)))

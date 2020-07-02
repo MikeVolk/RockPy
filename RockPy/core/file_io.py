@@ -1,20 +1,18 @@
 import RockPy
-from RockPy.core.utils import extract_tuple, to_tuple, tuple2list_of_tuples, series_to_dict, tuple2str, list_or_item
+from RockPy.core.utils import str2tuple, to_tuple, tuple2list_of_tuples, series_to_dict, tuple2str, list_or_item
 import os, re
 import warnings
 import logging
 
 
 def read_abbreviations():
-    """
-    Reads the abbreviations.txt file into a dictionary
+    """Reads the abbreviations.txt file into a dictionary
 
-    Returns
-    -------
-        get_mtype_ftype: dict (abbrev:mtype/ftype)
-            a dictionary used to get to the true mtype/ftype sname from an abbreviation
-        get_abbreviations: dict(list) (mtype/ftype:[abbreviation])
-            a dictionary with a list of all possible abbreviations.txt
+    Returns:
+        * **get_mtype_ftype** (*dict (abbrev:mtype/ftype)*) -- a dictionary used
+          to get to the true mtype/ftype sname from an abbreviation
+        * **get_abbreviations** (*dict(list) (mtype/ftype:[abbreviation])*) -- a
+          dictionary with a list of all possible abbreviations.txt
     """
     RockPy.log.debug("READING FTYPE/MTYPE abbreviations.txt")
 
@@ -40,18 +38,13 @@ class ImportHelper(object):
 
     @staticmethod
     def extract_measurement_block(block):
-        """
-        The measurement block entails the samplegroups the sample belongs to, the samples included in the measurement
-        file if more than one, the measurement types included in the measurement file (if more than one) and the
-        filetype the file is in
+        """The measurement block entails the samplegroups the sample belongs to,
+        the samples included in the measurement file if more than one, the
+        measurement types included in the measurement file (if more than one)
+        and the filetype the file is in
 
-        Parameters
-        ----------
-            block
-
-        Returns
-        -------
-
+        Args:
+            block:
         """
         sgroups, snames, mtypes, ftype = block.split("_")
 
@@ -60,9 +53,9 @@ class ImportHelper(object):
             snames = snames.replace(",", ".")
             RockPy.log().debug("sample sname %s contains \",\" will be replaced with \".\"" % snames)
 
-        sgroups = RockPy.core.utils.extract_tuple(sgroups)
-        snames = RockPy.core.utils.extract_tuple(snames)
-        mtypes = RockPy.core.utils.extract_tuple(mtypes)
+        sgroups = RockPy.core.utils.str2tuple(sgroups)
+        snames = RockPy.core.utils.str2tuple(snames)
+        mtypes = RockPy.core.utils.str2tuple(mtypes)
         ftype = ftype.upper()#RockPy.abbrev_to_classname[ftype.lower()]
 
         mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in RockPy.to_tuple(mtypes))
@@ -70,16 +63,10 @@ class ImportHelper(object):
 
     @staticmethod
     def extract_sample_block(block):
-        """
-        Sample block holds the sample information e.g. mass, height, diameter
+        """Sample block holds the sample information e.g. mass, height, diameter
 
-        Parameters
-        ----------
-        block
-
-        Returns
-        -------
-
+        Args:
+            block:
         """
 
         # has to be initialized
@@ -109,23 +96,17 @@ class ImportHelper(object):
 
     @staticmethod
     def extract_series_block(block):
-        """
-        Series block in the minfo
+        """Series block in the minfo
 
-        Parameters
-        ----------
-        block
-
-        Returns
-        -------
-
+        Args:
+            block:
         """
 
         def extract_series(s):
             """
             extracts a series tuple from a str
             """
-            s = RockPy.core.utils.extract_tuple(s)
+            s = RockPy.core.utils.str2tuple(s)
             s = tuple([s[0], float(s[1]), s[2]])
             return s
 
@@ -149,20 +130,16 @@ class ImportHelper(object):
 
     @classmethod
     def extract_add_dialect_block(cls, block):
-        """
-        creates the add block. additional information is comma seperated. 
+        """creates the add block. additional information is comma seperated.
 
         if dialect=XXX: this will then be passed
 
-        Parameters
-        ----------
-        block
+        Args:
+            block:
 
-        Returns
-        -------
-            list of additionals
-            str, dialect
-
+        Returns:
+            * *list of additionals*
+            * *str, dialect*
         """
         if not 'dialect' in block:
             return block, ''
@@ -173,19 +150,15 @@ class ImportHelper(object):
 
     @classmethod
     def from_folder(cls, folder, filter=None):
-        """
-        Creates a minfo (measurement info) instance for all files in a given directory. 
-        
-        Parameters
-        ----------
-        folder: str 
-            location of files
-        filter:
-            unused
+        """Creates a minfo (measurement info) instance for all files in a given
+        directory.
 
-        Returns
-        -------
-            RockPy.minfo
+        Args:
+            folder (str): location of files
+            filter: unused
+
+        Returns:
+            RockPy.minfo:
         """
 
         if filter == None:
@@ -212,15 +185,10 @@ class ImportHelper(object):
 
     @classmethod
     def from_file(cls, fpath):
-        """
-        Reads a path into RockPy readable minfo structure
-        Parameters
-        ----------
-        fpath
+        """Reads a path into RockPy readable minfo structure :param fpath:
 
-        Returns
-        -------
-
+        Args:
+            fpath:
         """
         cls.log().info("reading file infos: ... %s" % fpath[-30:])
 
@@ -280,6 +248,10 @@ class ImportHelper(object):
 
     @classmethod
     def from_dict(cls, **kwargs):
+        """
+        Args:
+            **kwargs:
+        """
         return cls(**{param: kwargs.get(param, None) for param in ("snames", "mtypes", "ftype", "fpath", "sgroups",
                                                                    "dialect",
                                                                    "mass", "massunit", "height", "heightunit",
@@ -287,16 +259,10 @@ class ImportHelper(object):
                                                                    "series", "comment", "additional", "suffix")})
 
     def __add__(self, other):
-        """
-        adds the importinfos of one class to the other.
-        
-        Parameters
-        ----------
-        other: ImportHelper istance
+        """adds the importinfos of one class to the other.
 
-        Returns
-        -------
-
+        Args:
+            other (ImportHelper istance):
         """
 
         for param in ("snames", "mtypes", "ftype", "fpath", "sgroups",
@@ -322,8 +288,26 @@ class ImportHelper(object):
             additional=None,
             suffix=None,
             ):
-        """
-        constructor
+        """constructor
+
+        Args:
+            snames:
+            mtypes:
+            ftype:
+            fpath:
+            sgroups:
+            dialect:
+            mass:
+            massunit:
+            height:
+            heightunit:
+            diameter:
+            diameterunit:
+            lengthunit:
+            series:
+            comment:
+            additional:
+            suffix:
         """
         self.snames = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(snames))
         self.sgroups = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(sgroups))
@@ -370,19 +354,21 @@ class ImportHelper(object):
 
     @classmethod
     def get_measurement_block(cls, sgroups, snames, mtypes, ftype):
-        """
-        Method that joins the parts in the measurement block.
+        """Method that joins the parts in the measurement block.
 
             (Samplegroups)_(snames)_(MTYPES)_ftype
 
-        Returns
-        -------
-            str
-
-        Examples
-        --------
-
+        Examples:
             (SG1,SG2)_(S1,S2)_(HYS,DCD)_VSM
+
+        Args:
+            sgroups:
+            snames:
+            mtypes:
+            ftype:
+
+        Returns:
+            str:
         """
         mtypes = (RockPy.classname_to_abbrev[i][0] for i in mtypes)
         block = [sgroups, snames, mtypes, ftype]
@@ -395,20 +381,25 @@ class ImportHelper(object):
                          mass, massunit,
                          height, heightunit,
                          diameter, diameterunit):
-        """
-        Method that joins the parts of the sample info block.
+        """Method that joins the parts of the sample info block.
 
             (XXmg)_(XXmm)_(XXMM)
 
         In the case there is a mass, diameter and height associated
 
-        Returns
-        -------
-            str
-
-        Examples
-        --------
+        Examples:
             (0.1mg)_(S1,S2)_(HYS,DCD)_VSM
+
+        Args:
+            mass:
+            massunit:
+            height:
+            heightunit:
+            diameter:
+            diameterunit:
+
+        Returns:
+            str:
         """
         out = []
         block = [[mass, massunit], [height, heightunit], [diameter, diameterunit]]
@@ -439,16 +430,15 @@ class ImportHelper(object):
 
     @classmethod
     def get_series_block(cls, series):
-        """
-        Method that joins the series parts of the sample.
+        """Method that joins the series parts of the sample.
 
             (stype1,svalue1,sunit1)_(stype2, sval2, sunit2)
 
+        Args:
+            series:
 
-        Returns
-        -------
-            str
-
+        Returns:
+            str:
         """
         import numpy as np
         if series:
@@ -463,6 +453,10 @@ class ImportHelper(object):
 
     @classmethod
     def get_add_block(cls, additional):
+        """
+        Args:
+            additional:
+        """
         if additional:
             return RockPy.core.utils.tuple2str(additional)
 
@@ -501,21 +495,14 @@ class ImportHelper(object):
         return out
 
     def getImportHelper(self, snames=None, mtypes=None):
-        """
-        Generates ImportInfo instances for each sample, mtype.
-        
-        Parameters
-        ----------
-        snames: str 
-            filters the generator to only create the passed snames
-        mtypes: str
-            filters the generator to only create matching mtypes
+        """Generates ImportInfo instances for each sample, mtype.
 
+        Args:
+            snames (str): filters the generator to only create the passed snames
+            mtypes (str): filters the generator to only create matching mtypes
 
-        Returns
-        -------
-            yields
-
+        Returns:
+            yields:
         """
 
         snames = RockPy.to_tuple(snames)
@@ -539,12 +526,10 @@ class ImportHelper(object):
 
     @property
     def _gen_dicts(self):
-        """
-        generator that returns a dictionary for all samples of the instance
-        
-        Returns
-        -------
-            generator: dict
+        """generator that returns a dictionary for all samples of the instance
+
+        Returns:
+            dict: **generator**
         """
         for f in range(self.nfiles):
             for sname in self.snames[f]:
@@ -573,12 +558,11 @@ class ImportHelper(object):
 
     @property
     def gen_sample_dict(self):
-        """
-        generator returns dictionary with all sample infos for each sample in the instance
-        
-        Returns
-        -------
-            generator: dict
+        """generator returns dictionary with all sample infos for each sample in
+        the instance
+
+        Returns:
+            dict: **generator**
         """
         generated = []
         for ih in self._gen_dicts:
@@ -593,12 +577,11 @@ class ImportHelper(object):
                                                         "sgroups", "series")} #todo check if adding series here broke stuff
 
     def return_file_infos(self):
-        """
-        Returns a dictionary with the sample infos of the ImportHelper with the sname as keys.
+        """Returns a dictionary with the sample infos of the ImportHelper with
+        the sname as keys.
 
-        Returns
-        -------
-        dict
+        Returns:
+            dict:
         """
         out = {}
 

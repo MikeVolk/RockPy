@@ -6,7 +6,9 @@ import importlib
 import pkgutil
 import RockPy
 import numpy as np
+import scipy as sp
 import pandas as pd
+import scipy.io as spio
 
 from contextlib import contextmanager
 
@@ -31,7 +33,12 @@ def welcome_message():
     print()
 
 
-def create_logger(debug):
+def load_logging_conf(debug):
+    """
+    Loads the RockPy logging configuration
+    Args:
+        debug(bool): if debug or normal logging should be loaded #todo I think this does not work, fix 
+    """
     if debug:
         logging.config.fileConfig(os.path.join(RockPy.installation_directory, 'logging_debug.conf'))
     else:
@@ -40,25 +47,18 @@ def create_logger(debug):
 
 def convert(value, unit, si_unit):
     """
-    converts a value from a ``unit`` to a SIunit``
+    converts a value from a ``unit`` to a SIunit`` using `pint` package
     
-    Parameters
-    ----------
-    value
-    unit
-    si_unit
-
-    Returns
-    -------
-        float
-        
-    Notes
-    -----
-        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
+    Args:
+        value(float): value
+        unit(str): input unit
+        si_unit(str): desired output unit
+    Returns:
+        float: converted value
     """
     # print(value, unit, si_unit)
     converted = convert_units(value, in_unit=unit, out_unit=si_unit)
-    if hasattr(value,'magnitude'):
+    if hasattr(value, 'magnitude'):
         value = value.magnitude
     RockPy.log.debug('converting %.3e [%s] -> %.3e [%s]' % (value, unit, converted, si_unit))
     return converted
@@ -68,24 +68,19 @@ def convert_units(values, in_unit, out_unit):
     """
     converts a value from a ``unit`` to a SIunit``
 
-    Parameters
-    ----------
-    value
-    unit
-    si_unit
+    Args:
+        value(float): value
+        in_unit(str): input unit
+        out_unit(str): desired output unit
 
-    Returns
-    -------
-        float
-
-    Notes
-    -----
-        the conversion table is stored in RockPy.installation_directory as 'unit_conversion_table.csv'
+    Returns:
+        float: converted value 
     """
     values = as_array(values)
     in_unit = values * to_quantity(in_unit)
     out_unit = in_unit.to(to_quantity(out_unit))
     return out_unit.magnitude
+
 
 def to_quantity(unit):
     try:
@@ -94,13 +89,13 @@ def to_quantity(unit):
         pass
     return unit
 
+
 @contextmanager
 def ignored(*exceptions):
     """
     ignores certain exceptions
 
-    Parameters
-    ----------
+        Args:
     exceptions: errors
         the errors to be ignored
 
@@ -113,15 +108,12 @@ def ignored(*exceptions):
 
 def mtype_implemented(mtype):
     """
-    Function to check if mtype is implemented
+    Checks if given mtype is implemented in RockPy
     
-    Parameters
-    ----------
-    mtype: str
-        mtype to check
+    Args:
+        mtype(str): mtype to check
 
-    Returns
-    -------
+    Returns:
         bool
     """
     return True if mtype in RockPy.implemented_measurements else False
@@ -131,26 +123,33 @@ def mtype_implemented(mtype):
 
 
 def as_array(df):
+    """
+    makes shure the output is an array, not Series/DataFrame
+    
+    Args:
+        df(pandas.Series, pandas.DataFrame, ndarray): data to convert to array.
+
+    Returns:
+        ndarray: extracted/converted array
+    """
     if isinstance(df, (pd.Series, pd.DataFrame)):
         return df.values
     elif hasattr(df, '__iter__'):
         return df
-    else: # todo
+    else:  # todo
         return df
+
 
 def tuple2list_of_tuples(item) -> list:
     """
     Takes a list of tuples or a tuple and returns a list of tuples
 
-    Parameters
-    ----------
-       item: list, tuple
+        Args:
+       item(list, tuple):
 
-    Returns
-    -------
-       list
-          Returns a list of tuples, if data is a tuple it converts it to a list of tuples
-          if data == a list of tuples will just return data
+    Returns:
+       list: A list of tuples, if data is a tuple it converts it to a list of tuples 
+             if data == a list of tuples will just return data
     """
 
     # check if item is a list -> each item in item has to be converted to a tuple
@@ -170,15 +169,13 @@ def tuple2list_of_tuples(item) -> list:
 
 def to_tuple(oneormoreitems):
     """
-    conversion_table argument to tuple of elements
+    converts one or more items to a tuple of elements
 
-    Parameters
-    ----------
-        oneormoreitems: single number or string or list of numbers or strings
+        Args:
+        oneormoreitems(int, float, list, array, tuple): single number or string or list of numbers or strings
 
-    Returns
-    -------
-        tuple of elements
+    Returns:
+        tuple: tuple of elements
     """
     return tuple(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else (
         oneormoreitems,)
@@ -188,33 +185,30 @@ def to_list(oneormoreitems):
     """
     conversion_table argument to tuple of elements
 
-    Parameters
-    ----------
+        Args:
         oneormoreitems: single number or string or list of numbers or strings
 
-    Returns
-    -------
+    Returns:
         tuple of elements
     """
     return list(oneormoreitems) if hasattr(oneormoreitems, '__iter__') and type(oneormoreitems) is not str else [
         oneormoreitems]
 
 
-def extract_tuple(s: str) -> tuple:
+def str2tuple(s: str) -> tuple:
     """
     Extracts a tuple from a string, brackets ('[]()') are removed first
 
     e.g. "(HYS, COE)" -> ('hys','coe')
     e.g. "[HYS, COE]" -> ('hys','coe')
 
-    Parameters
-    ----------
-    s str
-        string to be tupeled
+        Args:
+        s(str): string to be tupeled
 
-    Returns
-    -------
-        tuple
+    Returns:
+        tuple: tuple of strings
+
+    See Also: tuple2str
     """
     s = s.translate(str.maketrans("", "", "(){}[]")).split(',')
     return tuple(s)
@@ -223,6 +217,14 @@ def extract_tuple(s: str) -> tuple:
 def tuple2str(tup):
     """
     takes a tuple and converts it to text, if more than one element, brackets are put around it
+
+    Args:
+        tup(tuple):
+
+    Returns:
+        str: string of the tuple, i.e. with surrounding brackets
+
+    See Also: str2tuple
     """
     if tup is None:
         return ''
@@ -239,13 +241,10 @@ def split_num_alph(item):
     """
     splits a string with numeric and str values into a float and a string
 
-    Parameters
-    ----------
-    item: str
-        The string that to be split
+        Args:
+        item(str): The string that to be split
 
-    Returns
-    -------
+    Returns:
         float, str
     """
     # replace german decimal comma
@@ -269,12 +268,10 @@ def list_or_item(item):
     """
     Takes a list and returns a list if there is more than one element else it returns only that element.
 
-    Parameters
-    ----------
-    item: List
+        Args:
+        item(list)
 
-    Returns
-    -------
+    Returns:
         list or first element of list
     """
 
@@ -282,6 +279,7 @@ def list_or_item(item):
         return item[0]
     else:
         return item
+
 
 @decorator.decorator
 def correction(func, *args, **kwargs):
@@ -306,12 +304,10 @@ def series_to_dict(series_tuple):
     """
     Converts a series tuple (stype, sval, sunit) to dictionary {stype: (sval, sunit)}
 
-    Parameters
-    ----------
+        Args:
     series_tuple: tuple len(3)
 
-    Returns
-    -------
+    Returns:
 
     dict
 
@@ -321,12 +317,14 @@ def series_to_dict(series_tuple):
 
 """ class and object related """
 
+
 def extract_inheritors_from_cls(cls):
     """
     Method that gets all children and childrens-children ... from a class
 
-    Returns
-    -------
+    Args:
+       cls(class):
+    Returns:
        list
     """
     subclasses = set()
@@ -344,15 +342,12 @@ def set_get_attr(obj, attr, value=None):
     """
     checks if attribute exists, if not, creates attribute with value None
 
-    Parameters
-    ----------
-        obj: object
-        attr: str
-        value: (str, int, float)
-            default: None
+        Args:
+        obj (object):
+        attr (str):
+        value (str, int, float): default: None
 
-    Returns
-    -------
+    Returns:
         value(obj.attr)
     """
     if not hasattr(obj, attr):
@@ -369,14 +364,17 @@ def get_default_args(func):
         if v.default is not inspect.Parameter.empty
     }
 
+
 """ Package related """
 
-def import_submodules(package, recursive=True):
-    """ Import all submodules of a module, recursively, including subpackages
 
-    :param package: package (name or actual module)
-    :type package: str | module
-    :rtype: dict[str, types.ModuleType]
+def import_submodules(package, recursive=True):
+    """
+    Import all submodules of a module, recursively, including subpackages
+
+    Args:
+        package(str, package): package name or actual module
+        recursive(bool, True):
     """
     if isinstance(package, str):
         package = importlib.import_module(package)
@@ -389,24 +387,22 @@ def import_submodules(package, recursive=True):
     return results
 
 
+""" data related """
+
+
 def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
     """
-    Decorator that transforms the input into an `XYZ` array of (n,3) shape. If keyword 'dim' id provided,
-    the data will first be converted to xyz values. Returns an array in its original form and coordinates.
-    Parameters
-    ----------
-    func wrapped function
-    internal_dtype: str
-        default: 'xyz'
-        tells the decorator what input data type is given
-    transform_output: bool
-        default: True
-        transforms the data type back to the original imput dtype
-        if False, calculated dtype will be returned
-    Returns
-    -------
-    np.array
-        maintains shape and coordinates
+    Decorator that transforms the input into an `xyz` array of (n,3) shape. If keyword 'dim' is provided,
+    the data is assumed to be declination, inclination, and Moment and will first be converted to xyz
+    values. Returns an array in its original form and coordinates.
+
+    Args:
+        func: wrapped function
+        internal_dtype (str): tells the decorator what input data type is given
+        transform_output (bool, True): transforms the data type back to the original input dtype.
+            if False, calculated dtype will be returned
+    Returns:
+        ndarray: maintains shape and coordinates
     """
     if func is None:
         return partial(handle_shape_dtype, internal_dtype=internal_dtype, transform_output=transform_output)
@@ -429,14 +425,14 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
         # if the input data is dim it needs to be converted for functions, where internal dtype == 'xyz'
         if internal_dtype == 'dim':
             # if input data dtype == 'xyz' (i.e. input = 'xyz')
-            if 'input' in kwargs and kwargs['input'] == 'xyz':
+            if 'intype' in kwargs and kwargs['intype'] == 'xyz':
                 from RockPy.tools.compute import convert_to_dim
                 RockPy.log.debug(f'{func.__qualname__} uses \'dim\' for internal calculations: converting xyz -> dim')
                 xyz = convert_to_dim(xyz)
         # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
         elif internal_dtype == 'xyz':
             # if input data dtype == 'xyz' (i.e. input = 'xyz')
-            if 'input' in kwargs and kwargs['input'] == 'dim':
+            if 'intype' in kwargs and kwargs['intype'] == 'dim':
                 from RockPy.tools.compute import convert_to_xyz
                 RockPy.log.debug(f'{func.__qualname__} uses \'xyz\' for internal calculations: converting dim -> xyz')
                 xyz = convert_to_xyz(xyz)
@@ -449,47 +445,54 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
             # for internal dtype == dim, the data up to here is dim. Needs to be converted, if input was xyz.
             if internal_dtype == 'dim':
                 # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'input' in kwargs and kwargs['input'] == 'xyz':
+                if 'intype' in kwargs and kwargs['intype'] == 'xyz':
                     from RockPy.tools.compute import convert_to_xyz
                     xyz = convert_to_xyz(xyz)
 
             # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
             elif internal_dtype == 'xyz':
                 # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'input' in kwargs and kwargs['input'] == 'dim':
+                if 'intype' in kwargs and kwargs['intype'] == 'dim':
                     from RockPy.tools.compute import convert_to_dim
                     xyz = convert_to_dim(xyz)
 
-        # if np.shape(xyz) != s:
-        #     if len(s) == 1:
-        #         return xyz[0]
-        #     else:
-        #         return xyz.T
         return xyz
 
     return conversion
+
+
+@handle_shape_dtype
+def handle_shape(xyz):
+    return xyz
 
 
 def maintain_n3_shape(xyz):
     """
     Takes vector of (3,), (n,3) and (3,n) shape and transforms it into (n,3) shape used for ALL compute calculations.
 
-    Parameters
-    ----------
-    xyz array like
-        data to be returned
+    Args:
+        xyz (ndarray): data to be returned
 
-    Returns
-    -------
-        array like
-        in the shape of (n,3)
+    Returns:
+        ndarray: in the shape of (n,3)
+
+    Raises:
+        ValueError:
+            - if not at least one dimension is len 3
+            - if the number of elements is inconsistent (e.g. [[1, 2, 3], [1, 2], [1, 2]])
     """
     ## maintain vector shape part
     s = np.array(xyz).shape
+
+    if not any(i == 3 for i in s):
+        raise ValueError('At least one dimension needs to be length 3')
     # for [x,y,z] or [d,i,m]
     if s == (3,):
+        if len(set(np.shape(elem) for elem in xyz)) != 1:
+            raise ValueError('Number of elements ix xyz is inconsistent')
         xyz = np.array(xyz).reshape((1, 3))
-    # for array like [[x],[y],
+
+    # for array like [[x1,x2,... ],[y1,y2,...],[z1,z2,...]],
     elif s[0] == 3 and s[1] != 3:
         xyz = np.array(xyz).T
     elif s[1] == 3 and s[0] != 3:
@@ -500,15 +503,73 @@ def maintain_n3_shape(xyz):
                            'Returning original shape')
         xyz = np.array(xyz)
     return xyz
+
+def loadmat(filename):
+    '''
+    FROM: https://stackoverflow.com/questions/7008608/scipy-io-loadmat-nested-structures-i-e-dictionaries
+    this function should be called instead of direct spio.loadmat
+    as it cures the problem of not properly recovering python dictionaries
+    from mat files. It calls the function check keys to cure all entries
+    which are still mat-objects
+    '''
+    def _check_keys(d):
+        '''
+        checks if entries in dictionary are mat-objects. If yes
+        todict is called to change them to nested dictionaries
+        '''
+        for key in d:
+            if isinstance(d[key], spio.matlab.mio5_params.mat_struct):
+                d[key] = _todict(d[key])
+        return d
+
+    def _todict(matobj):
+        '''
+        A recursive function which constructs from matobjects nested dictionaries
+        '''
+        d = {}
+        for strg in matobj._fieldnames:
+            elem = matobj.__dict__[strg]
+            if isinstance(elem, spio.matlab.mio5_params.mat_struct):
+                d[strg] = _todict(elem)
+            # elif isinstance(elem, np.ndarray):
+            #     d[strg] = _tolist(elem)
+            else:
+                d[strg] = elem
+        return d
+
+    def _tolist(ndarray):
+        '''
+        A recursive function which constructs lists from cellarrays
+        (which are loaded as numpy ndarrays), recursing into the elements
+        if they contain matobjects.
+        '''
+        elem_list = []
+        for sub_elem in ndarray:
+            if isinstance(sub_elem, spio.matlab.mio5_params.mat_struct):
+                elem_list.append(_todict(sub_elem))
+            elif isinstance(sub_elem, np.ndarray):
+                elem_list.append(_tolist(sub_elem))
+            else:
+                elem_list.append(sub_elem)
+        return elem_list
+    data = sp.io.loadmat(filename, struct_as_record=False, squeeze_me=True)
+    return _check_keys(data)
+
+if __name__ == '__main__':
+    a = handle_shape([[1, 2, 3], [1, 2, 3]])
+    print(a)
+    print(np.shape(a))
+
 import json
 import codecs
 
 _MagIC_codes = None
 
+
 def MagIC_codes():
     if RockPy.core.utils._MagIC_codes is None:
-        data = json.load(codecs.open(os.path.join(RockPy.installation_directory, 'MagIC_method_codes.json'), 'r', 'utf-8-sig'))
-        _MagIC_codes = {n:{i['code']:i['definition'] if 'definition' in i else None for i in data[n]['codes']} for n in data.keys()}
+        data = json.load(
+            codecs.open(os.path.join(RockPy.installation_directory, 'MagIC_method_codes.json'), 'r', 'utf-8-sig'))
+        _MagIC_codes = {n: {i['code']: i['definition'] if 'definition' in i else None for i in data[n]['codes']} for n
+                        in data.keys()}
     return _MagIC_codes
-
-

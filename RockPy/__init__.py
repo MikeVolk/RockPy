@@ -27,7 +27,6 @@ import RockPy.ftypes.tools
 import RockPy.packages
 
 from RockPy.core.utils import to_tuple, welcome_message
-
 ''' PLOTTING '''
 
 from RockPy.tools.plotting import colorpalettes, ls, marker, figsize
@@ -38,8 +37,8 @@ from RockPy.tools.data import datamining
 colors = colorpalettes['cat10']
 
 ''' LOGGING '''
-from RockPy.core.utils import create_logger
-create_logger(debug=False)
+from RockPy.core.utils import load_logging_conf
+load_logging_conf(debug=False)
 
 # create the RockPy main logger
 log = logging.getLogger('RockPy')
@@ -57,4 +56,8 @@ implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
 auto_calc_results = True
 
 def debug_mode(on=False):
-    create_logger(debug=on)
+    """
+    Args:
+        on:
+    """
+    load_logging_conf(debug=on)

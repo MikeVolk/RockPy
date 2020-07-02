@@ -13,6 +13,8 @@ from RockPy.core.utils import correction
 from RockPy.tools.compute import lin_regress
 import RockPy.packages.magnetism.simulations
 from RockPy.tools.pandas_tools import get_values_in_both
+import os
+
 
 class Hysteresis(Measurement):
 
@@ -26,30 +28,22 @@ class Hysteresis(Measurement):
 
     @staticmethod
     def _format_vsm(ftype_data, sobj_name=None):
-        '''
-        formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
+        """formatting routine for VSM type hysteresis measurements. Indirectly
+        called by the measurement.from_file method.
 
-        Parameters
-        ----------
-        ftype_data: RockPy.io
-            data read by magnetism.ftypes.Vsm.vsm function.
-            Contains:
-              - data
-              - header
-              - segment_header
+        Args:
+            ftype_data (RockPy.io): data read by magnetism.ftypes.Vsm.vsm
+                function. Contains:
+                    - data
+                    - header
+                    - segment_header
+            sobj_name (str): unused
 
-        sobj_name: str
-            unused
-
-        Returns
-        -------
-            data: pandas.Dataframe
-                columns = ['B','M']
-            ftype_data: ftypes object
-                ftypes object as read by magnetism.ftypes.Vsm.vsm
-
-
-        '''
+        Returns:
+            * **data** (*pandas.Dataframe*) -- columns = ['B','M']
+            * **ftype_data** (*ftypes object*) -- ftypes object as read by
+              magnetism.ftypes.Vsm.vsm
+        """
 
         # expected column names for typical VSM hysteresis experiments
         expected_columns = ['Field (T)', 'Moment (Am2)']
@@ -63,67 +57,61 @@ class Hysteresis(Measurement):
 
     @staticmethod
     def _format_agm(ftype_data, sobj_name=None):
+        """
+        Args:
+            ftype_data:
+            sobj_name:
+        """
         return Hysteresis._format_vsm(ftype_data, sobj_name)
 
     @staticmethod
     def _format_vftb(ftype_data, sobj_name=None):
-        '''
-        formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
+        """formatting routine for VSM type hysteresis measurements. Indirectly
+        called by the measurement.from_file method.
 
-        Parameters
-        ----------
-        ftype_data: RockPy.io
-            data read by magnetism.ftypes.Vsm.vsm function.
-            Contains:
-              - data
-              - header
-              - segment_header
+        Args:
+            ftype_data (RockPy.io): data read by magnetism.ftypes.Vsm.vsm
+                function. Contains:
+                    - data
+                    - header
+                    - segment_header
+            sobj_name (str): unused
 
-        sobj_name: str
-            unused
-
-        Returns
-        -------
-            data: pandas.Dataframe
-                columns = ['B','M']
-            ftype_data: ftypes object
-                ftypes object as read by magnetism.ftypes.Vsm.vsm
-
-
-        '''
+        Returns:
+            * **data** (*pandas.Dataframe*) -- columns = ['B','M']
+            * **ftype_data** (*ftypes object*) -- ftypes object as read by
+              magnetism.ftypes.Vsm.vsm
+        """
 
         # expected column names for typical VSM hysteresis experiments
         expected_columns = ['B', 'M']
         data = ftype_data.data
         data = data.dropna(how='all')
         return data
+
     ####################################################################################################################
     ''' BRANCHES '''
 
     @property
     def fieldspacing(self):
-        """
-        Property returns the mean absolute spacing between field steps
+        """Property returns the mean absolute spacing between field steps
 
-        Returns
-        -------
-            float
+        Returns:
+            float:
         """
         return np.mean(np.abs(np.diff(self.data.index)))
 
     @property
     def max_field(self):
-        """ returns maximum field of measurement """
+        """returns maximum field of measurement"""
         return np.nanmax(np.abs(self.data.index.values))
 
     @property
     def _regularize_fields(self):
-        '''
-        Method generates new field steps using the mean field spacing and the maximum applied field, with regular steps
-        Returns
-        -------
-            np.array with reugularized field steps
-        '''
+        """Method generates new field steps using the mean field spacing and the
+        maximum applied field, with regular steps :returns: :rtype: np.array
+        with reugularized field steps
+        """
         virgin_fields = np.arange(0, self.max_field + self.fieldspacing, self.fieldspacing)
         df_fields = np.arange(self.max_field, (self.max_field + self.fieldspacing) * -1, -self.fieldspacing)
         uf_fields = np.arange(-1 * self.max_field, self.max_field + self.fieldspacing, self.fieldspacing)
@@ -134,15 +122,14 @@ class Hysteresis(Measurement):
         return np.round(fields, 2)
 
     def has_virgin(self):
-        '''
-        Method to determine weather a virgin/MSi branch was measured.
+        """Method to determine weather a virgin/MSi branch was measured.
 
-        Checks if the first field step is > 90% of the max field. If yes than it is no virgin/MSi
+        Checks if the first field step is > 90% of the max field. If yes than
+        it is no virgin/MSi
 
-        Returns
-        -------
-            bool
-        '''
+        Returns:
+            bool:
+        """
         # check if the first point is  close to the maximum/minimum field
         if np.abs(self.data.index[0]) > 0.9 * self.data.index.max():
             return False
@@ -150,24 +137,20 @@ class Hysteresis(Measurement):
             return True
 
     def get_polarity_switch(self, window=5):
-        '''
+        """
+        Args:
+            window (int): default_recipe: 1 - no running mean Size of the moving
+                window. This is the number of observations used for calculating
+                the statistic. Each window will be a fixed size. Moving window
+                is used twice: for smoothing data (mean with hamming window) and
+                smoothing the sign (median, no special window)
 
-        Parameters
-        ----------
-        window : int
-            default_recipe: 1 - no running mean
-            Size of the moving window. This is the number of observations used for calculating the statistic.
-            Each window will be a fixed size. Moving window is used twice: for smoothing data (mean with hamming window)
-            and smoothing the sign (median, no special window)
+        Returns:
+            pandas.Series with sign of the polarity:
 
-        Notes
-        -----
+        Notes:
             A window size of 5 is usually sufficient to smooth out 1% of noise
-
-        Returns
-        -------
-            pandas.Series with sign of the polarity
-        '''
+        """
         a = self.data.index.to_series()
 
         # adding 2% noise to the data
@@ -191,19 +174,17 @@ class Hysteresis(Measurement):
         return asign
 
     def get_polarity_switch_index(self, window=1):
-        '''
-        Method calls hysteresis.get_polarity_switch with window and then calculated the indices of the switch
+        """Method calls hysteresis.get_polarity_switch with window and then
+        calculated the indices of the switch
 
-        Parameters
-        ----------
-        window: int
-            default_recipe: 1 - no running mean
-            Size of the moving window. This is the number of observations used for calculating the statistic.
+        Args:
+            window (int): default_recipe: 1 - no running mean Size of the moving
+                window. This is the number of observations used for calculating
+                the statistic.
 
-        Returns
-        -------
-            np.array of indices
-        '''
+        Returns:
+            np.array of indices:
+        """
 
         asign = self.get_polarity_switch()
 
@@ -214,12 +195,10 @@ class Hysteresis(Measurement):
 
     @property
     def downfield(self):
-        '''
-
-        Returns
-        -------
-            pandas.DataFrame with only downfield data. Window size for selecting the polarity change is 5
-        '''
+        """
+        Returns:
+            pandas.DataFrame with only downfield data. Window size for selecting the polarity change is 5:
+        """
         # todo how to change window size?
         idx = self.get_polarity_switch_index(5)
         if len(idx) > 1:
@@ -229,12 +208,10 @@ class Hysteresis(Measurement):
 
     @property
     def upfield(self):
-        '''
-
-        Returns
-        -------
-            pandas.DataFrame with only upfield data. Window size for selecting the polarity change is 5
-        '''
+        """
+        Returns:
+            pandas.DataFrame with only upfield data. Window size for selecting the polarity change is 5:
+        """
         # todo how to change window size?
         idx = self.get_polarity_switch_index(5)
         return self.data.iloc[int(idx[-1]) - 1:].dropna(axis=1).dropna()
@@ -243,19 +220,17 @@ class Hysteresis(Measurement):
 
     @property
     def irreversible(self):
-        """
-        Calculates the irreversible hysteretic components :math:`M_{ih}` from the data.
+        """Calculates the irreversible hysteretic components :math:`M_{ih}` from
+        the data.
 
         .. math::
-
            M_{ih} = (M^+(H) + M^-(H)) / 2
 
-        where :math:`M^+(H)` and :math:`M^-(H)` are the upper and lower branches of the hysteresis loop
+        where :math:`M^+(H)` and :math:`M^-(H)` are the upper and lower
+        branches of the hysteresis loop
 
-        Returns
-        -------
-           Mih: RockPyData
-
+        Returns:
+            RockPyData: **Mih**
         """
 
         raise NotImplementedError
@@ -285,45 +260,37 @@ class Hysteresis(Measurement):
         default_recipe = 'linear'
 
         def recipe_linear(self, npoints=4, check=False):
-            """
-            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield and down field slope.
+            """Calculates the coercivity using a linear interpolation between
+            the points crossing the x axis for upfield and down field slope.
 
-            Parameters
-            ----------
-                field_limit: float
-                    default_recipe: 0, 0mT
-                    the maximum/ minimum fields used for the linear regression
+                Args: npoints(int, 4): Number of points to use for linear
+                interpolation
 
-            Note
-            ----
-                Uses numpy.polyfit for calculation
+            Args:
+                npoints:
+                check:
+
+            Note:
+                Uses recipe_nonlinear with order=1 for calculation
             """
             self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
         def recipe_nonlinear(self, npoints=4, order=2, check=False):
-            """
-            Calculates the coercivity using a spline interpolation between the points crossing
-            the x axis for upfield and down field slope.
+            """Calculates the coercivity using a spline interpolation between
+            the points crossing the x axis for upfield and down field slope.
 
-            Parameters
-            ----------
-                npoints: int
-                    default_recipe: 4
-                    number of points used for fit
+                Args: npoints (int, 4): number of points used for fit
 
-            Note
-            ----
+            Args:
+                npoints:
+                order:
+                check:
+
+            Note:
                 Uses numpy.polyfit for calculation
             """
+
             # retireve measurement instance
-            m = self.mobj
-
-            # initialize result
-            result = []
-
-            # the field_limit has to be set higher than the lowest field
-            # if not the field_limit will be chosen to be 2 points for uf and df separately
-
             m = self.mobj
 
             if npoints > len(m.data):
@@ -389,6 +356,12 @@ class Hysteresis(Measurement):
         def recipe_default(self, npoints=4, check=False, **unused_params):
 
             # set measurement instance
+            """
+            Args:
+                npoints:
+                check:
+                **unused_params:
+            """
             m = self.mobj
             # initialize result
             result = []
@@ -435,76 +408,57 @@ class Hysteresis(Measurement):
     """ MS """
 
     class Ms(Result):
-        """
-        Calculates the saturation magnetization from a hysteresis loop. The standard recipe is 'linear'.
+        """Calculates the saturation magnetization from a hysteresis loop. The
+        standard recipe is 'linear'.
 
         Recipes
-        -------
-            - simple:
-                simple linear fit for fields higher than specified
+            - simple (default):
+                  simple linear fit for fields higher than specified
+                      Args: saturation_percent (float, 75.): percent where
+                      saturation is assumed ommit_last_n (int, 0): omits the
+                      last n points check(bool, False): creates a plot to check
+                      the result
+
             - app2sat:
-                Uses approach to saturation to calculate Ms, Hf_sus
-
-        Parameters
-        ----------
-            recipe = simple
-            ---------------
-                saturation_percent: float
-                    percent where saturation is assumed
-                    default = 75.
-                ommit_last_n: int
-                    omits the last n points
-                    default = 0
-                check: bool
-                    creates a plot to check the result
-                    default:False
-
-            recipe = app2sat
-            ---------------
-                saturation_percent: float
-                    percent where saturation is assumed
-                    default = 75.
-                ommit_last_n: int
-                    omits the last n points
-                    default = 0
-                check: bool
-                    creates a plot to check the result
-                    default:False
-
-
-
+                  Uses approach to saturation to calculate Ms, Hf_sus
+                      Args: saturation_percent (float, 75.): percent where
+                      saturation is assumed ommit_last_n: (int, 0): omits the
+                      last n points check: (bool, False): creates a plot to
+                      check the result
         """
 
         default_recipe = 'simple'
 
         @staticmethod
         def approach2sat_func(h, ms, chi, alpha, beta=-2):
-            """
-            General approach to saturation function
+            """General approach to saturation function
+            :math:`M_s \chi * B + \\alpha * B^{\\beta = -2}`
 
-            Parameters
-            ----------
-               x: ndarray
-                  field
-               ms: float
-                  saturation magnetization
-               chi: float
-                  susceptibility
-               alpha: float
-               beta: float
-                  not fitted assumed -2
+                    Args:
 
-            Returns
-            -------
-               ndarray:
-                  :math:`M_s \chi * B + \\alpha * B^{\\beta = -2}`
+                x (ndarray): field ms (float): saturation magnetization chi
+                (float): susceptibility alpha (float): beta (float, -2): not
+                fitted assumed to be -2
+
+            Returns: ndarray
+
+            Args:
+                h:
+                ms:
+                chi:
+                alpha:
+                beta:
             """
             return ms + chi * h + alpha * h ** beta
 
         def get_df_uf_plus_minus(self, saturation_percent, ommit_last_n):
-            """
-            Filters the data :code:`down_field`, :code:`up_field` to be larger than the saturation_field, filters
-            the last :code:`ommit_last_n` and splits into pos and negative components
+            """Filters the data ``down_field``, ``up_field`` to be larger than
+            the saturation_field, filters the last ``ommit_last_n`` and splits
+            into pos and negative components
+
+            Args:
+                saturation_percent:
+                ommit_last_n:
             """
             # transform from percent value
             saturation_percent /= 100
@@ -527,9 +481,13 @@ class Hysteresis(Measurement):
             return df_plus, df_minus, uf_plus, uf_minus
 
         def recipe_app2sat(self, saturation_percent=75., ommit_last_n=0, check=False):
-            """
-            Calculates the high field susceptibility and Ms using approach to saturation
-            :return:
+            """Calculates the high field susceptibility and Ms using approach to
+            saturation :return:
+
+            Args:
+                saturation_percent:
+                ommit_last_n:
+                check:
             """
             df_pos, df_neg, uf_pos, uf_neg = self.get_df_uf_plus_minus(saturation_percent=saturation_percent,
                                                                        ommit_last_n=ommit_last_n)
@@ -592,26 +550,28 @@ class Hysteresis(Measurement):
                 plt.show()
 
         def recipe_simple(self, saturation_percent=75., ommit_last_n=0, check=False):
-            """
-            Calculates High-Field susceptibility using a simple linear regression on all branches
+            """Calculates High-Field susceptibility using a simple linear
+            regression on all branches
 
-            Parameters
-            ----------
-                saturation_percent: float
-                    default_recipe: 75.0
-                    Defines the field limit in percent of max(field) at which saturation is assumed.
-                     e.g. max field : 1T -> saturation asumed at 750mT
-                ommit_last_n: int, pos
-                    last n points of each branch are not used for the calculation
+                Args: saturation_percent (float, 75): Defines the field limit in
+                percent of max(field) at which saturation
 
+                    is assumed e.g. max field : 1T -> saturation assumed at
+                    750mT.
 
-            Calculation
-            -----------
+                ommit_last_n (+int,0): last n points of each branch are not used
+                for the calculation
 
-                calculates the slope using SciPy.linregress for each branch at positive and negative fields.
-                Giving four values for the slope.
-                The result is the mean for all four values, and the error is the standard deviation
+            Args:
+                saturation_percent:
+                ommit_last_n:
+                check:
 
+            Note:
+                calculates the slope using SciPy.linregress for each branch at
+                positive and negative fields. Giving four values for the slope.
+                The result is the mean for all four values, and the error is the
+                standard deviation
             """
 
             # initialize result
@@ -664,18 +624,15 @@ class Hysteresis(Measurement):
     ''' CORRECTIONS '''
 
     def rotate_branch(self, branch):
-        """
-        rotates a branch by 180 degrees, by multiplying the field and mag values by -1.
+        """rotates a branch by 180 degrees, by multiplying the field and mag
+        values by -1.
 
-        Parameters
-        ----------
-            branch: str or. pandas.DataFrame
-                up-field or down-field
+        Args:
+            branch (str or. pandas.DataFrame): up-field or down-field
                 RockPyData: will rotate the data
 
-        Returns
-        -------
-            deepcopy of branch
+        Returns:
+            deepcopy of branch:
         """
         if isinstance(branch, str):
             data = getattr(self, branch).copy()
@@ -689,19 +646,16 @@ class Hysteresis(Measurement):
         return data.sort_index()  # todo may fail for hysteresis loops with virgin branch
 
     @classmethod
-    def get_grid(cls, bmax=1, grid_points=30, tuning=10):
-        """
-        Creates a grid of field values
+    def get_grid(cls, bmax: float = 1, grid_points: int = 30, tuning: int = 10) -> np.array:
+        """Creates a grid of field values
 
-        Parameters
-        ----------
-        bmax
-        grid_points
-        tuning
+        Args:
+            bmax (float):
+            grid_points (int):
+            tuning (int):
 
-        Returns
-        -------
-
+        Returns:
+            object:
         """
         grid = []
         # calculating the grid
@@ -715,32 +669,23 @@ class Hysteresis(Measurement):
 
     @correction
     def data_gridding(self, order=2, grid_points=20, tuning=1, ommit_n_points=0, check=False, **parameter):
-        """
-        Data griding after :cite:`Dobeneck1996a`. Generates an interpolated hysteresis loop with
-        :math:`M^{\pm}_{sam}(B^{\pm}_{exp})` at mathematically defined (grid) field values, identical for upper
-        and lower branch.
+        """Data griding after :cite:`Dobeneck1996a`. Generates an interpolated
+        hysteresis loop with :math:`M^{\pm}_{sam}(B^{\pm}_{exp})` at
+        mathematically defined (grid) field values, identical for upper and
+        lower branch.
 
         .. math::
+           B_{text{grid}}(i) = \frac{|i|}{i} \frac{B_m}{lambda} \left[(lambda +
+           1 )^{|i| /n} - 1 \right]
 
-           B_{\text{grid}}(i) = \\frac{|i|}{i} \\frac{B_m}{\lambda} \\left[(\lambda + 1 )^{|i|/n} - 1 \\right]
-
-        Parameters
-        ----------
-
-           method: str
-              method with which the data is fitted between grid points.
-
-              first:
-                  data is fitted using a first order polinomial :math:`M(B) = a_1 + a2*B`
-              second:
-                  data is fitted using a second order polinomial :math:`M(B) = a_1 + a2*B +a3*B^2`
-
-           parameter: dict
-              Keyword arguments passed through
-
-        See Also
-        --------
-           get_grid
+        Args:
+            order (int, 2): order of the polynomial that is used to fit the
+                data: e.g. 1 = first order polinomial :math:`M(B) = a_1 + a2*B`
+            grid_points (int, 20):
+            tuning (int, 1):
+            ommit_n_points (int, 0):
+            check (bool, False):
+            **parameter: Keyword arguments passed through
         """
 
         if any([len(i.index) <= 50 for i in [self.downfield, self.upfield]]):
@@ -752,7 +697,7 @@ class Hysteresis(Measurement):
         bmin = max([min(self.downfield.index), min(self.upfield.index)])
         bm = max([abs(bmax), abs(bmin)])
 
-        grid = self.get_grid(bmax=bm, grid_points=grid_points, tuning=tuning, **parameter)
+        grid = self.get_grid(bmax=bm, grid_points=grid_points, tuning=tuning)
 
         # interpolate the magnetization values M_int(Bgrid(i)) for i = -n+1 .. n-1
         # by fitting M_{measured}(B_{experimental}) individually in all intervals [Bgrid(i-1), Bgrid(i+1)]
@@ -863,13 +808,17 @@ class Hysteresis(Measurement):
 
     @staticmethod
     def check_plot(corrected_data, uncorrected_data, ax=None, f=None, points=None, show=True, title='', **kwargs):
-        """
-        Helper function for consistent check visualization
+        """Helper function for consistent check visualization
 
-        Parameters
-        ----------
-           uncorrected_data: RockPyData
-              the pre-correction data.
+        Args:
+            corrected_data:
+            uncorrected_data (RockPyData): the pre-correction data.
+            ax:
+            f:
+            points:
+            show:
+            title:
+            **kwargs:
         """
         if not ax:
             f, ax = plt.subplots()
@@ -894,17 +843,26 @@ class Hysteresis(Measurement):
 
     def plot(self, ax=None, **kwargs):
 
+        """
+        Args:
+            ax:
+            **kwargs:
+        """
         if ax is None:
             ax = plt.gca()
 
         ax.plot(self.data['M'])
 
+
 class Paleointensity(Measurement):
 
     def equal_acqu_demag_steps(self, vmin=20, vmax=700):
-        """
-        Filters the th and ptrm data so that the temperatures are within vmin, vmax and only temperatures in both
-        th and ptrm are returned.
+        """Filters the th and ptrm data so that the temperatures are within
+        vmin, vmax and only temperatures in both th and ptrm are returned.
+
+        Args:
+            vmin:
+            vmax:
         """
 
         # get equal temperature steps for both demagnetization and acquisition measurements
@@ -921,8 +879,14 @@ class Paleointensity(Measurement):
         return x, y
 
     @classmethod
-    def from_simulation(cls, sobj, idx=0, series=None, **simparams):
-
+    def from_simulation(cls, sobj: RockPy.Sample, idx: int = 0, series: dict = None, **simparams: dict):
+        """
+        Args:
+            sobj (RockPy.Sample):
+            idx (int):
+            series (dict):
+            **simparams (dict):
+        """
         pressure_demag = simparams.pop('pressure_demag', False)
         method = simparams.pop('method', 'fabian')
 
@@ -936,10 +900,9 @@ class Paleointensity(Measurement):
     @staticmethod
     def _format_jr6(ftype_data, sobj_name=None):
         """
-
-        Returns
-        -------
-
+        Args:
+            ftype_data:
+            sobj_name:
         """
 
         # check if sample name in file
@@ -967,10 +930,9 @@ class Paleointensity(Measurement):
     @staticmethod
     def _format_tdt(ftype_data, sobj_name=None):
         """
-
-        Returns
-        -------
-
+        Args:
+            ftype_data:
+            sobj_name:
         """
 
         # check if sample name in file
@@ -992,18 +954,13 @@ class Paleointensity(Measurement):
 
     @staticmethod
     def _format_cryomag(ftype_data, sobj_name):
-        '''
-        formats the data fro ftype.cryomag into paleointensity readable format
+        """formats the data fro ftype.cryomag into paleointensity readable
+        format
 
-        Parameters
-        ----------
-        ftype_data
-        sobj_name
-
-        Returns
-        -------
-
-        '''
+        Args:
+            ftype_data:
+            sobj_name:
+        """
         # only use results
         data = ftype_data.data[ftype_data.data['mode'] == 'results']
 
@@ -1020,12 +977,11 @@ class Paleointensity(Measurement):
 
     @property
     def zf_steps(self):
-        """
-        Thermal demagnetization steps of the experiments, also giving NRM step
+        """Thermal demagnetization steps of the experiments, also giving NRM
+        step
 
-        Returns
-        -------
-            pandas.DataFrame
+        Returns:
+            pandas.DataFrame:
         """
         d = self.data[(self.data['LT_code'] == 'LT-T-Z') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
         d = d.groupby(d.index).first()
@@ -1038,17 +994,16 @@ class Paleointensity(Measurement):
 
     @property
     def if_steps(self):
-        """
-        Acquisition of partial Thermal remanent magnetization steps of the experiments, also giving NRM step.
+        """Acquisition of partial Thermal remanent magnetization steps of the
+        experiments, also giving NRM step.
 
-        Notes
-        -----
-        This gives the experimental value of the NRM remaining (ti) and pTRM acquisition (ti). The true pTRM gained (ti)
-        can be obtained with measurement.ifzf_diff
+        Returns:
+            pandas.DataFrame:
 
-        Returns
-        -------
-            pandas.DataFrame
+        Notes:
+            This gives the experimental value of the NRM remaining (ti) and pTRM
+            acquisition (ti). The true pTRM gained (ti) can be obtained with
+            measurement.ifzf_diff
         """
         d = self.data[(self.data['LT_code'] == 'LT-T-I') | (self.data['LT_code'] == 'LT-NO')].set_index('ti')
         d = d.groupby(d.index).first()
@@ -1057,12 +1012,10 @@ class Paleointensity(Measurement):
 
     @property
     def ck(self):
-        """
-        pTRM check steps of the experiments, also giving NRM step
+        """pTRM check steps of the experiments, also giving NRM step
 
-        Returns
-        -------
-            pandas.DataFrame
+        Returns:
+            pandas.DataFrame:
         """
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-I'].set_index('ti')
@@ -1072,12 +1025,10 @@ class Paleointensity(Measurement):
 
     @property
     def ac(self):
-        """
-        additivity check steps of the experiments, also giving NRM step
+        """additivity check steps of the experiments, also giving NRM step
 
-        Returns
-        -------
-            pandas.DataFrame
+        Returns:
+            pandas.DataFrame:
         """
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-Z'].set_index('ti')
@@ -1085,12 +1036,10 @@ class Paleointensity(Measurement):
 
     @property
     def tr(self):
-        """
-        MD tail check steps of the experiments, also giving NRM step
+        """MD tail check steps of the experiments, also giving NRM step
 
-        Returns
-        -------
-            pandas.DataFrame
+        Returns:
+            pandas.DataFrame:
         """
 
         d = self.data[self.data['LT_code'] == 'LT-PTRM-MD'].set_index('ti')
@@ -1098,16 +1047,15 @@ class Paleointensity(Measurement):
 
     @property
     def ifzf_diff(self):
-        """
-        pTRM acquisition steps of the experiments. Vector substration of the pt[[x,y,z]] and th[[x,y,z]] steps for
-        each ti. Also recalculates the moment ['m'] using np.linalg.norm
+        """pTRM acquisition steps of the experiments. Vector substration of the
+        pt[[x,y,z]] and th[[x,y,z]] steps for each ti. Also recalculates the
+        moment ['m'] using np.linalg.norm
 
-        Returns
-        -------
-            pandas.DataFrame
+        Returns:
+            pandas.DataFrame:
         """
 
-        equal_vals = get_values_in_both(self.if_steps, self.zf_steps, key = 'level')
+        equal_vals = get_values_in_both(self.if_steps, self.zf_steps, key='level')
 
         if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
         zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
@@ -1126,14 +1074,9 @@ class Paleointensity(Measurement):
 
     def create_model(self, ModelType='Fabian2001', **parameters):
         """
-
-        Parameters
-        ----------
-        type
-
-        Returns
-        -------
-
+        Args:
+            ModelType:
+            **parameters:
         """
 
         if ModelType == 'Fabian2001':
@@ -1150,33 +1093,31 @@ class Paleointensity(Measurement):
 
         def vd(self, vmin, vmax,
                **unused_params):
-            """
-            Vector differences
+            """Vector differences
 
-            :param parameter:
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                **unused_params:
             """
             acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
             vd = np.diff(demag.loc[:, ['x', 'y', 'z']], axis=0)
             return vd.astype(float)
 
         def vds(self, vmin, vmax, **unused_params):  # todo move somwhere else
-            """
-            The vector difference sum of the entire NRM vector :math:`\\mathbf{NRM}`.
+            """The vector difference sum of the entire NRM vector
+            :math:`\\mathbf{NRM}`.
 
             .. math::
+               VDS=\left|\mathbf{NRM}_{n_{max}}\right|+\sum\limits_{i=1}^{n_{max}-1}{\left|\mathbf{NRM}_{i+1}-\mathbf{NRM}_{i}\right|}
 
-               VDS=\\left|\\mathbf{NRM}_{n_{max}}\\right|+\\sum\\limits_{i=1}^{n_{max}-1}{\\left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right|}
+            where :math:`\\left|\\mathbf{NRM}_{i}\\right|` denotes the length
+            of the NRM vector at the :math:`i^{demagnetization}` step.
 
-            where :math:`\\left|\\mathbf{NRM}_{i}\\right|` denotes the length of the NRM vector at the :math:`i^{demagnetization}` step.
-
-            Parameters
-            ----------
-                vmin: float
-                vmax: float
-                recalc: bool
-                non_method_parameters: dict
+            Args:
+                vmin (float):
+                vmax (float):
+                **unused_params:
             """
             acqu, demag = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
             NRM_var_max = np.linalg.norm(self.mobj.zf_steps[['x', 'y', 'z']].iloc[-1])
@@ -1186,20 +1127,21 @@ class Paleointensity(Measurement):
         def x_dash(self, vmin, vmax, component,
                    **unused_params):
             """
-
-            :math:`x_0 and :math:`y_0` the x and y points on the Arai plot projected on to the best-fit line. These are
-            used to
-            calculate the NRM fraction and the length of the best-fit line among other parameters. There are
-            multiple ways of calculating :math:`x_0 and :math:`y_0`, below is one example.
+            :math:`x_0 and :math:` the x and y points on the Arai plot
+            projected on to the best-fit line. These are used to calculate the
+            NRM fraction and the length of the best-fit line among other
+            parameters. There are multiple ways of calculating
+            :math:`x_0 and :math:`, below is one example.
 
             ..math:
 
-              x_i' = \\frac{1}{2} \\left( x_i + \\frac{y_i - Y_{int}}{b}
+                x_i' = \frac{1}{2} \left( x_i + \frac{y_i - Y_{int}}{b}
 
-
-            :param parameter:
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
 
             demagnetization, acquisition = self.filter_demagnetization_ptrm(vmin=vmin, vmax=vmax)
@@ -1214,22 +1156,25 @@ class Paleointensity(Measurement):
         def y_dash(self, vmin, vmax, component,
                    **unused_params):
             """
-
-            :math:`x_0` and :math:`y_0` the x and y points on the Arai plot projected on to the best-fit line. These are
-            used to
-            calculate the NRM fraction and the length of the best-fit line among other parameters. There are
-            multiple ways of calculating :math:`x_0` and :math:`y_0`, below is one example.
+            :math:`x_0` and :math:`y_0` the x and y points on the Arai plot
+            projected on to the best-fit line. These are used to calculate the
+            NRM fraction and the length of the best-fit line among other
+            parameters. There are multiple ways of calculating :math:`x_0` and
+            :math:`y_0`, below is one example.
 
             ..math:
 
-               y_i' = \\frac{1}{2} \\left( y_i + bx + Y_{int} \\right)
+                y_i' = \frac{1}{2} \left( y_i + bx + Y_{int} \right)
 
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
 
-            Notes
-            -----
-                needs slope and yint. Classes that use this directly or indirectly need
-                dependencies = ('slope', 'yint')
-
+            Notes:
+                needs slope and yint. Classes that use this directly or
+                indirectly need dependencies = ('slope', 'yint')
             """
             acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
@@ -1241,9 +1186,14 @@ class Paleointensity(Measurement):
         def delta_x_dash(self, vmin, vmax, component,
                          **unused_params):
             """
+            :math:`\Delta x_0` is the TRM length of the best-fit line on the
+            Arai plot.
 
-            :math:`\Delta x_0` is the TRM length of the best-fit line on the Arai plot.
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
             x_dash = self.x_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
             out = abs(np.max(x_dash) - np.min(x_dash))
@@ -1252,30 +1202,39 @@ class Paleointensity(Measurement):
         def delta_y_dash(self, vmin, vmax, component,
                          **unused_params):
             """
+            :math:`\Delta y_0` is the NRM length of the best-fit line on the
+            Arai plot.
 
-            :math:`\Delta y_0`  is the NRM length of the best-fit line on the Arai plot.
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
             y_dash = self.y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
             out = abs(np.max(y_dash) - np.min(y_dash))
             return out
 
         def best_fit_line_length(self, vmin=20, vmax=700, component='m'):
+            """
+            Args:
+                vmin:
+                vmax:
+                component:
+            """
             L = np.sqrt((self.delta_x_dash(vmin=vmin, vmax=vmax, component=component)) ** 2 +
                         (self.delta_y_dash(vmin=vmin, vmax=vmax, component=component)) ** 2)
             return L
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
-            """
-            calculates the least squares slope for the specified temperature interval
+            """calculates the least squares slope for the specified temperature
+            interval
 
-            Parameters
-            ----------
-            vmin
-            vmax
-            component
-            unused_params
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                unused_params:
             """
             acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
@@ -1310,28 +1269,22 @@ class Paleointensity(Measurement):
 
         def recipe_default(self, vmin=20, vmax=700, component='m', blab=35.0,
                            **unused_params):
-            """
-            calculates the :math:`B_{anc}` value for a given lab field in the specified temperature interval.
+            """calculates the :math:`B_{anc}` value for a given lab field in the
+            specified temperature interval.
 
+            Args:
+                vmin (float): min variable for best line fit
+                vmax (float): max variable for best line fit
+                component (str): component to be used for best line fit
+                blab (lab field):
+                unused_params (dict): anything that is passed to another result
+                    class
 
-            Parameters
-            ----------
-                vmin: float
-                    min variable for best line fit
-                vmax:float
-                    max variable for best line fit
-                component: str
-                    component to be used for best line fit
-                blab: lab field
-                unused_params: dict
-                    anything that is passed to another result class
-
-            Note
-            ----
-                This calculation method calls calculate_slope if you call it again afterwards, with different
-                calculation_parameters, it will not influence this result. Therfore you have to be careful when calling
-                this.
-
+            Note:
+                This calculation method calls calculate_slope if you call it
+                again afterwards, with different calculation_parameters, it will
+                not influence this result. Therfore you have to be careful when
+                calling this.
             """
             slope = self.mobj.sobj.results.loc[self.mobj.mid, 'slope']
             sigma = self.mobj.sobj.results.loc[self.mobj.mid, 'sigma']
@@ -1347,20 +1300,19 @@ class Paleointensity(Measurement):
         dependencies = ('slope', 'yint')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
-            """
-
-            The remanence fraction, f, was defined by Coe et al. (1978) as:
+            """The remanence fraction, f, was defined by Coe et al. (1978) as:
 
             .. math::
+               f = \frac{\Delta y^T}{y_0}
 
-               f =  \\frac{\\Delta y^T}{y_0}
+            where :math:`\Delta y^T` is the length of the NRM/TRM segment
+            used in the slope calculation.
 
-            where :math:`\Delta y^T` is the length of the NRM/TRM segment used in the slope calculation.
-
-
-            :param parameter:
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
             delta_y_dash = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
             y_int = self.get_result('yint')
@@ -1375,21 +1327,17 @@ class Paleointensity(Measurement):
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
-            """
-
-            NRM fraction used for the best-fit on an Arai diagram calculated as a vector difference sum (Tauxe and Staudigel, 2004).
+            """NRM fraction used for the best-fit on an Arai diagram calculated
+            as a vector difference sum (Tauxe and Staudigel, 2004).
 
             .. math::
+               f_{VDS}=\frac{Delta{y'}}{VDS}
 
-               f_{VDS}=\\frac{\Delta{y'}}{VDS}
-
-            Parameters
-            ----------
-            vmin
-            vmax
-            component
-            unused_params
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                unused_params:
             """
 
             delta_y = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
@@ -1401,18 +1349,18 @@ class Paleointensity(Measurement):
 
     class frac(slope):
         def recipe_default(self, vmin=20, vmax=700, **unused_params):
-            """
-
-            NRM fraction used for the best-fit on an Arai diagram determined entirely by vector difference sum
-            calculation (Shaar and Tauxe, 2013).
+            """NRM fraction used for the best-fit on an Arai diagram determined
+            entirely by vector difference sum calculation (Shaar and Tauxe,
+            2013).
 
             .. math::
+               FRAC=\frac{sumlimits_{i=start}^{end-1}{
+               left|\mathbf{NRM}_{i+1}-\mathbf{NRM}_{i}\right| }}{VDS}
 
-                FRAC=\\frac{\sum\limits_{i=start}^{end-1}{ \left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right| }}{VDS}
-
-            :param parameter:
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                **unused_params:
             """
             NRM_sum = np.sum(np.linalg.norm(self.vd(vmin=vmin, vmax=vmax, **unused_params), axis=1))
             VDS = self.vds(vmin, vmax=vmax)
@@ -1427,18 +1375,18 @@ class Paleointensity(Measurement):
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
             """
-
-            :math:`\beta` is a measure of the relative data scatter around the best-fit line and is the ratio of the
-            standard error of the slope to the absolute value of the slope (Coe et al., 1978)
+            :math:`\beta` is a measure of the relative data scatter around
+            the best-fit line and is the ratio of the standard error of the
+            slope to the absolute value of the slope (Coe et al., 1978)
 
             .. math::
+               \beta = \frac{sigma_b}{|b|}
 
-               \\beta = \\frac{\sigma_b}{|b|}
-
-
-            :param parameters:
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
 
             slope = self.get_result('slope')
@@ -1454,11 +1402,16 @@ class Paleointensity(Measurement):
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
                            **unused_params):
-            """
+            """Gap factor: A measure of the gap between the points in the chosen
+            segment of the Arai plot and the least-squares line. :math:`g`
+            approaches :math:`(n-2)/(n-1)` (close to unity) as the points are
+            evenly distributed.
 
-            Gap factor: A measure of the gap between the points in the chosen segment of the Arai plot and the least-squares
-            line. :math:`g` approaches :math:`(n-2)/(n-1)` (close to unity) as the points are evenly distributed.
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
             y_dash = self.y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
             delta_y_dash = self.delta_y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
@@ -1473,17 +1426,21 @@ class Paleointensity(Measurement):
 
     class gapmax(slope):
         def recipe_default(self, vmin=20, vmax=700, **unused_params):
-            """
-            The gap factor is a measure of the average Arai plot point spacing and may not represent extremes
-            of spacing. To account for this Shaar and Tauxe (2013)) proposed :math:`GAP_{\text{MAX}}`, which is the maximum
-            gap between two points determined by vector arithmetic.
+            """The gap factor is a measure of the average Arai plot point
+            spacing and may not represent extremes of spacing. To account for
+            this Shaar and Tauxe (2013)) proposed :math:`GAP_{\text{MAX}}`,
+            which is the maximum gap between two points determined by vector
+            arithmetic.
 
             .. math::
-               GAP_{\\text{MAX}}=\\frac{\\max{\{\\left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right|\}}_{i=start, \\ldots, end-1}}
-               {\\sum\\limits_{i=start}^{end-1}{\\left|\\mathbf{NRM}_{i+1}-\\mathbf{NRM}_{i}\\right|}}
+               GAP_{\text{MAX}}=\frac{\max{{\left|\mathbf{NRM}_{i+1}-\mathbf{NRM}_{i}\right|}}_{i=start,
+               \ldots, end-1}}
+               {\sum\limits_{i=start}^{end-1}{\left|\mathbf{NRM}_{i+1}-\mathbf{NRM}_{i}\right|}}
 
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                **unused_params:
             """
             vd = self.vd(vmin=vmin, vmax=vmax)
             vd = np.linalg.norm(vd, axis=1)
@@ -1499,16 +1456,19 @@ class Paleointensity(Measurement):
         dependencies = ['beta', 'f', 'g']
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
-            """
-            The quality factor (:math:`q`) is a measure of the overall quality of the paleointensity estimate and combines
-            the relative scatter of the best-fit line, the NRM fraction and the gap factor (Coe et al., 1978).
+            """The quality factor (:math:`q`) is a measure of the overall
+            quality of the paleointensity estimate and combines the relative
+            scatter of the best-fit line, the NRM fraction and the gap factor
+            (Coe et al., 1978).
 
             .. math::
-               q=\\frac{\\left|b\\right|fg}{\\sigma_b}=\\frac{fg}{\\beta}
+               q=\frac{\left|b\right|fg}{\sigma_b}=\frac{fg}{\beta}
 
-            :param parameter:
-            :return:
-
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
             beta = self.get_result('beta')
             f = self.get_result('f')
@@ -1523,33 +1483,37 @@ class Paleointensity(Measurement):
         dependencies = ('q', 'n')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
-            """
-            Weighting factor of Prevot et al. (1985). It is calculated by
+            """Weighting factor of Prevot et al. (1985). It is calculated by
 
             .. math::
+               w=\frac{q}{\sqrt{n-2}}
 
-               w=\\frac{q}{\\sqrt{n-2}}
-
-            Originally it is :math:`w=\\frac{fg}{s}`, where :math:`s^2` is given by
-
-            .. math::
-
-               s^2 = 2+\\frac{2\\sum\\limits_{i=start}^{end}{(x_i-\\bar{x})(y_i-\\bar{y})}}
-                  {\\left( \\sum\\limits_{i=start}^{end}{(x_i- \\bar{x})^{\\frac{1}{2}}}
-                  \\sum\\limits_{i=start}^{end}{(y_i-\\bar{y})^2} \\right)^2}
-
-            It can be noted, however, that :math:`w` can be more readily calculated as:
+            Originally it is :math:`w=\\frac{fg}{s}`, where :math:`s^2` is
+            given by
 
             .. math::
+               s^2 = 2+\frac{2\sum\limits_{i=start}^{end}{(x_i-\bar{x})(y_i-\bar{y})}}
+                   {\left( \sum\limits_{i=start}^{end}{(x_i-
+                   \bar{x})^{\frac{1}{2}}}
+                   \sum\limits_{i=start}^{end}{(y_i-\bar{y})^2} \right)^2}
 
-               w=\\frac{q}{\\sqrt{n-2}}
+            It can be noted, however, that :math:`w` can be more readily
+            calculated as:
 
-            :param parameter:
+            .. math::
+               w=\frac{q}{\sqrt{n-2}}
+
+            Args:
+                vmin:
+                vmax:
+                component:
+                **unused_params:
             """
             q = self.get_result('q')
             n = self.get_result('n')
             result = q / np.sqrt((n - 2))
             self.set_result(result)
+
 
 class Dcd(Measurement):
     logger = logging.getLogger('RockPy.MEASUREMENT.Backfield')
@@ -1591,12 +1555,32 @@ class Dcd(Measurement):
     # ABSTRACT METHODS
     #################################################################################
     def set_initial_state(self, mtype=None, fpath=None, ftype=None, mobj=None, series=None):
+        """
+        Args:
+            mtype:
+            fpath:
+            ftype:
+            mobj:
+            series:
+        """
         pass
 
     def set_calibration_measurement(self, fpath=None, mdata=None, mobj=None):
+        """
+        Args:
+            fpath:
+            mdata:
+            mobj:
+        """
         pass
 
     def delete_dtype_var_val(self, dtype, var, val):
+        """
+        Args:
+            dtype:
+            var:
+            val:
+        """
         pass
 
     ####################################################################################################################
@@ -1604,27 +1588,21 @@ class Dcd(Measurement):
 
     @staticmethod
     def _format_vsm(ftype_data, **kwargs):
-        """
-        formatting routine for VSM type hysteresis measurements. Indirectly called by the measurement.from_file method.
+        """formatting routine for VSM type backfield measurements. Indirectly
+        called by the measurement.from_file method.
 
-        Parameters
-        ----------
-        ftype_data: RockPy.io
-            data read by magnetism.ftypes.Vsm.vsm function.
-            Contains:
-              - data
-              - header
-              - segment_header
+        Args:
+            ftype_data (RockPy.io): data read by magnetism.ftypes.Vsm.vsm
+                function. Contains:
+                    - data
+                    - header
+                    - segment_header
+            **kwargs:
 
-
-        Returns
-        -------
-            data: pandas.Dataframe
-                columns = ['B','M']
-            ftype_data: ftypes object
-                ftypes object as read by magnetism.ftypes.Vsm.vsm
-
-
+        Returns:
+            * **data** (*pandas.Dataframe*) -- columns = ['B','M']
+            * **ftype_data** (*ftypes object*) -- ftypes object as read by
+              magnetism.ftypes.Vsm.vsm
         """
 
         # expected column names for typical VSM hysteresis experiments
@@ -1640,9 +1618,11 @@ class Dcd(Measurement):
 
     @staticmethod
     def _format_vftb(ftype_data, sobj_name=None):  # todo implement VFTB
-        """
-        formats the output from vftb to measurement.data
-        :return:
+        """formats the output from vftb to measurement.data :return:
+
+        Args:
+            ftype_data:
+            sobj_name:
         """
         raise NotImplementedError
 
@@ -1652,8 +1632,10 @@ class Dcd(Measurement):
 
     class Mrs(Result):
         def recipe_max(self, **non_method_parameters):
-            """
-            Magnetic Moment at first measurement point
+            """Magnetic Moment at first measurement point
+
+            Args:
+                **non_method_parameters:
             """
             m = self.mobj
             result = m.data['M'].max()
@@ -1663,51 +1645,36 @@ class Dcd(Measurement):
     ''' Bcr '''
 
     class Bcr(Result):
-        """
-        Calculates the coercivity of remanence from the dcd curve
-        """
+        """Calculates the coercivity of remanence from the dcd curve"""
         default_recipe = 'nonlinear'
 
         def recipe_linear(self, npoints=4, check=False):
-            """
-            Calculates the coercivity using a linear interpolation between the points crossing the x axis for upfield
-            and down field slope.
+            """Calculates the coercivity using a linear interpolation between
+            the points crossing the x axis for upfield and down field slope.
 
-            Parameters
-            ----------
-                check: bool
-                    creates a small plot to check results
-                npoints: int
-                    number of points to use for fit
+            Args:
+                npoints (int): number of points to use for fit
+                check (bool): creates a small plot to check results
 
-            Note
-            ----
+            Note:
                 Uses scipy.linregress for calculation
             """
             self.recipe_nonlinear(npoints=npoints, order=1, check=check)
 
         def recipe_nonlinear(self, npoints=4, order=2, check=False):
-            """
-            Calculates the coercivity of remanence using a spline interpolation between the points crossing
-            the x axis for upfield and down field slope.
+            """Calculates the coercivity of remanence using a spline
+            interpolation between the points crossing the x axis for upfield and
+            down field slope.
 
-            Parameters
-            ----------
-                check: bool
-                    creates a small plot to check results
-                npoints: int
-                    default: 4
-                    number of points to use for fit
-                order: int
-                    default: 2
-                    order of polynomial fit
+            Args:
+                npoints (int): default: 4 number of points to use for fit
+                order (int): default: 2 order of polynomial fit
+                check (bool): creates a small plot to check results
 
-            Note
-            ----
+            Note:
                 Uses numpy.polyfit for calculation
             """
 
-            # raise NotImplementedError
             m = self.mobj
 
             if npoints > len(m.data):
@@ -1747,6 +1714,7 @@ class Dcd(Measurement):
             # set result so it can be accessed
             self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.abs(result)
 
+
 class Demagnetization(Measurement):
 
     ####################################################################################################################
@@ -1754,17 +1722,72 @@ class Demagnetization(Measurement):
 
     @staticmethod
     def _format_cif(ftype_data, sobj_name=None):
-        '''
-        formats the data fro ftype.cryomag into paleointensity readable format
+        """formats the data fro ftype.cryomag into paleointensity readable
+        format
 
-        Parameters
-        ----------
-        ftype_data
-        sobj_name
-
-        Returns
-        -------
-
-        '''
+        Args:
+            ftype_data:
+            sobj_name:
+        """
 
         data = ftype_data
+
+
+class Acquisition(Measurement):
+    ####################################################################################################################
+    # FORMATTING
+
+    pass
+
+
+class Irm_Acquisition(Acquisition):
+    logger = logging.getLogger('RockPy.magnetism.IRM')
+    ####################################################################################################################
+    """ formatting functions """
+
+    @property
+    def data(self):
+        out = super().data
+        return out.set_index('B')
+
+    @staticmethod
+    def _format_vsm(ftype_data, **kwargs):
+        """formatting routine for VSM type hysteresis measurements. Indirectly
+        called by the measurement.from_file method.
+
+        Args:
+            ftype_data (RockPy.io): data read by magnetism.ftypes.Vsm.vsm
+                function. Contains:
+                    - data
+                    - header
+                    - segment_header
+            **kwargs:
+
+        Returns:
+            * **data** (*pandas.Dataframe*) -- columns = ['B','M']
+            * **ftype_data** (*ftypes object*) -- ftypes object as read by
+              magnetism.ftypes.Vsm.vsm
+        """
+
+        # expected column names for typical VSM hysteresis experiments
+        expected_columns = ['Field (T)', 'Remanence (Am2)']
+
+        if not all(i in expected_columns for i in ftype_data.data.columns):
+            IrmAcquisition.log().error(
+                'ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
+
+        segment_index = ftype_data.mtype.index('irm')
+        data = ftype_data.get_segment_data(segment_index).rename(columns={"Field (T)": "B", "Remanence (Am2)": "M"})
+
+        return data
+
+
+if __name__ == '__main__':
+    S = RockPy.Study()
+    s = S.add_sample('test')
+    m = s.add_measurement(mtype=['dcd', 'irm'],
+                          fpath=os.path.join(RockPy.test_data_path, 'VSM', 'dcd_irm_vsm.001'),
+                          ftype='vsm')
+    print(m)
+    print(s.measurements)
+    print(s.results)
