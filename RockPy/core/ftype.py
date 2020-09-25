@@ -174,6 +174,7 @@ class Ftype(object):
     def to_si_units(self):
         """ converts each numeric column in self.data to SI internal_units TODO: write to out_units
         """
+        Q_ = ureg.Quantity
         for col in self.data.columns:
             if col in self.in_units:
                 if not col in self.units:
@@ -192,11 +193,11 @@ class Ftype(object):
 
                 # convert to internal unit
                 try:
-
-                    conv = (1 * in_unit).to(unit).magnitude
-                    self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
-                    self.data.loc[:, col] *= conv
-
+                    d = self.data.loc[:, col].values
+                    d = Q_(d, in_unit)
+                    conv = Q_(1, in_unit).to(unit).magnitude
+                    self.log().debug(f'converting to SI units 1 {in_unit} -> {conv * unit}')
+                    self.data.loc[:, col] = d.to(unit)
                 except pint.DimensionalityError:
                     self.log().debug(f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
                     if in_unit == ureg('gauss') and unit == ureg('tesla'):
