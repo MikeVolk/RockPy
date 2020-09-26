@@ -1,5 +1,4 @@
 __author__ = 'mike'
-from time import clock
 import RockPy
 import numpy as np
 import pandas as pd

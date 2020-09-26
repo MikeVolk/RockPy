@@ -433,7 +433,7 @@ class Study(object):
         -----
             for now only samplenames can be filtered
         """
-        start = time.clock()
+        start = time.time()
         arg_filter = RockPy.to_tuple(arg_filter)
 
         iHelper = ImportHelper.from_folder(folder, **kwargs)
@@ -474,7 +474,7 @@ class Study(object):
             '%i / %i files imported in %.2f seconds' % (
                 len(mlist),
                 iHelper.nfiles,
-                time.clock() - start))
+                time.time() - start))
 
     def import_file(self, fpath):
         iHelper = ImportHelper.from_file(fpath)
