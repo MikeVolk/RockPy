@@ -55,6 +55,9 @@ implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
 # todo create config file for RockPy
 auto_calc_results = True
 
+log.info('Creating RockPy.MasterStudy')
+MasterStudy = RockPy.Study('MasterStudy')
+
 def debug_mode(on=False):
     """
     Args:
