@@ -1,8 +1,8 @@
 import numpy as np
-from RockPy.core.utils import handle_shape_dtype
-from RockPy.core.utils import convert
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+
+import RockPy.core.utils as core_utils
 
 """ ROTATIONS """
 
@@ -70,7 +70,7 @@ def rotmat(dec, inc):
     return np.array(a)
 
 
-@handle_shape_dtype
+@core_utils.handle_shape_dtype
 def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='xyz'):
     """Rotates a vector [x,y,z] or array of vectors around an arbitrary axis.
 
@@ -111,7 +111,7 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='x
     return out
 
 
-@handle_shape_dtype
+@core_utils.handle_shape_dtype
 def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, intype='xyz'):
     """
     Args:
@@ -138,7 +138,7 @@ def rotate_arbitrary(xyz, *, alpha=0, beta=0, gamma=0, intype='xyz'):
     return out
 
 
-@handle_shape_dtype
+@core_utils.handle_shape_dtype
 def rotate(xyz, *, axis='x', theta=0., intype='xyz'):
     """Rotates the vector 'xyz' by 'theta' degrees around 'x','y', or 'z' axis.
 
@@ -169,7 +169,7 @@ def rotate(xyz, *, axis='x', theta=0., intype='xyz'):
     return out
 
 
-@handle_shape_dtype(internal_dtype='dim')
+@core_utils.handle_shape_dtype(internal_dtype='dim')
 def rotate_360_deg(xyz, theta, intype='xyz'):
     """draws a circle with angle theta around a point xyz
 
@@ -205,7 +205,7 @@ bring the coordinates "back" into the original coordinate system, which will not
 """
 
 
-@handle_shape_dtype(transform_output=False)
+@core_utils.handle_shape_dtype(transform_output=False)
 def convert_to_xyz(dim, *, M=True):
     """Converts a numpy array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
     into an numpy array with [[d1,i1,m1], [d2,i2,m2]]. Reshape allows to pass an
@@ -239,7 +239,7 @@ def convert_to_xyz(dim, *, M=True):
     return out
 
 
-@handle_shape_dtype(transform_output=False)
+@core_utils.handle_shape_dtype(transform_output=False)
 def convert_to_dim(xyz):
     """Converts a numpy array of [d,i,m] values (i.e. [[d1,i1,m1], [d2,i2,m2]])
     into an numpy array with [[x1,y1,z1], [x2,y2,z2]] Reshape allows to pass an
@@ -267,7 +267,7 @@ def convert_to_dim(xyz):
     return out
 
 
-@handle_shape_dtype(internal_dtype='dim', transform_output=False)
+@core_utils.handle_shape_dtype(internal_dtype='dim', transform_output=False)
 def convert_to_stereographic(xyz, intype='dim'):
     """Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
     into an numpy array with [d,r,neg], where:
@@ -306,7 +306,7 @@ def convert_to_stereographic(xyz, intype='dim'):
     return out
 
 
-@handle_shape_dtype(internal_dtype='xyz', transform_output=False)
+@core_utils.handle_shape_dtype(internal_dtype='xyz', transform_output=False)
 def convert_to_equal_area(xyz, intype='xyz'):
     """
     Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
@@ -355,7 +355,7 @@ def convert_to_equal_area(xyz, intype='xyz'):
     return out
 
 
-@handle_shape_dtype(internal_dtype='dim', transform_output=False)
+@core_utils.handle_shape_dtype(internal_dtype='dim', transform_output=False)
 def convert_to_hvl(xyz, intype='xyz'):
     """Transforms an array of [x,y,z] values (i.e. [[x1,y1,z1], [x2,y2,z2]])
     into an numpy array with [h,v,M], where:

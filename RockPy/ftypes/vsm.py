@@ -1,12 +1,12 @@
-import RockPy
-from RockPy.core.ftype import Ftype
-import pandas as pd
-import numpy as np
 import io
 from copy import deepcopy
-import io
 
-class Vsm(Ftype):
+import pandas as pd
+import numpy as np
+
+import RockPy
+
+class Vsm(RockPy.core.ftype.Ftype):
     standard_calibration_exponent = 0
 
     mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),

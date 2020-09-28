@@ -1,11 +1,10 @@
-import RockPy
-import RockPy.core.utils
 import pandas as pd
-from RockPy.core.measurement import Measurement
-from RockPy import ureg
 
+import RockPy
+import RockPy.core.utils as core_utils
+import RockPy.core.measurement
 
-class Parameter(Measurement):
+class Parameter(RockPy.core.measurement.Measurement):
     SIunit = None
 
     def __init__(self,
@@ -67,7 +66,7 @@ class Mass(Parameter):
     """
     simple 1d measurement for mass
     """
-    SIunit = ureg('kg')
+    SIunit = RockPy.ureg('kg')
 
     def __init__(self, sobj,
                  fpath=None, ftype='generic',
@@ -89,7 +88,7 @@ class Length(Parameter):
     """
     simple 1d measurement for Length
     """
-    SIunit = ureg('m')
+    SIunit = RockPy.ureg('m')
 
     def __init__(self, sobj,
                  fpath=None, ftype='generic',

@@ -1,12 +1,13 @@
-import RockPy
-from RockPy.core.ftype import Ftype
-import pandas as pd
-import os
-import numpy as np
 import io
+import os
 from copy import deepcopy
 
-class Vftb(Ftype):
+import pandas as pd
+import numpy as np
+
+import RockPy
+
+class Vftb(RockPy.core.ftype.Ftype):
     def __init__(self, dfile, snames=None, dialect=None, reload=False):
         """
         Args:

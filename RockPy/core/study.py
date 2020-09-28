@@ -2,18 +2,13 @@ import logging
 import time
 
 import RockPy
-from RockPy.core.file_io import ImportHelper
-from RockPy.core.utils import to_tuple
+import RockPy.core.file_io as RockPy_io
+import RockPy.core.utils as core_utils
 
 import pandas as pd
 import numpy as np
 
-# import ipywidgets as widgets
-# from IPython.display import display
-# from ipywidgets import HBox, VBox, Label
-
 log = logging.getLogger(__name__)
-
 
 class Study(object):
     """
@@ -375,12 +370,12 @@ class Study(object):
 
         # samplegroup filtering
         if gname:
-            gname = to_tuple(gname)
+            gname = core_utils.to_tuple(gname)
             slist = [s for s in slist if any(sg in gname for sg in s._samplegroups)]
 
         # sample filtering
         if sname:
-            sname = to_tuple(sname)
+            sname = core_utils.to_tuple(sname)
             slist = [s for s in slist if s.name in sname]
 
         if any(i for i in [mtype, series, stype, sval, sval_range, mean, invert]):
@@ -438,7 +433,7 @@ class Study(object):
         start = time.time()
         arg_filter = RockPy.to_tuple(arg_filter)
 
-        iHelper = ImportHelper.from_folder(folder, **kwargs)
+        iHelper = RockPy_io.ImportHelper.from_folder(folder, **kwargs)
 
         mlist = []
         slist = []
@@ -479,7 +474,7 @@ class Study(object):
                 time.time() - start))
 
     def import_file(self, fpath):
-        iHelper = ImportHelper.from_file(fpath)
+        iHelper = RockPy_io.ImportHelper.from_file(fpath)
 
         for sample in iHelper.gen_sample_dict:
             s = self.add_sample(**sample)

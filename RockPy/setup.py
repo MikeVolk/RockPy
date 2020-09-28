@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='RockPy',
-    version='0.1',
+    version='2020a',
     packages=[''],
     package_dir={'': 'RockPy/tests'},
     url='',

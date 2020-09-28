@@ -1,12 +1,11 @@
-import RockPy
-from RockPy.core.ftype import Ftype
-from RockPy.tools import pandas_tools as pdt
+import os
 import pandas as pd
 import numpy as np
 
-import os
+import RockPy
+import RockPy.tools.pandas_tools as pdt
 
-class tdt(Ftype):
+class tdt(RockPy.core.ftype.Ftype):
 
     pint_treatment_codes = ('LT-NO', 'LT-T-Z', 'LT-T-I', 'LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z')
 

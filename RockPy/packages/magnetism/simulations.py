@@ -1,13 +1,13 @@
-import logging
 import os
+import logging
 from copy import deepcopy
 
-import RockPy
 import numpy as np
 import pandas as pd
-from RockPy.packages.magnetism import tools as SimUtils
 from matplotlib import pylab as plt
 
+import RockPy
+import RockPy.packages.magnetism.tools as SimUtils
 
 class Fabian2001(object):
     presets = pd.read_csv(os.path.join(RockPy.installation_directory,

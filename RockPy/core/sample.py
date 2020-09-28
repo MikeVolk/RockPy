@@ -1,13 +1,13 @@
 import logging
 import numpy as np
+import pandas as pd
 
 import RockPy
 import RockPy.core.study
 import RockPy.core.file_io
 import RockPy.core.utils
-from RockPy.core.utils import to_tuple
+import RockPy.core.utils as core_utils
 
-import pandas as pd
 
 log = logging.getLogger(__name__)
 
@@ -653,12 +653,12 @@ class Sample(object):
         mlist = self.measurements
 
         if mid is not None:
-            mid = to_tuple(mid)
+            mid = core_utils.to_tuple(mid)
             mlist = (x for x in mlist if x.mid in mid)
             return list(mlist)
 
         if mtype:
-            mtype = to_tuple(mtype)
+            mtype = core_utils.to_tuple(mtype)
             mtype = tuple(RockPy.abbrev_to_classname[mt] for mt in mtype)
             mlist = (m for m in mlist if m.mtype in mtype)
 
@@ -671,8 +671,8 @@ class Sample(object):
             if not sval:
                 sval = sval_range
             else:
-                sval = to_tuple(())
-                sval += to_tuple(sval_range)
+                sval = core_utils.to_tuple(())
+                sval += core_utils.to_tuple(sval_range)
 
         if sval is not None:
             mlist = (m for m in mlist if m.has_sval(sval=sval, method='any'))

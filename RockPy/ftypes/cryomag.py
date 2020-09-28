@@ -3,14 +3,13 @@ __author__ = 'mike'
 import RockPy
 import numpy as np
 import pandas as pd
-from RockPy.core import ftype
 import os.path
 from copy import deepcopy
 
 
 # from RockPy3.core.utils import convert_time
 
-class CryoMag(ftype.Ftype):
+class CryoMag(RockPy.core.ftype.Ftype):
     pint_treatment_codes = ('LT-NO', 'LT-T-Z', 'LT-T-I', 'LT-PTRM-I', 'LT-PTRM-MD', 'LT-PTRM-Z')
     table = {'tdt': ['NRM', 'TH', 'PT', 'CK', 'AC', 'TR']}
 

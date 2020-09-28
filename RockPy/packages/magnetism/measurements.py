@@ -1,5 +1,4 @@
 import logging
-import RockPy
 import numpy as np
 import pandas as pd
 
@@ -7,16 +6,18 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from scipy.optimize import curve_fit
 
-from RockPy.core.measurement import Measurement
-from RockPy.core.result import Result
-from RockPy.core.utils import correction
-from RockPy.tools.compute import lin_regress
+import RockPy
+import RockPy.core.measurement
+import RockPy.core.result
+import RockPy.core.utils as core_utils
+import RockPy.tools.compute as RPcompute
 import RockPy.packages.magnetism.simulations
-from RockPy.tools.pandas_tools import get_values_in_both
+
+import RockPy.tools.pandas_tools as pdt
 import os
 
 
-class Hysteresis(Measurement):
+class Hysteresis(RockPy.core.measurement.Measurement):
 
     @property
     def data(self):
@@ -256,7 +257,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ BC """
 
-    class Bc(Result):
+    class Bc(RockPy.core.result.Result):
         default_recipe = 'linear'
 
         def recipe_linear(self, npoints=4, check=False):
@@ -352,7 +353,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ MRS """
 
-    class Mrs(Result):
+    class Mrs(RockPy.core.result.Result):
         def recipe_default(self, npoints=4, check=False, **unused_params):
 
             # set measurement instance
@@ -407,7 +408,7 @@ class Hysteresis(Measurement):
     ####################################################################################################################
     """ MS """
 
-    class Ms(Result):
+    class Ms(RockPy.core.result.Result):
         """Calculates the saturation magnetization from a hysteresis loop. The
         standard recipe is 'linear'.
 
@@ -622,7 +623,7 @@ class Hysteresis(Measurement):
 
     ####################################################################################################################
     ''' CORRECTIONS '''
-    @correction
+    @core_utils.correction
     def correct_paramagnetic(self, **parameter):
         hf_sus = self.Hf_sus()
         self.clsdata[self.midx] += hf_sus * self.data.index
@@ -672,7 +673,7 @@ class Hysteresis(Measurement):
             grid.append(boi)
         return np.array(grid)
 
-    @correction
+    @core_utils.correction
     def data_gridding(self, order=2, grid_points=20, tuning=1, ommit_n_points=0, check=False, **parameter):
         """Data griding after :cite:`Dobeneck1996a`. Generates an interpolated
         hysteresis loop with :math:`M^{\pm}_{sam}(B^{\pm}_{exp})` at
@@ -859,7 +860,7 @@ class Hysteresis(Measurement):
         ax.plot(self.data['M'])
 
 
-class Paleointensity(Measurement):
+class Paleointensity(RockPy.core.measurement.Measurement):
 
     def equal_acqu_demag_steps(self, vmin=20, vmax=700):
         """Filters the th and ptrm data so that the temperatures are within
@@ -871,7 +872,7 @@ class Paleointensity(Measurement):
         """
 
         # get equal temperature steps for both demagnetization and acquisition measurements
-        equal_steps = get_values_in_both(self.zf_steps, self.if_steps, key='level')
+        equal_steps = pdt.get_values_in_both(self.zf_steps, self.if_steps, key='level')
 
         # Filter data for the equal steps and filter steps outside of tmin-tmax range
         # True if step between vmin, vmax
@@ -1060,7 +1061,7 @@ class Paleointensity(Measurement):
             pandas.DataFrame:
         """
 
-        equal_vals = get_values_in_both(self.if_steps, self.zf_steps, key='level')
+        equal_vals = pdt.get_values_in_both(self.if_steps, self.zf_steps, key='level')
 
         if_steps = self.if_steps[np.in1d(self.if_steps['level'], equal_vals)].copy()
         zf_steps = self.zf_steps[np.in1d(self.zf_steps['level'], equal_vals)].copy()
@@ -1093,7 +1094,7 @@ class Paleointensity(Measurement):
     ####################################################################################################################
     """ RESULTS CALCULATED USING CALCULATE_SLOPE  METHODS """
 
-    class slope(Result):
+    class slope(RockPy.core.result.Result):
         # __calculates__ = ['sigma', 'yint', 'xint', 'n']
 
         def vd(self, vmin, vmax,
@@ -1243,7 +1244,7 @@ class Paleointensity(Measurement):
             """
             acqu_data, demag_data = self.mobj.equal_acqu_demag_steps(vmin=vmin, vmax=vmax)
 
-            slope, sigma, yint, xint = lin_regress(pdd=acqu_data, column_name_x=component,
+            slope, sigma, yint, xint = RPcompute.lin_regress(pdd=acqu_data, column_name_x=component,
                                                    ypdd=demag_data, column_name_y=component)
 
             self.set_result(slope, 'slope')
@@ -1269,7 +1270,7 @@ class Paleointensity(Measurement):
     class n(slope):
         pass
 
-    class banc(Result):
+    class banc(RockPy.core.result.Result):
         dependencies = ('slope', 'sigma')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', blab=35.0,
@@ -1374,7 +1375,7 @@ class Paleointensity(Measurement):
     ####################################################################################################################
     """ BETA """
 
-    class beta(Result):
+    class beta(RockPy.core.result.Result):
         dependencies = ('slope', 'sigma')
 
         def recipe_default(self, vmin=20, vmax=700, component='m',
@@ -1484,7 +1485,7 @@ class Paleointensity(Measurement):
     ####################################################################################################################
     """ W """
 
-    class w(Result):
+    class w(RockPy.core.result.Result):
         dependencies = ('q', 'n')
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
@@ -1520,7 +1521,7 @@ class Paleointensity(Measurement):
             self.set_result(result)
 
 
-class Dcd(Measurement):
+class Dcd(RockPy.core.measurement.Measurement):
     logger = logging.getLogger('RockPy.MEASUREMENT.Backfield')
     """
     A Backfield Curve can give information on:
@@ -1640,7 +1641,7 @@ class Dcd(Measurement):
     ####################################################################################################################
     ''' Mrs '''
 
-    class Mrs(Result):
+    class Mrs(RockPy.core.result.Result):
         def recipe_max(self, **non_method_parameters):
             """Magnetic Moment at first measurement point
 
@@ -1654,7 +1655,7 @@ class Dcd(Measurement):
     ####################################################################################################################
     ''' Bcr '''
 
-    class Bcr(Result):
+    class Bcr(RockPy.core.result.Result):
         """Calculates the coercivity of remanence from the dcd curve"""
         default_recipe = 'nonlinear'
 
@@ -1725,7 +1726,7 @@ class Dcd(Measurement):
             self.mobj.sobj.results.loc[self.mobj.mid, self.name] = np.abs(result)
 
 
-class Demagnetization(Measurement):
+class Demagnetization(RockPy.core.measurement.Measurement):
 
     ####################################################################################################################
     # FORMATTING
@@ -1743,7 +1744,7 @@ class Demagnetization(Measurement):
         data = ftype_data
 
 
-class Acquisition(Measurement):
+class Acquisition(RockPy.core.measurement.Measurement):
     ####################################################################################################################
     # FORMATTING
 
@@ -1783,7 +1784,7 @@ class Irm_Acquisition(Acquisition):
         expected_columns = ['Field (T)', 'Remanence (Am2)']
 
         if not all(i in expected_columns for i in ftype_data.data.columns):
-            IrmAcquisition.log().error(
+            Irm_Acquisition.log().error(
                 'ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         segment_index = ftype_data.mtype.index('irm')

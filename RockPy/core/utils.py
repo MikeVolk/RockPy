@@ -15,7 +15,6 @@ from contextlib import contextmanager
 import inspect
 import logging
 
-from RockPy import installation_directory, ureg
 
 conversion_table = pd.read_csv(os.path.join(RockPy.installation_directory, 'unit_conversion_table.csv'), index_col=0)
 
@@ -24,7 +23,7 @@ def welcome_message():
     print('-' * 75)
     print(''.join(['|', 'This is RockPy'.center(73), '|']))
     print('-' * 75)
-    print('Installation dir: %s' % installation_directory)
+    print('Installation dir: %s' % RockPy.installation_directory)
     print()
     print('IMPLEMENTED MEASUREMENT TYPES     : \tFTYPES')
     print('-' * 75)
@@ -84,7 +83,7 @@ def convert_units(values, in_unit, out_unit):
 
 def to_quantity(unit):
     try:
-        unit = ureg(unit)
+        unit = RockPy.ureg(unit)
     except AttributeError:
         pass
     return unit

@@ -105,7 +105,6 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
         positions = [positions for _, _ in enumerate(axes)]
 
     for i, ax in enumerate(axes):
-
         label = 'abcdefghijklmnopqrstuvwxyz'[i]
 
         if label in ignore or i in ignore:

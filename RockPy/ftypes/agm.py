@@ -1,8 +1,7 @@
-from RockPy.core.ftype import Ftype
-from RockPy.ftypes.vsm import Vsm
+import RockPy.ftypes.vsm
 
 
-class Agm(Vsm):
+class Agm(RockPy.ftypes.vsm.Vsm):
     standard_calibration_exponent = 0
 
     mtype_translation = {'Direct moment vs. field; Hysteresis loop\n': ('hys',),

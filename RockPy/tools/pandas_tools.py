@@ -1,10 +1,10 @@
 # here all functions, that manipulate panda Dataframes are  stored
 import numpy as np
-import matplotlib.pyplot as plt
-import RockPy
 import pandas as pd
-from RockPy.tools import compute
-from RockPy.tools.compute import rotate, convert_to_xyz
+import matplotlib.pyplot as plt
+
+import RockPy
+import RockPy.tools.compute as RPcompute
 
 
 def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
@@ -207,7 +207,7 @@ def detect_outlier(df, column, threshold=3, order=4):
         list of indices: **list**
     """
     x, y = (df.index, df[column])
-    return compute.detect_outlier(x, y, order, threshold)
+    return RPcompute.detect_outlier(x, y, order, threshold)
 
 
 def remove_outliers(df, column, threshold=3, order=4, **kwargs):
@@ -321,8 +321,8 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I', c
 
     xyz = DI[['x', 'y', 'z']]
 
-    xyz = rotate(xyz, axis='y', theta=-dip)
-    xyz = rotate(xyz, axis='z', theta=-strike)
+    xyz = RPcompute.rotate(xyz, axis='y', theta=-dip)
+    xyz = RPcompute.rotate(xyz, axis='z', theta=-strike)
 
     corrected = xyz2dim(pd.DataFrame(columns=['x', 'y', 'z'], data=xyz, index=DI.index),
                         colI=newI, colD=newD)
