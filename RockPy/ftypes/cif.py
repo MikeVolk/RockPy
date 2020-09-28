@@ -944,6 +944,31 @@ class Cif(RockPy.core.ftype.Ftype):
                                                   bedding_dip=self.header['bedding_dip'][0],
                                                   bedding_strike=self.header['bedding_strike'][0])
 
+    def rotate_individual_measurement(self, indices, theta, axis):
+        """
+
+        Parameters
+        ----------
+        indices
+
+        Returns
+        -------
+
+        """
+        indices = RockPy.to_tuple(indices)
+
+        data = self.data.iloc[indices]
+        xyz = data[['x','y','z']].values
+        xyz_ = data[['std_x','std_y','std_z']].values
+
+        if xyz.shape == (3,):
+            xyz = xyz.reshape((3,1))
+
+        xyz_rotated = Rc.rotate(xyz=xyz, axis=axis, theta=theta)
+        xyz__rotated = Rc.rotate(xyz=xyz_, axis=axis, theta=theta)
+
+        print(xyz_rotated)
+
     def export(self, fname, sample_id=None, **kwargs):
         """
         Exports a cif file from the data
