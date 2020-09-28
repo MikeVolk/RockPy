@@ -622,6 +622,11 @@ class Hysteresis(Measurement):
 
     ####################################################################################################################
     ''' CORRECTIONS '''
+    @correction
+    def correct_paramagnetic(self, **parameter):
+        hf_sus = self.Hf_sus()
+        self.clsdata[self.midx] += hf_sus * self.data.index
+        return
 
     def rotate_branch(self, branch):
         """rotates a branch by 180 degrees, by multiplying the field and mag
@@ -1614,6 +1619,11 @@ class Dcd(Measurement):
         segment_index = ftype_data.mtype.index('dcd')
         data = ftype_data.get_segment_data(segment_index).rename(columns={"Field (T)": "B", "Remanence (Am2)": "M"})
 
+        return data
+
+    @staticmethod
+    def _format_agm(ftype_data, **kwargs):
+        data = Dcd._format_vsm(ftype_data, **kwargs)
         return data
 
     @staticmethod
