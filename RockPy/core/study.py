@@ -8,9 +8,9 @@ from RockPy.core.utils import to_tuple
 import pandas as pd
 import numpy as np
 
-import ipywidgets as widgets
-from IPython.display import display
-from ipywidgets import HBox, VBox, Label
+# import ipywidgets as widgets
+# from IPython.display import display
+# from ipywidgets import HBox, VBox, Label
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +71,8 @@ class Study(object):
             yield s
 
     def __getitem__(self, item):
+        if isinstance(item, int):
+            item = list(self._samples.keys())[item]
         item = str(item)
         if item in self._samples:
             return self._samples[item]
@@ -500,88 +502,88 @@ class Study(object):
         results['mtype'] = [self.get_measurement(mid=mid)[0].mtype for mid in results.index]
         return results
 
-    def widget_add_sample(self):
+    # def widget_add_sample(self):
 
-        out = widgets.Output()
-        # left panel
+    #     out = widgets.Output()
+    #     # left panel
 
-        # first line with sample name and create button
-        samplename = widgets.Text(value='',
-                                  description='name:',
-                                  disabled=False, layout=widgets.Layout(width='325px'),
-                                  )
-        add_sample_button = widgets.Button(description='create', layout=widgets.Layout(width='75px'))
-        topline = HBox([samplename, add_sample_button], layout=widgets.Layout(width='400px'))
+    #     # first line with sample name and create button
+    #     samplename = widgets.Text(value='',
+    #                               description='name:',
+    #                               disabled=False, layout=widgets.Layout(width='325px'),
+    #                               )
+    #     add_sample_button = widgets.Button(description='create', layout=widgets.Layout(width='75px'))
+    #     topline = HBox([samplename, add_sample_button], layout=widgets.Layout(width='400px'))
 
-        # second line mass and mass unit
-        mass = widgets.FloatText(value=None,
-                                 description='mass:',
-                                 disabled=False, layout=widgets.Layout(width='243px'),
-                                 )
+    #     # second line mass and mass unit
+    #     mass = widgets.FloatText(value=None,
+    #                              description='mass:',
+    #                              disabled=False, layout=widgets.Layout(width='243px'),
+    #                              )
 
-        mass_unit = widgets.Dropdown(options=['T', 'kg', 'g', 'mg', 'mug', 'ng'],
-                                     value='mg',
-                                     description='unit',
-                                     disabled=False, layout=widgets.Layout(width='150px'))
-        mass_line = HBox([mass, mass_unit], layout=widgets.Layout(width='450px'))
-
-
-        comment = widgets.Textarea(value='',
-                                   placeholder='',
-                                   description='comment',
-                                   disabled=False, layout=widgets.Layout(width='397px', height='30px'))
-
-        # right panel
-        label = Label('Sample list:', layout=widgets.Layout(width='160px'))
-        samplelist = widgets.Textarea(value='\n'.join(self.samplenames),
-                                      placeholder='No samples yet',
-                                      description='',
-                                      disabled=True,
-                                      layout=widgets.Layout(width='25%', height='160px'))
-
-        display(HBox([VBox([topline, mass_line, comment]), sample_column], layout=widgets.Layout(width='100%')),
-                )
-
-        def button_click(button):
-            out.clear_output()
+    #     mass_unit = widgets.Dropdown(options=['T', 'kg', 'g', 'mg', 'mug', 'ng'],
+    #                                  value='mg',
+    #                                  description='unit',
+    #                                  disabled=False, layout=widgets.Layout(width='150px'))
+    #     mass_line = HBox([mass, mass_unit], layout=widgets.Layout(width='450px'))
 
 
-            s = self.add_sample(sname=samplename.value, mass=mass.value, massunit=mass_unit.value)
+    #     comment = widgets.Textarea(value='',
+    #                                placeholder='',
+    #                                description='comment',
+    #                                disabled=False, layout=widgets.Layout(width='397px', height='30px'))
 
-            if not '{}\t{}\n'.format(s.idx, s.name) in samplelist.value:
-                samplelist.value += '{}\t{}\n'.format(s.idx, s.name)
+    #     # right panel
+    #     label = Label('Sample list:', layout=widgets.Layout(width='160px'))
+    #     samplelist = widgets.Textarea(value='\n'.join(self.samplenames),
+    #                                   placeholder='No samples yet',
+    #                                   description='',
+    #                                   disabled=True,
+    #                                   layout=widgets.Layout(width='25%', height='160px'))
 
-        add_sample_button.on_click(button_click)
+    #     display(HBox([VBox([topline, mass_line, comment]), sample_column], layout=widgets.Layout(width='100%')),
+    #             )
 
-    def widget_import(self):
-        display(Label('import file', layout=widgets.Layout(width='150px')),
-                HBox([]),
-                HBox([]))
+    #     def button_click(button):
+    #         out.clear_output()
 
-    def widget_plot(self):
 
-        def next_(event):
-            pass
+    #         s = self.add_sample(sname=samplename.value, mass=mass.value, massunit=mass_unit.value)
 
-        # samples selection
-        samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0],
-                                            description='sample:',
-                                            disabled=False, layout=widgets.Layout(width='250px'))
-        next_sample = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
-        previous_sample = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
-        sample_select = widgets.HBox([samples_dropdown, previous_sample, next_sample])
+    #         if not '{}\t{}\n'.format(s.idx, s.name) in samplelist.value:
+    #             samplelist.value += '{}\t{}\n'.format(s.idx, s.name)
 
-        # mtype selection
-        mtype_dropdown = widgets.Dropdown(options=list(self.mtypes), value=None, description='mtype:',
-                                          disabled=False, layout=widgets.Layout(width='250px'))
-        next_mtype = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
-        previous_mtype = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
-        mtype_select = widgets.HBox([mtype_dropdown, previous_mtype, next_mtype])
+    #     add_sample_button.on_click(button_click)
 
-        RightPane = widgets.VBox([sample_select, mtype_select], layout=widgets.Layout(width='300px'))
-        LeftPane = widgets.VBox([widgets.Label(value=self.name)], layout=widgets.Layout(width='600px'))
+    # def widget_import(self):
+    #     display(Label('import file', layout=widgets.Layout(width='150px')),
+    #             HBox([]),
+    #             HBox([]))
 
-        display(HBox([LeftPane, RightPane]))
+    # def widget_plot(self):
+
+    #     def next_(event):
+    #         pass
+
+    #     # samples selection
+    #     samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0],
+    #                                         description='sample:',
+    #                                         disabled=False, layout=widgets.Layout(width='250px'))
+    #     next_sample = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
+    #     previous_sample = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
+    #     sample_select = widgets.HBox([samples_dropdown, previous_sample, next_sample])
+
+    #     # mtype selection
+    #     mtype_dropdown = widgets.Dropdown(options=list(self.mtypes), value=None, description='mtype:',
+    #                                       disabled=False, layout=widgets.Layout(width='250px'))
+    #     next_mtype = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
+    #     previous_mtype = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
+    #     mtype_select = widgets.HBox([mtype_dropdown, previous_mtype, next_mtype])
+
+    #     RightPane = widgets.VBox([sample_select, mtype_select], layout=widgets.Layout(width='300px'))
+    #     LeftPane = widgets.VBox([widgets.Label(value=self.name)], layout=widgets.Layout(width='600px'))
+
+    #     display(HBox([LeftPane, RightPane]))
 
 
 if __name__ == '__main__':
