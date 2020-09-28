@@ -597,7 +597,6 @@ class Sample(object):
             return np.array(out)
 
     ### get functions
-
     def get_measurement(self,
                         mtype=None,
                         series=None,

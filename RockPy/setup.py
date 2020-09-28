@@ -9,5 +9,5 @@ setup(
     license='',
     author='Michael Volk',
     author_email='michaelvolk1979@gmail.com',
-    description='', install_requires=['pint', 'numpy','scipy','matplotlib','decorator']
+    description='', install_requires=['pint','numpy','scipy','matplotlib','decorator']
 )
