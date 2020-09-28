@@ -180,7 +180,8 @@ def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_or
     if norm:
         dy /= np.nanmax(abs(dy))
 
-    col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1', 'd').replace(')1', ')')
+    # col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1', 'd').replace(')1', ')')
+    col_name = f'd{n}({ycol})/d({xcol}){n}'.replace('d1', 'd').replace(')1', ')')
 
     out = pd.DataFrame(data=np.array([x, dy]).T, columns=[xcol, col_name])
     out = out.set_index(xcol)
