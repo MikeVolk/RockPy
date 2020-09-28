@@ -34,6 +34,7 @@ class Cif(RockPy.core.ftype.Ftype):
     datacolumns = ('mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time')
 
+    # dec/ inc values for (below, towards) combinations
     corrections = {"TW": (0, 0),
                    "TN": (90, 0),
                    "TE": (180, 0),  #
@@ -139,6 +140,7 @@ class Cif(RockPy.core.ftype.Ftype):
         """
         rows = []
         header_rows = []
+
         for idx, row in enumerate(raw_data):
             if row.startswith('#'):
                 continue
@@ -426,7 +428,12 @@ class Cif(RockPy.core.ftype.Ftype):
             level = 0
 
         sdata.loc[:, 'mtype'] = mtype
-        sdata.loc[:, 'level'] = int(level)
+
+        try:
+            sdata.loc[:, 'level'] = int(level)
+        except:
+            sdata.loc[:, 'level'] = 0
+
         return sdata
 
     @classmethod
@@ -966,3 +973,4 @@ class Cif(RockPy.core.ftype.Ftype):
 
 if __name__ == '__main__':
     Cif('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM_ARM_IRM/MIL14_IRM')
+    
