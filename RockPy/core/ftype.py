@@ -3,13 +3,13 @@ import os
 from shutil import copy2
 
 import pandas as pd
+import RockPy.core.utils
+from RockPy.core.file_io import ImportHelper
 from copy import deepcopy
 from io import StringIO, BytesIO
 import pint
+from RockPy import ureg
 
-import RockPy
-import RockPy.core.utils as core_utils
-import RockPy.core.file_io as RockPy_io
 
 class Ftype(object):
     """ Delivers core functionality to all classes inheriting from it.
@@ -75,7 +75,7 @@ class Ftype(object):
         # initialize the _raw_data attribute
         self._raw_data = None
         # create sample name tuple
-        self.snames = [str(i) for i in core_utils.to_tuple(snames)] if snames else None
+        self.snames = [str(i) for i in RockPy.core.utils.to_tuple(snames)] if snames else None
 
         self.dfile = dfile
 
@@ -96,7 +96,7 @@ class Ftype(object):
 
         if create_minfo:
             try:
-                self.import_helper = RockPy_io.ImportHelper.from_file(self.dfile)
+                self.import_helper = ImportHelper.from_file(self.dfile)
                 self.file_infos = self.import_helper.return_file_infos()
             except:
                 self.__class__.log().warning('Cant read file infos automatically. RockPy file naming scheme required')
@@ -142,7 +142,7 @@ class Ftype(object):
     @classmethod
     def inheritors(cls):
 
-        return core_utils.extract_inheritors_from_cls(cls)
+        return RockPy.core.utils.extract_inheritors_from_cls(cls)
 
     def _get_comment_line_indices(self):
         """ Checks for commented lines in the file and returns the indices of those lines. Comments are '#'
@@ -177,7 +177,7 @@ class Ftype(object):
     def to_si_units(self):
         """ converts each numeric column in self.data to SI internal_units TODO: write to out_units
         """
-        Q_ = RockPy.ureg.Quantity
+        Q_ = ureg.Quantity
         for col in self.data.columns:
             if col in self.in_units:
                 if not col in self.units:
@@ -206,9 +206,9 @@ class Ftype(object):
                     self.data.loc[:, col] = d.to(unit)
                 except pint.DimensionalityError:
                     self.log().debug(f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
-                    if in_unit == RockPy.ureg('gauss') and unit == RockPy.ureg('tesla'):
+                    if in_unit == ureg('gauss') and unit == ureg('tesla'):
                         conv = 1e-4
-                    if in_unit == RockPy.ureg('tesla') and unit == RockPy.ureg('gauss'):
+                    if in_unit == ureg('tesla') and unit == ureg('gauss'):
                         conv = 1e4
                     self.data.loc[:, col] *= conv
                     self.log().info(f'manual conversion to SI units {in_unit} -> {conv} {unit}')

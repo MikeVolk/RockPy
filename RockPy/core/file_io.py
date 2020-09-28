@@ -1,5 +1,5 @@
 import RockPy
-import RockPy.core.utils as core_utils
+from RockPy.core.utils import str2tuple, to_tuple, tuple2list_of_tuples, series_to_dict, tuple2str, list_or_item
 import os, re
 import warnings
 import logging
@@ -53,12 +53,12 @@ class ImportHelper(object):
             snames = snames.replace(",", ".")
             RockPy.log().debug("sample sname %s contains \",\" will be replaced with \".\"" % snames)
 
-        sgroups = core_utils.str2tuple(sgroups)
-        snames = core_utils.str2tuple(snames)
-        mtypes = core_utils.str2tuple(mtypes)
+        sgroups = RockPy.core.utils.str2tuple(sgroups)
+        snames = RockPy.core.utils.str2tuple(snames)
+        mtypes = RockPy.core.utils.str2tuple(mtypes)
         ftype = ftype.upper()#RockPy.abbrev_to_classname[ftype.lower()]
 
-        mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in core_utils.to_tuple(mtypes))
+        mtypes = tuple(RockPy.abbrev_to_classname[mtype.lower()] for mtype in RockPy.to_tuple(mtypes))
         return sgroups, snames, mtypes, ftype
 
     @staticmethod
@@ -106,7 +106,7 @@ class ImportHelper(object):
             """
             extracts a series tuple from a str
             """
-            s = core_utils.str2tuple(s)
+            s = RockPy.core.utils.str2tuple(s)
             s = tuple([s[0], float(s[1]), s[2]])
             return s
 
@@ -309,48 +309,48 @@ class ImportHelper(object):
             additional:
             suffix:
         """
-        self.snames = core_utils.tuple2list_of_tuples(core_utils.to_tuple(snames))
-        self.sgroups = core_utils.tuple2list_of_tuples(core_utils.to_tuple(sgroups))
+        self.snames = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(snames))
+        self.sgroups = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(sgroups))
 
-        self.mtypes = core_utils.tuple2list_of_tuples(core_utils.to_tuple(mtypes))
+        self.mtypes = RockPy.core.utils.tuple2list_of_tuples(RockPy.to_tuple(mtypes))
         self.mtypes = [[RockPy.abbrev_to_classname[mt.lower()] for mt in mtypes] for mtypes in
                        self.mtypes]  # translate from abbrev to classname
 
-        self.ftype = core_utils.to_list(core_utils.to_tuple(ftype.lower()))
+        self.ftype = RockPy.core.utils.to_list(RockPy.to_tuple(ftype.lower()))
 
-        self.fpath = core_utils.to_list(fpath)
-        self.dialect = core_utils.to_list(dialect)
+        self.fpath = RockPy.core.utils.to_list(fpath)
+        self.dialect = RockPy.core.utils.to_list(dialect)
 
         #################################################################################
         """ PARAMETER """
-        self.mass = core_utils.to_list(mass)
-        self.massunit = core_utils.to_list(massunit)
+        self.mass = RockPy.core.utils.to_list(mass)
+        self.massunit = RockPy.core.utils.to_list(massunit)
 
-        self.height = core_utils.to_list(height)
-        self.heightunit = core_utils.to_list(heightunit)
-        self.diameter = core_utils.to_list(diameter)
-        self.diameterunit = core_utils.to_list(diameterunit)
+        self.height = RockPy.core.utils.to_list(height)
+        self.heightunit = RockPy.core.utils.to_list(heightunit)
+        self.diameter = RockPy.core.utils.to_list(diameter)
+        self.diameterunit = RockPy.core.utils.to_list(diameterunit)
 
         # in case of different units convert them to the same
         if self.heightunit != self.diameterunit:
-            self.height *= core_utils.convert(self.height, self.heightunit, self.diameterunit)
+            self.height *= RockPy.core.utils.convert(self.height, self.heightunit, self.diameterunit)
             self.heightunit = self.diameterunit
 
         if lengthunit is None:
-            self.lengthunit = core_utils.to_list(self.diameterunit)
+            self.lengthunit = RockPy.core.utils.to_list(self.diameterunit)
         else:
-            self.lengthunit = core_utils.to_list(lengthunit)
+            self.lengthunit = RockPy.core.utils.to_list(lengthunit)
 
         if series is not None:
             # if only one series and not three
             if len(series) == 3 and not len(series[0]) == 3:
-                series = core_utils.tuple2list_of_tuples(core_utils.to_tuple(series))
+                series = tuple2list_of_tuples(to_tuple(series))
 
         self.series = [series]
 
-        self.comment = core_utils.to_list(comment)
-        self.additional = [core_utils.to_tuple(additional)]
-        self.suffix = core_utils.to_list(suffix)
+        self.comment = RockPy.core.utils.to_list(comment)
+        self.additional = [to_tuple(additional)]
+        self.suffix = RockPy.core.utils.to_list(suffix)
 
     @classmethod
     def get_measurement_block(cls, sgroups, snames, mtypes, ftype):
@@ -374,7 +374,7 @@ class ImportHelper(object):
         block = [sgroups, snames, mtypes, ftype]
         if not all(i for i in block):
             raise ImportError("sname, mtype, ftype needed for minfo to be generated")
-        return "_".join((core_utils.tuple2str(b) for b in block))
+        return "_".join((RockPy.core.utils.tuple2str(b) for b in block))
 
     @classmethod
     def get_sample_block(cls,
@@ -443,10 +443,10 @@ class ImportHelper(object):
         import numpy as np
         if series:
             if np.array(series).shape == (3,):
-                out = [core_utils.tuple2str(series)]
+                out = [RockPy.core.utils.tuple2str(series)]
 
             else:
-                out = [core_utils.tuple2str(b) for b in series]
+                out = [RockPy.core.utils.tuple2str(b) for b in series]
             return "_".join(out).replace("\"", "").replace(" ", "")
         else:
             return ""
@@ -458,7 +458,7 @@ class ImportHelper(object):
             additional:
         """
         if additional:
-            return core_utils.tuple2str(additional)
+            return RockPy.core.utils.tuple2str(additional)
 
     @property
     def new_filenames(self):
@@ -505,8 +505,8 @@ class ImportHelper(object):
             yields:
         """
 
-        snames = core_utils.to_tuple(snames)
-        mtypes = core_utils.to_tuple(mtypes)
+        snames = RockPy.to_tuple(snames)
+        mtypes = RockPy.to_tuple(mtypes)
 
         for ih in self._gen_dicts:
             if all(i for i in snames) and ih["snames"] not in snames:
@@ -585,9 +585,9 @@ class ImportHelper(object):
         """
         out = {}
 
-        out['snames'] = core_utils.list_or_item(self.snames[0])
-        out['sgroups'] = core_utils.list_or_item(self.sgroups[0])
-        out['mtypes'] = core_utils.list_or_item(self.mtypes[0])
+        out['snames'] = list_or_item(self.snames[0])
+        out['sgroups'] = list_or_item(self.sgroups[0])
+        out['mtypes'] = list_or_item(self.mtypes[0])
         out['ftype'] = self.ftype[0]
         out['fpath'] = self.fpath[0]
         out['dialect'] = self.dialect[0]
@@ -605,7 +605,7 @@ class ImportHelper(object):
 
         if self.series[0]:
             for s in self.series[0]:
-                out["series"].update(core_utils.series_to_dict(s))
+                out["series"].update(series_to_dict(s))
 
         out['comment'] = self.comment[0]
         out['additional'] = self.additional[0]

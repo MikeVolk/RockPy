@@ -1,18 +1,16 @@
-import io
-from copy import deepcopy
-
+import RockPy
+from RockPy.core.ftype import Ftype
 import pandas as pd
 import numpy as np
+import io
+from copy import deepcopy
 import matplotlib.pyplot as plt
-
-import RockPy
-import RockPy.tools.plotting as RPplot
+from RockPy.tools.plotting import MidpointNormalize
 
 
-class VariForc(RockPy.core.ftype.Ftype):
+class VariForc(Ftype):
     header_ends = {'FORC function -1/2 ddM/(dHr dH) from corrected FORC measurements.': 'Data matrix',
-                   'Backfield coercivity distribution f(x) = 1/2 dM(Hr,H)/dHr at Hr = -x and H = 0.':
-                       'Coercivity distribution on linear field scale (Hc, f(Hc), SE of f)'}
+                   'Backfield coercivity distribution f(x) = 1/2 dM(Hr,H)/dHr at Hr = -x and H = 0.':'Coercivity distribution on linear field scale (Hc, f(Hc), SE of f)'}
 
     def __init__(self, dfile, snames=None, dialect='processed', reload=False):
         """
@@ -106,7 +104,7 @@ class VariForc(RockPy.core.ftype.Ftype):
                            extent=(min(x), max(x), min(y), max(y)),
                            #                       aspect = max(x)/max(y),
                            cmap=plt.get_cmap('RdBu_r'),
-                           norm=RPplot.MidpointNormalize(midpoint=0, vmin=d.min().min(), vmax=d.max().max())
+                           norm=MidpointNormalize(midpoint=0, vmin=d.min().min(), vmax=d.max().max())
                            )
 
             cb = plt.colorbar(cf, ax=ax)

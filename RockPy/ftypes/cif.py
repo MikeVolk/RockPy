@@ -6,8 +6,9 @@ import numpy as np
 import pint
 
 import RockPy
+from RockPy import ureg
 import RockPy.core.ftype
-import RockPy.tools.pandas_tools as pdtools
+from RockPy.tools.pandas_tools import xyz2dim, dim2xyz, correct_dec_inc
 
 
 class Cif(RockPy.core.ftype.Ftype):
@@ -53,37 +54,37 @@ class Cif(RockPy.core.ftype.Ftype):
                    "WS": (270, 270),
                    }
 
-    in_units = {'geo_dec': RockPy.ureg('degree'),
-                'geo_inc': RockPy.ureg('degree'),
-                'strat_dec': RockPy.ureg('degree'),
-                'strat_inc': RockPy.ureg('degree'),
-                'intensity': RockPy.ureg('emu'),
-                'ang_err': RockPy.ureg('degree'),
-                'plate_dec': RockPy.ureg('degree'),
-                'plate_inc': RockPy.ureg('degree'),
-                'std_x': RockPy.ureg('emu'),
-                'std_y': RockPy.ureg('emu'),
-                'std_z': RockPy.ureg('emu'),
-                'x': RockPy.ureg('emu'),
-                'y': RockPy.ureg('emu'),
-                'z': RockPy.ureg('emu')}
+    in_units = {'geo_dec': ureg('degree'),
+                'geo_inc': ureg('degree'),
+                'strat_dec': ureg('degree'),
+                'strat_inc': ureg('degree'),
+                'intensity': ureg('emu'),
+                'ang_err': ureg('degree'),
+                'plate_dec': ureg('degree'),
+                'plate_inc': ureg('degree'),
+                'std_x': ureg('emu'),
+                'std_y': ureg('emu'),
+                'std_z': ureg('emu'),
+                'x': ureg('emu'),
+                'y': ureg('emu'),
+                'z': ureg('emu')}
 
     out_units = in_units
 
-    units = {'geo_dec': RockPy.ureg('degree'),
-             'geo_inc': RockPy.ureg('degree'),
-             'strat_dec': RockPy.ureg('degree'),
-             'strat_inc': RockPy.ureg('degree'),
-             'intensity': RockPy.ureg('ampere meter ^2'),
-             'ang_err': RockPy.ureg('degree'),
-             'plate_dec': RockPy.ureg('degree'),
-             'plate_inc': RockPy.ureg('degree'),
-             'std_x': RockPy.ureg('ampere meter ^2'),
-             'std_y': RockPy.ureg('ampere meter ^2'),
-             'std_z': RockPy.ureg('ampere meter ^2'),
-             'x': RockPy.ureg('ampere meter ^2'),
-             'y': RockPy.ureg('ampere meter ^2'),
-             'z': RockPy.ureg('ampere meter ^2')}
+    units = {'geo_dec': ureg('degree'),
+             'geo_inc': ureg('degree'),
+             'strat_dec': ureg('degree'),
+             'strat_inc': ureg('degree'),
+             'intensity': ureg('ampere meter ^2'),
+             'ang_err': ureg('degree'),
+             'plate_dec': ureg('degree'),
+             'plate_inc': ureg('degree'),
+             'std_x': ureg('ampere meter ^2'),
+             'std_y': ureg('ampere meter ^2'),
+             'std_z': ureg('ampere meter ^2'),
+             'x': ureg('ampere meter ^2'),
+             'y': ureg('ampere meter ^2'),
+             'z': ureg('ampere meter ^2')}
 
     def __init__(self, dfile,
                  snames=None, reload=False,
@@ -111,11 +112,11 @@ class Cif(RockPy.core.ftype.Ftype):
 
         # set the level units
         if level_unit == 'gauss':
-            self.in_units['level'] = RockPy.ureg('gauss')
-            self.units['level'] = RockPy.ureg('tesla')
+            self.in_units['level'] = ureg('gauss')
+            self.units['level'] = ureg('tesla')
         if level_unit == 'celsius':
-            self.in_units['level'] = RockPy.ureg('celsius')
-            self.units['level'] = RockPy.ureg('kelvin')
+            self.in_units['level'] = ureg('celsius')
+            self.units['level'] = ureg('kelvin')
 
         # call the ftype constructor
         super().__init__(dfile, snames=snames,
@@ -410,7 +411,7 @@ class Cif(RockPy.core.ftype.Ftype):
         sdata = cls._rotate_UP_measurements(sdata)
 
         # calculate dec, inc and moment
-        sdata = pdtools.xyz2dim(sdata, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
+        sdata = xyz2dim(sdata, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
 
         sdata = sdata.set_index('datetime')
         dfile = os.path.basename(dfile)
@@ -570,7 +571,7 @@ class Cif(RockPy.core.ftype.Ftype):
         else:
             data = average_df[0]
 
-        data = pdtools.xyz2dim(data, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
+        data = xyz2dim(data, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
 
         data = data.sort_index()
         data.index.name = 'datetime'
@@ -646,7 +647,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
     @classmethod
     def _recalc_plate(cls, df):
-        df = pdtools.xyz2dim(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
+        df = xyz2dim(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
         return df
 
     @classmethod
@@ -696,7 +697,7 @@ class Cif(RockPy.core.ftype.Ftype):
             strike = strike.values[0]
 
         cls.log().info(f'Correcting data for core dip ({dip}) and strike ({strike})')
-        return pdtools.correct_dec_inc(df=df, dip=dip, strike=(strike - 90),
+        return correct_dec_inc(df=df, dip=dip, strike=(strike - 90),
                                colI='plate_inc', colD='plate_dec',
                                newD='geo_dec', newI='geo_inc')
 
@@ -729,7 +730,7 @@ class Cif(RockPy.core.ftype.Ftype):
             cls.log().warn(
                 f'UNTESTED: Correcting data for stratigraphic dip ({dip}) and strike ({strike}).')
 
-        return pdtools.correct_dec_inc(df=df, dip=dip, strike=strike,
+        return correct_dec_inc(df=df, dip=dip, strike=strike,
                                colI='geo_inc', colD='geo_dec',
                                newI='strat_inc', newD='strat_dec')
 
@@ -817,7 +818,7 @@ class Cif(RockPy.core.ftype.Ftype):
             columns=['mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                      'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time'], data=rows)
 
-        data = pdtools.dim2xyz(data, colD='plate_dec', colI='plate_inc', colM='intensity')
+        data = dim2xyz(data, colD='plate_dec', colI='plate_inc', colM='intensity')
         data.loc[:, 'datetime'] = pd.to_datetime(data['date'] + ' ' + data['time'])
         data = data.set_index('datetime')
         return data
@@ -842,7 +843,7 @@ class Cif(RockPy.core.ftype.Ftype):
     @property
     def geo_xyz(self):
         """ Returns :obj:`pandas.DataFrame` of the geographic (x,y,z) """
-        return pdtools.dim2xyz(self.geo_dim, colD='geo_dec', colI='geo_inc', colM='intensity')[['x', 'y', 'z']]
+        return dim2xyz(self.geo_dim, colD='geo_dec', colI='geo_inc', colM='intensity')[['x', 'y', 'z']]
 
     def mean_levels(self):
         """ Calculates the mean of a level by from AF, UAFX1, UAFX2... measuements.

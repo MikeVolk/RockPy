@@ -2,16 +2,18 @@ import logging
 import os
 from copy import deepcopy
 
+import RockPy
+import RockPy.core
+import RockPy.core.utils
+import RockPy.core.result
+from RockPy.core.ftype import Ftype
+# from RockPy.Packages.generic.Measurement.Parameter import Parameter
+from RockPy.core.utils import to_tuple, tuple2list_of_tuples
+
 import numpy as np
 import pandas as pd
 import inspect
-
-import RockPy
-import RockPy.core
-import RockPy.core.utils as core_utils
-import RockPy.core.result
-import RockPy.core.ftype
-import RockPy.tools.pandas_tools as pandas_tools
+from RockPy.tools.pandas_tools import get_values_in_both
 
 class Measurement(object):
     """
@@ -773,7 +775,7 @@ class Measurement(object):
             return False
 
         if sval is not None:
-            sval = core_utils.to_tuple(sval)
+            sval = to_tuple(sval)
             if method == 'all':
                 return True if all(i in self.svals for i in sval) else False
             if method == 'any':
@@ -807,7 +809,7 @@ class Measurement(object):
             return False
 
         if stype is not None:
-            stype = core_utils.to_tuple(stype)
+            stype = to_tuple(stype)
             if method == 'all':
                 return True if all(i in self.stypes for i in stype) else False
             if method == 'any':
@@ -838,7 +840,7 @@ class Measurement(object):
         '''
 
         if series is not None:
-            series = core_utils.tuple2list_of_tuples(series)
+            series = tuple2list_of_tuples(series)
             if method == 'all':
                 return True if all(i in self.series for i in series) else False
             if method == 'any':
@@ -925,13 +927,13 @@ class Measurement(object):
         slist = self.series
 
         if stype is not None:
-            stype = core_utils.to_tuple(stype)
+            stype = to_tuple(stype)
             slist = filter(lambda x: x[0] in stype, slist)
         if sval is not None:
-            sval = core_utils.to_tuple(sval)
+            sval = to_tuple(sval)
             slist = filter(lambda x: x[1] in sval, slist)
         if series:
-            series = core_utils.tuple2list_of_tuples(series)
+            series = tuple2list_of_tuples(series)
             slist = filter(lambda x: (x[0], x[1]) in series, slist)
         return list(slist)
 
@@ -953,7 +955,7 @@ class Measurement(object):
         if not self.series and not other.series:
             return True
 
-        ignore_stypes = core_utils.to_tuple(ignore_stypes)
+        ignore_stypes = to_tuple(ignore_stypes)
         ignore_stypes = [st.lower() for st in ignore_stypes if type(st) == str]
         selfseries = (s for s in self.series if not s[0] in ignore_stypes)
         otherseries = (s for s in other.series if not s[0] in ignore_stypes)
@@ -1010,11 +1012,11 @@ class Measurement(object):
             return
 
         # dont normalize parameter measurements
-        if isinstance(self, RockPy.packages.generic.parameter.Parameter):
+        if isinstance(self, Parameter):
             return
         # print(self.mtype, locals())
         # separate the calc from non calc parameters
-        calculation_parameter, options = core_utils.separate_calculation_parameter_from_kwargs(rpobj=self,
+        calculation_parameter, options = RockPy.core.utils.separate_calculation_parameter_from_kwargs(rpobj=self,
                                                                                                       **options)
 
         # getting normalization factor
@@ -1130,6 +1132,7 @@ class Measurement(object):
         if not vval:
             if not norm_method in methods:
                 raise NotImplemented('NORMALIZATION METHOD << %s >>' % norm_method)
+                return
             else:
                 return methods[norm_method](data[rtype].v)
 
