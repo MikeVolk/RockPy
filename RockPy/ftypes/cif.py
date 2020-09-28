@@ -392,10 +392,9 @@ class Cif(RockPy.core.ftype.Ftype):
             cls.imported_files[dfile] = cls._read_raw_UP_file(dfile)
 
         out = cls.imported_files[dfile].copy() # todo does this have to be a copy?
-
         # check if the sample is in the data
         if not sample_id in set(out['Sample']):
-            RockPy.log.error('Could not find sample_id << {} >> in file << {} >.! '
+            RockPy.log.warning('Could not find sample_id << {} >> in file << {} >.! '
                              'Please check correct spelling'.format(sample_id, os.path.basename(dfile)))
             return
 
@@ -492,6 +491,7 @@ class Cif(RockPy.core.ftype.Ftype):
         raw_data = [n.rstrip().replace(',', '|') for n in raw_data]
         # in case of weird double <CR> symbols
         raw_data = [i for i in raw_data if i]
+
         raw_data = [n.split('|') for n in raw_data]
         header = header.rstrip().replace(',', '|')
         header = header.split('|')

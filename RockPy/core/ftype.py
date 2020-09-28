@@ -9,6 +9,8 @@ from copy import deepcopy
 from io import StringIO, BytesIO
 import pint
 from RockPy import ureg
+
+
 class Ftype(object):
     """ Delivers core functionality to all classes inheriting from it.
 
@@ -107,7 +109,7 @@ class Ftype(object):
         elif dfile not in self.__class__.imported_files or reload:
             if not dio:
                 self.log().info('IMPORTING << %s , %s >> file: << ... %s >>' % (self.snames,
-                                                                            type(self).__name__, dfile[-20:]))
+                                                                                type(self).__name__, dfile[-20:]))
             else:
                 self.log().info('IMPORTING << %s , %s >> from Bytes' % (self.snames, type(self).__name__))
 
@@ -116,7 +118,8 @@ class Ftype(object):
         else:
             self.log().info(
                 "LOADING previously imported file << {} , {} >> file: << {} >>\n\t>>> "
-                "USE reload option if you want to read files from HD".format(self.snames, type(self).__name__, dfile[-40:]))
+                "USE reload option if you want to read files from HD".format(self.snames, type(self).__name__,
+                                                                             dfile[-40:]))
 
         self.data = self.__class__.imported_files[dfile]
         self.to_si_units()
@@ -174,6 +177,7 @@ class Ftype(object):
     def to_si_units(self):
         """ converts each numeric column in self.data to SI internal_units TODO: write to out_units
         """
+        Q_ = ureg.Quantity
         for col in self.data.columns:
             if col in self.in_units:
                 if not col in self.units:
@@ -195,19 +199,19 @@ class Ftype(object):
 
                 # convert to internal unit
                 try:
-                    conv = (1 * in_unit).to(unit).magnitude
-                    self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
-                    self.data.loc[:, col] *= conv
-
+                    d = self.data.loc[:, col].values
+                    d = Q_(d, in_unit)
+                    conv = Q_(1, in_unit).to(unit).magnitude
+                    self.log().debug(f'converting to SI units 1 {in_unit} -> {conv * unit}')
+                    self.data.loc[:, col] = d.to(unit)
                 except pint.DimensionalityError:
                     self.log().debug(f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
                     if in_unit == ureg('gauss') and unit == ureg('tesla'):
-                        conv  = 1e-4
-                    if in_unit ==  ureg('tesla') and unit == ureg('gauss'):
+                        conv = 1e-4
+                    if in_unit == ureg('tesla') and unit == ureg('gauss'):
                         conv = 1e4
                     self.data.loc[:, col] *= conv
                     self.log().info(f'manual conversion to SI units {in_unit} -> {conv} {unit}')
-
 
     def read_file(self):
         """ Method for actual import of the file.
@@ -269,12 +273,13 @@ class Ftype(object):
         Returns:
             :obj:`RockPy.core.ftype.Ftype`:
         """
-        out =  deepcopy(self)
+        out = deepcopy(self)
         out.fid = id(out)
         return out
 
     def unit_label(self, quantity):
         return '{:~P}'.format(self.units[quantity].units)
+
 
 ### related functions
 def is_implemented(ftype):
@@ -292,5 +297,6 @@ def is_implemented(ftype):
     if ftype in RockPy.implemented_ftypes:
         return True
     else:
-        RockPy.log.error(f'Ftype << {ftype} >> is not implemented. Check RockPy.implemented_ftypes for which ftypes are.')
+        RockPy.log.error(
+            f'Ftype << {ftype} >> is not implemented. Check RockPy.implemented_ftypes for which ftypes are.')
         return False
