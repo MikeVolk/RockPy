@@ -358,6 +358,7 @@ class Measurement(object):
     def sid(self):
         return self.sobj.sid
 
+    @classmethod
     def _result_classes(self):  # todo test
         """
         Mothod that gets all result classes of the measurement
@@ -367,7 +368,7 @@ class Measurement(object):
             list: <class 'RockPy.Result'>
             
         """
-        for name, cls in inspect.getmembers(self.__class__):
+        for name, cls in inspect.getmembers(self):
             if not inspect.isclass(cls):
                 continue
             if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
