@@ -447,30 +447,17 @@ class Study(object):
             if any(sample_info_dict[v] in arg_filter for v in ('sname',)):
                 self.log().debug('filtering out file: %s' % sample_info_dict['fpath'])
                 continue
-            print('=' * 90)
+
             s = self.add_sample(**sample_info_dict)
             slist.append(s)
 
-            # #create all measurements
-            # for s in slist:
-            #     for measurement_info_dict in iHelper.gen_measurement_dict:
-            #         if not s.name == sample_info_dict['sname']:
-            #             continue
-            #         if any(sample_info_dict[v] in filter for v in ('sname',)):
-            #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
-            #             continue
-            #         else:
-            #             s.add_measurement()
-
-            # for ih in iHelper.getImportHelper(snames=sample_info_dict['sname']):
+            # create all measurements
             for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
                 if s.name != measurement_dict['sname']:
                     continue
-                print(measurement_dict)
                 m = s.add_measurement(create_parameters=False, **measurement_dict)
                 if m is not None:
                     mlist.append(m)
-            print('=' * 90)
 
         self.log().info(
             '%i / %i files imported in %.2f seconds' % (
