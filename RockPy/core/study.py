@@ -8,10 +8,6 @@ from RockPy.core.utils import to_tuple
 import pandas as pd
 import numpy as np
 
-# import ipywidgets as widgets
-# from IPython.display import display
-# from ipywidgets import HBox, VBox, Label
-
 log = logging.getLogger(__name__)
 
 
