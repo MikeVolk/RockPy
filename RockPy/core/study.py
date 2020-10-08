@@ -23,19 +23,17 @@ class Study(object):
         return logging.getLogger('RockPy.Study')
 
     def __init__(self, name=None, folder=None):
-        # type: (str, str) -> RockPy.Study
         """
-        general Container for Samplegroups and Samples.
+        general Container for Samples.
 
         Parameters
         ----------
             name: str
-                default_recipe: 'study'
                 name of the Study
 
         Returns
         -------
-            object
+            RockPy.Study object
         """
 
         # give id to the study object
@@ -102,6 +100,19 @@ class Study(object):
             yield s
 
     @property
+    def samplenames(self):
+        """
+        Iterator yields all samplenames in Study
+
+        Returns
+        -------
+            str: RockPy.Sample.name
+        """
+
+        for sname in sorted(self._samples.keys()):
+            yield sname
+
+    @property
     def sample_list(self):
         """
         Iterator that returns each sample in Study
@@ -113,6 +124,8 @@ class Study(object):
 
         return list(self.samples)
 
+
+    ''' measurements '''
     @property
     def measurements(self):
         '''
@@ -120,7 +133,7 @@ class Study(object):
 
         Returns
         -------
-            RockPy.Measurement
+            iterator of measurements
         '''
 
         for s in self.samples:
@@ -137,27 +150,6 @@ class Study(object):
             list
         """
         return list(self.measurements)
-
-    @property
-    def samplenames(self):
-        """
-        Iterator yields all samplenames in Study
-
-        Returns
-        -------
-            str: RockPy.Sample.name
-        """
-
-        for sname in sorted(self._samples.keys()):
-            yield sname
-
-    ''' measurements '''
-
-    @property
-    def measurements(self):
-        for s in self.samples:
-            for m in s.measurements:
-                yield m
 
     @property
     def mtypes(self):
