@@ -852,7 +852,7 @@ class Measurement(object):
             return True if self._series else False
 
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
-        # todo change to set_series with styoe, sval, suit, series
+        # todo change to set_series with stype, sval, suit, series
         """
         adds a series to measurement.series
 
