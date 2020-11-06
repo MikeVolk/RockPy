@@ -1,6 +1,9 @@
 import os
 from functools import partial, wraps
 
+import json
+import codecs
+import configparser
 import decorator
 import importlib
 import pkgutil
@@ -555,16 +558,8 @@ def loadmat(filename):
     data = sp.io.loadmat(filename, struct_as_record=False, squeeze_me=True)
     return _check_keys(data)
 
-if __name__ == '__main__':
-    a = handle_shape([[1, 2, 3], [1, 2, 3]])
-    print(a)
-    print(np.shape(a))
-
-import json
-import codecs
 
 _MagIC_codes = None
-
 
 def MagIC_codes():
     if RockPy.core.utils._MagIC_codes is None:
@@ -573,3 +568,33 @@ def MagIC_codes():
         _MagIC_codes = {n: {i['code']: i['definition'] if 'definition' in i else None for i in data[n]['codes']} for n
                         in data.keys()}
     return _MagIC_codes
+
+def CreateConfigFile():
+    config = configparser.ConfigParser()
+    for mtype, cls in sorted(RockPy.implemented_measurements.items()):
+        for result in cls._result_classes():
+            config['#'.join([mtype, result])] = {}
+            print(result)
+            # print(cls.res_signature()[result]['signature'])
+            # config[mtype][] = 'test'#cls.res_signature()[result]
+    #         #         if result == 'b_anc':
+    #         #             print(cls.res_signature()[result])
+    #         #         if not cls.res_signature()[result]['indirect']:
+    #         #             standard_method = '_'.join([result, cls.result_recipe()[result]]).replace('_DEFAULT', '')
+    #         #             for param, value in cls.calc_signature()[standard_method].items():
+    #         #                 line = ', '.join([mtype, result, cls.result_recipe()[result].lower(), param, str(value), '\n'])
+    #         #                 f.write(line)
+    #
+    with open(os.path.join(RockPy.installation_directory, 'configfile.ini'), 'w') as configfile:
+        config.write(configfile)
+
+if __name__ == '__main__':
+    CreateConfigFile()
+    # import RockPy.packages.magnetism.measurements
+    # s = RockPy.Sample('test')
+    # m = s.add_measurement(fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001',
+    #                       mtype='hys',ftype='vsm')
+    # for i in m._result_classes():
+    #     print(i)
+    # for i in RockPy.packages.magnetism.measurements.Hysteresis._result_classes():
+    #     print(i)
