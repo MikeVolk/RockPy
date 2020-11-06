@@ -305,6 +305,7 @@ class Sample(object):
             series=None,
             comment=None, additional=None,
             reload=False,
+            create_parameters=True,
             **kwargs):
 
         """
@@ -341,7 +342,7 @@ class Sample(object):
         mobj: RockPy3.Measurement object
             if provided, the object is added to self.measurements
 
-        series: lsist of tuples
+        series: list of tuples
             default: None
             A list of tuples consisting of (stype, svalue, sunit) 
 
@@ -350,7 +351,7 @@ class Sample(object):
 
         Returns
         -------
-            RockPy3.measurement object
+            RockPy.measurement object
         """
 
         # create the idx
@@ -365,26 +366,18 @@ class Sample(object):
 
         """ DATA import from mass, height, diameter, len ... """
 
-        # if create_parameters:
-        #     self.add_parameter_measurements(fpath, **kwargs)
-        #
-        # # catch only parameter measurements
-        # if not any([fpath, mtype, mobj, mdata, ftype]):
-        #     if any([k in parameters for k in kwargs.keys()]):
-        #         mtype = [k for k in kwargs.keys() if k in parameters][0]
-        #         return self.get_measurement(mtype=mtype)[0]
-
         # check for parameters in kwargs (i.e. mass = '12mg'
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
-        if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
-            mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
-            return mobj
+        if create_parameters:
+            if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
+                mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
+                return mobj
 
-        if mtype in parameters and not mobj:
-            value = kwargs.pop('value')
-            unit = kwargs.pop('unit', None)
-            mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, series=series, idx=idx)
-            return mobj
+            if mtype in parameters and not mobj:
+                value = kwargs.pop('value')
+                unit = kwargs.pop('unit', None)
+                mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, series=series, idx=idx)
+                return mobj
 
         # create the import helper
         if fpath and not any((mtype, ftype)):
@@ -597,7 +590,6 @@ class Sample(object):
             return np.array(out)
 
     ### get functions
-
     def get_measurement(self,
                         mtype=None,
                         series=None,

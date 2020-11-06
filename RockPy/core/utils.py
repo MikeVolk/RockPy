@@ -294,7 +294,8 @@ def correction(func, *args, **kwargs):
     set_get_attr(self, 'correction')
 
     if func.__name__ in self._correction:
-        self.log().warning('CORRECTION {} has already been applied'.format(func.__name__))
+        if not kwargs.pop('redo', False):
+            self.log().warning('CORRECTION {} has already been applied'.format(func.__name__))
         return
     else:
         self.log().info('APPLYING correction {}, resetting results'.format(func.__name__))

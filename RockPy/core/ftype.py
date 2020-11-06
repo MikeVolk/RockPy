@@ -191,6 +191,9 @@ class Ftype(object):
                             col, self.in_units[col]))
                     continue
 
+                if col == 'level':
+                    self.data.loc[:, 'old_level'] = self.data.loc[:, 'level'].values
+
                 in_unit = self.in_units[col]
                 unit = self.units[col]
 

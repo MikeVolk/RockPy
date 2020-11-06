@@ -830,9 +830,9 @@ class Measurement(object):
         series: list of tuples 
             each element is (stype, sval, sunit) tuple
         method: str:
-            'all': returns True if measurement posesses ALL series
-            'any': returns True if measurement posesses ONE or more series
-            'None': returns True if measurement posesses NONE of the provided series
+            'all': returns True if measurement possesses ALL series
+            'any': returns True if measurement possesses ONE or more series
+            'None': returns True if measurement possesses NONE of the provided series
 
         Returns
         -------
