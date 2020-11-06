@@ -166,7 +166,7 @@ def max_zorder(ax):
 """ Stereonet and other projections"""
 
 
-def setup_stereonet(ax=None, grid=True, rtickwidth=1):
+def setup_stereonet(ax=None, grid=True, rings=True, rtickwidth=1):
     """
 
     Parameters
@@ -196,18 +196,21 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
         d = convert_to_equal_area([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)], intype='dim')
         ax.plot(np.radians(d[:,0]), d[:,1], 'k+')
 
-    ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+    if rings:
+        ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+    else:
+        ticks = ax.set_rticks([])  # Less radial ticks
+
     for t in ticks:
-        t.set_alpha(0)
+        t.set_alpha(0.5)
 
     # outer ticks
     for t in np.deg2rad(np.arange(0, 360, 5)):
         ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=-1)
 
-
-
+    ax.set_thetagrids(angles=[0,90,180,270])
     ax.set_rmax(1)
-
+    return ax
 
 def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
     if ax is None:
