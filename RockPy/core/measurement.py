@@ -368,7 +368,7 @@ class Measurement(object):
             list: <class 'RockPy.Result'>
             
         """
-        for name, cls in inspect.getmembers(self.__class__):
+        for name, cls in inspect.getmembers(self):
             if not inspect.isclass(cls):
                 continue
             if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
@@ -852,7 +852,7 @@ class Measurement(object):
             return True if self._series else False
 
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
-        # todo change to set_series with styoe, sval, suit, series
+        # todo change to set_series with stype, sval, suit, series
         """
         adds a series to measurement.series
 
