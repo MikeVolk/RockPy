@@ -202,8 +202,8 @@ class Ftype(object):
                     d = self.data.loc[:, col].values
                     d = Q_(d, in_unit)
                     conv = Q_(1, in_unit).to(unit).magnitude
-                    self.log().debug(f'converting to SI units 1 {in_unit} -> {conv * unit}')
-                    self.data.loc[:, col] = d.to(unit)
+                    self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
+                    self.data.loc[:, col] = d.to(unit).magnitude
                 except pint.DimensionalityError:
                     self.log().debug(f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
                     if in_unit == ureg('gauss') and unit == ureg('tesla'):
@@ -211,7 +211,7 @@ class Ftype(object):
                     if in_unit == ureg('tesla') and unit == ureg('gauss'):
                         conv = 1e4
                     self.data.loc[:, col] *= conv
-                    self.log().info(f'manual conversion to SI units {in_unit} -> {conv} {unit}')
+                    self.log().info(f'manual conversion to SI units 1 {in_unit} -> {conv} {unit}')
 
     def read_file(self):
         """ Method for actual import of the file.

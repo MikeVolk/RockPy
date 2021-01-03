@@ -419,7 +419,11 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
         defaults.update(kwargs)
         kwargs = defaults
 
-        xyz = args[0]
+        if 'xyz' in kwargs:
+            xyz = kwargs.pop('xyz')
+        else:
+            xyz = args[0]
+
         ## maintain vector shape part
         s = np.array(xyz).shape
 
