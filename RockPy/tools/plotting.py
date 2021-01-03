@@ -114,7 +114,7 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
-                bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                bbox=kwargs.pop('bbox', dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0)),
                 color=kwargs.pop('color', 'k'), **kwargs)
 
 
@@ -166,7 +166,7 @@ def max_zorder(ax):
 """ Stereonet and other projections"""
 
 
-def setup_stereonet(ax=None, grid=True, rtickwidth=1):
+def setup_stereonet(ax=None, grid=True, rings=True, rtickwidth=1):
     """
 
     Parameters
@@ -187,27 +187,36 @@ def setup_stereonet(ax=None, grid=True, rtickwidth=1):
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
 
-
     ax.set_yticklabels([])  # Less radial ticks
 
     ## plot the grids
     # crosses
     for d in [0, 90, 180, 270]:
         d = convert_to_equal_area([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)], intype='dim')
-        ax.plot(np.radians(d[:,0]), d[:,1], 'k+')
+        ax.plot(np.radians(d[:, 0]), d[:, 1], 'k+')
 
-    ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+<<<<<<< HEAD
+    ticks = ax.set_rticks(d[:, 1])  # Less radial ticks
+=======
+    if rings:
+        ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+    else:
+        ticks = ax.set_rticks([])  # Less radial ticks
+
+>>>>>>> development
     for t in ticks:
-        t.set_alpha(0)
+        t.set_alpha(0.5)
 
     # outer ticks
     for t in np.deg2rad(np.arange(0, 360, 5)):
         ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=-1)
 
-
-
+<<<<<<< HEAD
+=======
+    ax.set_thetagrids(angles=[0,90,180,270])
+>>>>>>> development
     ax.set_rmax(1)
-
+    return ax
 
 def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
     if ax is None:
@@ -225,6 +234,7 @@ def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
                 y = ymax
 
             ax.axvline(r, ymin=ymin / ymx, ymax=y / ymx, color=color, lw=0.7)
+
 
 def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
     """
@@ -274,8 +284,11 @@ def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
 
 
 """ LINES """
-def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1], **legend_opts):
 
+
+def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1],
+                          add_handles=None, add_labels=None, add_sort=True,
+                          **legend_opts):
     """
     Combines labels that are the same into one label
 
@@ -291,14 +304,22 @@ def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1], **legend_opt
         ax = plt.gca()
 
     h, l = ax.get_legend_handles_labels()
+
+    if all(i is not None for i in [add_handles, add_labels]) and add_sort:
+        h += add_handles
+        l += add_labels
+
     labels = sorted(set(l))
     handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
 
+    if all(i is not None for i in [add_handles, add_labels]) and not add_sort:
+        h += add_handles
+        l += add_labels
+
     mxlen = max([len(i) for i in handles])
-    print(mxlen)
     ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor,
-              handler_map={tuple: HandlerTuple(ndivide=None, pad=-1*pad)},
-              handletextpad = mxlen *pad,
+              handler_map={tuple: HandlerTuple(ndivide=None, pad=-1)},
+              handletextpad=mxlen * pad,
               **legend_opts)
 
 
@@ -407,6 +428,7 @@ def add_zerolines(ax=None, **kwargs):
     ax.axhline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
     ax.axvline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
 
+
 def make_spines_zero(a, xlabel='', ylabel=''):
     a.set_xlabel()
     a.set_ylabel('N/up ($10^{-9}$ Am$^2$)', rotation=-90)
@@ -421,6 +443,7 @@ def make_spines_zero(a, xlabel='', ylabel=''):
     a.yaxis.set_ticks_position('left')
     a.xaxis.set_label_coords(1.0, -0.005)
     a.yaxis.set_label_coords(1., 0.5)
+
 
 def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
     """
@@ -478,7 +501,8 @@ def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
     else:
         RockPy.log.error('%s not a valid direction: choose either \'up\' or \'down\'' % direction)
 
-def plot_square(x, y, d, center = True, center_label=None, ax=None, **plt_args):
+
+def plot_square(x, y, d, center=True, center_label=None, ax=None, **plt_args):
     """
     plots a square with center = (x,y) and width = d
 
@@ -503,14 +527,15 @@ def plot_square(x, y, d, center = True, center_label=None, ax=None, **plt_args):
     l, = ax.plot(x, y, 's', markersize=3, visible=False, label=f'{center_label}', **plt_args)
 
     if center:
-        ax.plot(x, y, '+', markersize=3, color = l.get_color(), mew=1)
+        ax.plot(x, y, '+', markersize=3, color=l.get_color(), mew=1)
 
-    ax.plot([x-d, x+d], [y-d, y-d], color = l.get_color(), lw=1)
-    ax.plot([x-d, x+d], [y+d, y+d], color = l.get_color(), lw=1)
-    ax.plot([x-d, x-d], [y-d, y+d], color = l.get_color(), lw=1)
-    ax.plot([x+d, x+d], [y-d, y+d], color = l.get_color(), lw=1)
+    ax.plot([x - d, x + d], [y - d, y - d], color=l.get_color(), lw=1)
+    ax.plot([x - d, x + d], [y + d, y + d], color=l.get_color(), lw=1)
+    ax.plot([x - d, x - d], [y - d, y + d], color=l.get_color(), lw=1)
+    ax.plot([x + d, x + d], [y - d, y + d], color=l.get_color(), lw=1)
 
     return ax
+
 
 def label_line(line, label, x, y, color='0.5', size=12):
     """Add a label to a line, at the proper angle.

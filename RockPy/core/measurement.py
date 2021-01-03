@@ -358,6 +358,7 @@ class Measurement(object):
     def sid(self):
         return self.sobj.sid
 
+    @classmethod
     def _result_classes(self):  # todo test
         """
         Mothod that gets all result classes of the measurement

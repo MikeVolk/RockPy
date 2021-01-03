@@ -8,10 +8,6 @@ from RockPy.core.utils import to_tuple
 import pandas as pd
 import numpy as np
 
-# import ipywidgets as widgets
-# from IPython.display import display
-# from ipywidgets import HBox, VBox, Label
-
 log = logging.getLogger(__name__)
 
 
@@ -27,19 +23,17 @@ class Study(object):
         return logging.getLogger('RockPy.Study')
 
     def __init__(self, name=None, folder=None):
-        # type: (str, str) -> RockPy.Study
         """
-        general Container for Samplegroups and Samples.
+        general Container for Samples.
 
         Parameters
         ----------
             name: str
-                default_recipe: 'study'
                 name of the Study
 
         Returns
         -------
-            object
+            RockPy.Study object
         """
 
         # give id to the study object
@@ -106,6 +100,19 @@ class Study(object):
             yield s
 
     @property
+    def samplenames(self):
+        """
+        Iterator yields all samplenames in Study
+
+        Returns
+        -------
+            str: RockPy.Sample.name
+        """
+
+        for sname in sorted(self._samples.keys()):
+            yield sname
+
+    @property
     def sample_list(self):
         """
         Iterator that returns each sample in Study
@@ -117,6 +124,8 @@ class Study(object):
 
         return list(self.samples)
 
+
+    ''' measurements '''
     @property
     def measurements(self):
         '''
@@ -124,7 +133,7 @@ class Study(object):
 
         Returns
         -------
-            RockPy.Measurement
+            iterator of measurements
         '''
 
         for s in self.samples:
@@ -141,27 +150,6 @@ class Study(object):
             list
         """
         return list(self.measurements)
-
-    @property
-    def samplenames(self):
-        """
-        Iterator yields all samplenames in Study
-
-        Returns
-        -------
-            str: RockPy.Sample.name
-        """
-
-        for sname in sorted(self._samples.keys()):
-            yield sname
-
-    ''' measurements '''
-
-    @property
-    def measurements(self):
-        for s in self.samples:
-            for m in s.measurements:
-                yield m
 
     @property
     def mtypes(self):
@@ -447,30 +435,17 @@ class Study(object):
             if any(sample_info_dict[v] in arg_filter for v in ('sname',)):
                 self.log().debug('filtering out file: %s' % sample_info_dict['fpath'])
                 continue
-            print('=' * 90)
+
             s = self.add_sample(**sample_info_dict)
             slist.append(s)
 
-            # #create all measurements
-            # for s in slist:
-            #     for measurement_info_dict in iHelper.gen_measurement_dict:
-            #         if not s.name == sample_info_dict['sname']:
-            #             continue
-            #         if any(sample_info_dict[v] in filter for v in ('sname',)):
-            #             self.log().debug('filtering out file: %s'%measurement_info_dict['fpath'])
-            #             continue
-            #         else:
-            #             s.add_measurement()
-
-            # for ih in iHelper.getImportHelper(snames=sample_info_dict['sname']):
+            # create all measurements
             for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
                 if s.name != measurement_dict['sname']:
                     continue
-                print(measurement_dict)
                 m = s.add_measurement(create_parameters=False, **measurement_dict)
                 if m is not None:
                     mlist.append(m)
-            print('=' * 90)
 
         self.log().info(
             '%i / %i files imported in %.2f seconds' % (
@@ -502,98 +477,5 @@ class Study(object):
         results['mtype'] = [self.get_measurement(mid=mid)[0].mtype for mid in results.index]
         return results
 
-    # def widget_add_sample(self):
-
-    #     out = widgets.Output()
-    #     # left panel
-
-    #     # first line with sample name and create button
-    #     samplename = widgets.Text(value='',
-    #                               description='name:',
-    #                               disabled=False, layout=widgets.Layout(width='325px'),
-    #                               )
-    #     add_sample_button = widgets.Button(description='create', layout=widgets.Layout(width='75px'))
-    #     topline = HBox([samplename, add_sample_button], layout=widgets.Layout(width='400px'))
-
-    #     # second line mass and mass unit
-    #     mass = widgets.FloatText(value=None,
-    #                              description='mass:',
-    #                              disabled=False, layout=widgets.Layout(width='243px'),
-    #                              )
-
-    #     mass_unit = widgets.Dropdown(options=['T', 'kg', 'g', 'mg', 'mug', 'ng'],
-    #                                  value='mg',
-    #                                  description='unit',
-    #                                  disabled=False, layout=widgets.Layout(width='150px'))
-    #     mass_line = HBox([mass, mass_unit], layout=widgets.Layout(width='450px'))
 
 
-    #     comment = widgets.Textarea(value='',
-    #                                placeholder='',
-    #                                description='comment',
-    #                                disabled=False, layout=widgets.Layout(width='397px', height='30px'))
-
-    #     # right panel
-    #     label = Label('Sample list:', layout=widgets.Layout(width='160px'))
-    #     samplelist = widgets.Textarea(value='\n'.join(self.samplenames),
-    #                                   placeholder='No samples yet',
-    #                                   description='',
-    #                                   disabled=True,
-    #                                   layout=widgets.Layout(width='25%', height='160px'))
-
-    #     display(HBox([VBox([topline, mass_line, comment]), sample_column], layout=widgets.Layout(width='100%')),
-    #             )
-
-    #     def button_click(button):
-    #         out.clear_output()
-
-
-    #         s = self.add_sample(sname=samplename.value, mass=mass.value, massunit=mass_unit.value)
-
-    #         if not '{}\t{}\n'.format(s.idx, s.name) in samplelist.value:
-    #             samplelist.value += '{}\t{}\n'.format(s.idx, s.name)
-
-    #     add_sample_button.on_click(button_click)
-
-    # def widget_import(self):
-    #     display(Label('import file', layout=widgets.Layout(width='150px')),
-    #             HBox([]),
-    #             HBox([]))
-
-    # def widget_plot(self):
-
-    #     def next_(event):
-    #         pass
-
-    #     # samples selection
-    #     samples_dropdown = widgets.Dropdown(options=list(self.samplenames), value=list(self.samplenames)[0],
-    #                                         description='sample:',
-    #                                         disabled=False, layout=widgets.Layout(width='250px'))
-    #     next_sample = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
-    #     previous_sample = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
-    #     sample_select = widgets.HBox([samples_dropdown, previous_sample, next_sample])
-
-    #     # mtype selection
-    #     mtype_dropdown = widgets.Dropdown(options=list(self.mtypes), value=None, description='mtype:',
-    #                                       disabled=False, layout=widgets.Layout(width='250px'))
-    #     next_mtype = widgets.Button(description='>', layout=widgets.Layout(width='50px'))
-    #     previous_mtype = widgets.Button(description='<', layout=widgets.Layout(width='50px'))
-    #     mtype_select = widgets.HBox([mtype_dropdown, previous_mtype, next_mtype])
-
-    #     RightPane = widgets.VBox([sample_select, mtype_select], layout=widgets.Layout(width='300px'))
-    #     LeftPane = widgets.VBox([widgets.Label(value=self.name)], layout=widgets.Layout(width='600px'))
-
-    #     display(HBox([LeftPane, RightPane]))
-
-
-if __name__ == '__main__':
-    S = RockPy.Study()
-    S.import_folder('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)')
-
-    for m in S.measurements:
-        print(m.series)
-    # print(list(S.measurements))
-    print(S.info())
-    # S.import_file('/Users/mike/github/2016-FeNiX.2/data/(HYS,DCD)/FeNiX_FeNi00-Fa36-G01_HYS_VSM#36.5mg#(ni,0,perc)_(gc,1,No).002')
-
-    # print(S.samples)

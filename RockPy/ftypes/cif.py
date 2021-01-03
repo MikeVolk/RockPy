@@ -14,7 +14,8 @@ from RockPy.tools.pandas_tools import xyz2dim, dim2xyz, correct_dec_inc
 class Cif(RockPy.core.ftype.Ftype):
     ''' Ftype object that contains data read in from 'cif' files.
 
-    Attributes:
+    Parameters
+    ----------
         data (:obj:`pandas.DataFrame`): Data contained in the cif (or. UP) files. Note: units are converted to SI
             internally
         corrections (dict): A dictionary of the dec, inc values for all possible orientations (below, towards) when
@@ -24,11 +25,13 @@ class Cif(RockPy.core.ftype.Ftype):
         units (dict(:obj:`pint.ureg`)): units used internally (should be SI units)
         datacolumns (tuple(str)): names of all the columns should be the same as `self.data.columns`
         
-    Notes:
+    Notes
+    -----
         Data columns:
             `'mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time'`
-    See Also:
+    See Also
+    --------
         For more information on `attributes` see :py:class:`RockPy.core.ftype.Ftype`
     '''
     datacolumns = ('mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
