@@ -9,6 +9,7 @@ import RockPy
 from RockPy import ureg
 import RockPy.core.ftype
 from RockPy.tools.pandas_tools import xyz2dim, dim2xyz, correct_dec_inc
+import RockPy.tools.compute as Rc
 
 class Cit(RockPy.core.ftype.Ftype):
     ''' Ftype object that contains data read in from 'cif' files.
@@ -323,8 +324,11 @@ class Cit(RockPy.core.ftype.Ftype):
         sample_id = header_rows[0][4:13].strip(' ')
 
         widths = [(1, 7), (8, 13), (14, 19), (20, 25), (26, 31), (32, 37)]
-        labels = ['stratigraphic_level', 'core_strike', 'core_dip', 'bedding_strike', 'bedding_dip',
+        labels = ['stratigraphic_level',
+                  'core_strike', 'core_dip',
+                  'bedding_strike', 'bedding_dip',
                   'core_volume_or_mass']
+
         lw_dict = dict(zip(labels, widths))
 
         header = pd.DataFrame(index=[sample_id])
@@ -637,7 +641,7 @@ class Cit(RockPy.core.ftype.Ftype):
         out.loc[:, 'y'] = mean.loc[:, 'y']
         out.loc[:, 'z'] = mean.loc[:, 'z']
 
-        out = self._recalc_plate(out)
+        out = self._recalc_core_di(out)
         out = self._correct_core(out, core_dip, core_strike)
         out = self._correct_strat(out, strat_dip, strat_strike)
 
@@ -648,7 +652,7 @@ class Cit(RockPy.core.ftype.Ftype):
         return out
 
     @classmethod
-    def _recalc_plate(cls, df):
+    def _recalc_core_di(cls, df):
         df = xyz2dim(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
         return df
 
@@ -666,7 +670,7 @@ class Cit(RockPy.core.ftype.Ftype):
         df['z'] *= -1
         df['y'] *= -1
 
-        df = cls._recalc_plate(df)
+        df = cls._recalc_core_di(df)
         df = cls._correct_core(df=df, dip=core_dip, strike=core_strike)
         df = cls._correct_strat(df=df, dip=bedding_dip, strike=bedding_strike)
 
@@ -873,24 +877,24 @@ class Cit(RockPy.core.ftype.Ftype):
                                       strat_dip=strat_dip, strat_strike=strat_strike)
         return self.data
 
-    def reset_plate(self):
+    def reset_core_di(self):
         """ resets dec and inc in machine coordinates
 
         See Also:
             :py:meth:`RockPy.ftypes.cif.Cif._reset_plate` for the private method.
 
-            :py:meth:`RockPy.ftypes.cif.Cif.reset_geo` to reset the geographic coordinates.
+            :py:meth:`RockPy.ftypes.cif.Cif.reset_geo_di` to reset the geographic coordinates.
 
-            :py:meth:`RockPy.ftypes.cif.Cif.reset_strat` to reset the stratigraphic coordinates.
+            :py:meth:`RockPy.ftypes.cif.Cif.reset_bedding_di` to reset the stratigraphic coordinates.
 
             uses: :py:func:`RockPy.tools.compute.xyz2dim`
 
         Returns:
             :obj:`pandas.DataFrame`: Data recalculated from x,y,z values
         """
-        self.data = self._recalc_plate(self.data)
+        self.data = self._recalc_core_di(self.data)
 
-    def reset_geo(self, dip=None, strike=None):
+    def reset_geo_di(self, dip=None, strike=None):
         """ resets dec and inc in geographic coordinates
 
         Args:
@@ -915,7 +919,7 @@ class Cit(RockPy.core.ftype.Ftype):
         self.header['core_dip'] = dip
         self.header['core_strike'] = strike
 
-    def reset_strat(self, dip=None, strike=None):
+    def reset_bedding_di(self, dip=None, strike=None):
         """ resets dec and inc in stratigraphic coordinates
 
         Args:
@@ -933,9 +937,9 @@ class Cit(RockPy.core.ftype.Ftype):
         """
 
         if dip is None:
-            dip = self.header['strat_dip'].values[0]
+            dip = self.header['bedding_dip'].values[0]
         if strike is None:
-            strike = self.header['strat_strike'].values[0]
+            strike = self.header['bedding_strike'].values[0]
 
         self.data = self._correct_strat(self.data, dip, strike)
 
@@ -958,18 +962,22 @@ class Cit(RockPy.core.ftype.Ftype):
 
         """
         indices = RockPy.to_tuple(indices)
+        indices = np.array(indices)
 
         data = self.data.iloc[indices]
+
         xyz = data[['x','y','z']].values
         xyz_ = data[['std_x','std_y','std_z']].values
-
-        if xyz.shape == (3,):
-            xyz = xyz.reshape((3,1))
 
         xyz_rotated = Rc.rotate(xyz=xyz, axis=axis, theta=theta)
         xyz__rotated = Rc.rotate(xyz=xyz_, axis=axis, theta=theta)
 
-        print(xyz_rotated)
+        self.data.loc[data.index, ['x','y','z']] = xyz_rotated
+        self.data.loc[data.index, ['std_x','std_y','std_z']] = xyz__rotated
+
+        self.reset_core_di()
+        self.reset_geo_di()
+        self.reset_bedding_di()
 
     def export(self, fname, sample_id=None, **kwargs):
         """
@@ -1028,5 +1036,8 @@ class Cif(Cit):
                          dialect=None, reload=reload,
                          mdata=mdata, create_minfo=create_minfo,
                          **kwargs)
+
 if __name__ == '__main__':
-    Cit('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM_ARM_IRM/MIL14_IRM')
+    d = Cit('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM_ARM_IRM/MIL14_IRM')
+    d.rotate_individual_measurement([1,2], 20, 'z')
+    # print(Rc.rotate([0.1899985356159913,-0.02805654275408272,1.366569934863367],axis='z',theta=20))
