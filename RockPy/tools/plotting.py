@@ -114,7 +114,7 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
-                bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                bbox=kwargs.pop('bbox', dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0)),
                 color=kwargs.pop('color', 'k'), **kwargs)
 
 
