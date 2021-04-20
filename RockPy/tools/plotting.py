@@ -278,6 +278,26 @@ def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
 
 """ LINES """
 
+def sorted_legend(ax=None, **legend_opts):
+    """
+    Combines labels that are the same into one label
+
+    Args:
+        ax: matplotlib.axis
+            default: None -> gca()
+        pad: space between labels in a row
+        bbox_to_anchor: location of legend
+        **legend_opts: optional args passed to plt.legend
+    """
+
+    if ax is None:
+        ax = plt.gca()
+
+    h, l = ax.get_legend_handles_labels()
+
+    labels = sorted(set(l))
+    handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
+    ax.legend(handles, labels, **legend_opts)
 
 def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1],
                           add_handles=None, add_labels=None, add_sort=True,
