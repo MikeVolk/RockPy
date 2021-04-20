@@ -127,6 +127,10 @@ class Cit(RockPy.core.ftype.Ftype):
                          mdata=mdata, create_minfo=create_minfo,
                          **kwargs)
 
+        # read the header file if none was specified (e.g. through read_rapid)
+        if self.header is None:
+            self.header = self._read_header(self.raw_data[:2])
+
         self.data = self._add_missing_levels(self.data)
 
     """ staticmethods """
@@ -305,7 +309,7 @@ class Cit(RockPy.core.ftype.Ftype):
 
     @classmethod
     def _read_header(self, header_rows):
-        """ Reads the header of a cif file.
+        """ Reads the header of a cit file.
 
         In the first line the first four characters are the locality id, the next 9 the sample id, and the remainder
         (to 255) is a sample comment.
@@ -356,7 +360,7 @@ class Cit(RockPy.core.ftype.Ftype):
             Assuming that the previous AF step is the same as the UAFX steps, may be wrong.
         """
         data = data.copy()
-
+        
         AF_index = [(i, v) for i, v in enumerate(data['mtype']) if v == 'AF']
 
         new_levels = data['level'].values
@@ -631,8 +635,9 @@ class Cit(RockPy.core.ftype.Ftype):
         df = df.reset_index()
         df = df.set_index('level')
 
-        # make sure the data is sorted
-        df = df.sort_values('datetime')
+        if 'datetime' in df.columns:
+            # make sure the data is sorted
+            df = df.sort_values('datetime')
 
         out = df.loc[~np.in1d(df['mtype'], ['UAFX1', 'UAFX2', 'UAFX3'])].copy()
         mean = df.groupby('level').mean()
