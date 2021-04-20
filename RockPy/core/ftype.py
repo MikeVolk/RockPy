@@ -46,7 +46,7 @@ class Ftype(object):
     def __init__(self, dfile,
                  snames=None,
                  dialect=None,
-                 reload=False, create_minfo=True,
+                 reload=True, create_minfo=True,
                  mdata=None,
                  **kwargs):
         """ Constructor of the basic file type instance
@@ -280,6 +280,8 @@ class Ftype(object):
     def unit_label(self, quantity):
         return '{:~P}'.format(self.units[quantity].units)
 
+    def plot(self):
+        raise NotImplementedError('plot for this ftype has not been implemented')
 
 ### related functions
 def is_implemented(ftype):

@@ -1010,6 +1010,42 @@ class Cit(RockPy.core.ftype.Ftype):
                 row = self._write_cif_line(row)
                 f.write(row + '\n')
 
+    def plot(self, fname = None):
+        import RockPy.tools.plotting as rplt
+        import matplotlib.pyplot as plt
+
+        ax = [plt.subplot(121, projection='polar'),
+              plt.subplot(122)]
+        ax[0] = rplt.setup_stereonet(ax=ax[0])
+        rplt.plot_equal(self.geo_xyz, color='C0', label='MIL 2.3', ax=ax[0])
+
+        # Zydervelt
+        norm = round(np.log10(self.geo_xyz[['x','y','z']].abs().max().max()))//3
+
+        ax[1].plot(self.geo_xyz.iloc[:-1]['y'] / 10 ** (norm*3),
+                   self.geo_xyz.iloc[:-1]['x'] / 10 ** (norm*3),
+                   marker='o', ls='-', label='y/x (dec)', markevery=1, mfc='w')
+        ax[1].plot(self.geo_xyz.iloc[:-1]['y'] / 10 ** (norm*3),
+                   self.geo_xyz.iloc[:-1]['z'] / 10 ** (norm*3),
+                   marker='o', ls='-', label='y/z (inc)', markevery=1)
+
+        ax[1].plot([], [], marker='s', mfc='w', color='k')
+
+        ax[1].set_xlabel(f'E ($10^{{{norm*3}}}$ Am$^2$/kg)')
+        ax[1].set_ylabel(f'N/up ($10^{{{norm*3}}}$ Am$^2$/kg)', rotation=-90)
+
+        ax[1].xaxis.set_ticks_position('bottom')
+        ax[1].yaxis.set_ticks_position('left')
+
+        # ax[1].spines['left'].set_position('zero')
+        ax[1].spines['right'].set_color('none')
+        # ax[1].spines['bottom'].set_position('zero')
+        ax[1].spines['top'].set_color('none')
+
+        plt.tight_layout()
+        if fname is not None:
+            f.savefig(fname)
+        plt.show()
 class Cif(Cit):
     def __init__(self, dfile,
                  snames=None, reload=False,
