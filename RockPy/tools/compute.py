@@ -3,6 +3,7 @@ from RockPy.core.utils import handle_shape_dtype
 from RockPy.core.utils import convert
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+
 """ ROTATIONS """
 
 
@@ -88,7 +89,7 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='x
         ndarray: Vectors that has been rotated by `theta` degrees around the
         specified axis ( `axis_di` ). if intype = 'dim' will return DIM values
     """
-    
+
     if axis_di:
         axis_unit_vector = [axis_unit_vector[0], axis_unit_vector[1], 1]
         axis_unit_vector = convert_to_xyz(axis_unit_vector, M=False)
@@ -330,8 +331,8 @@ def convert_to_equal_area(xyz, intype='xyz'):
         intype:
 
     Returns:
-        np.array: **out** -- The output array is in the same shape and type as
-        the intype array
+        np.array: array in [theta, r, length] for plotting on polar coordinates
+            -- The output array is in the same shape and type as the intype array
 
     See Also:
         :func:`convert_to_dim`, :func:`convert_to_xyz`,
@@ -347,9 +348,10 @@ def convert_to_equal_area(xyz, intype='xyz'):
 
     r0 = 1
     i = np.radians(np.abs(i))
-    r = r0 * (1 - np.sqrt(1 - np.abs(xyz[:,2])))
 
-    out = np.array([d, r0-r, neg]).T
+    r = 1 - np.sqrt(1 - np.sin(i))
+    # r = np.abs(xyz[:, 2]) # Tauxe
+    out = np.array([d, r0 - r, neg]).T
     return out
 
 
@@ -508,7 +510,7 @@ def crossing_1d(x1, y1, x2, y2, lim=None, check=False, **kwargs):
     """
     f1 = interp1d(x1, y1, kind='slinear', bounds_error=False)
     f2 = interp1d(x2, y2, kind='slinear', bounds_error=False)
-
+    
     if lim is None:
         xmin = min(np.append(x1, x2))
         xmax = max(np.append(x1, x2))
@@ -529,4 +531,3 @@ def crossing_1d(x1, y1, x2, y2, lim=None, check=False, **kwargs):
         plt.legend()
         plt.show()
     return [mn, crossing]
-

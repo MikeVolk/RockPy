@@ -27,7 +27,6 @@ import RockPy.ftypes.tools
 import RockPy.packages
 
 from RockPy.core.utils import to_tuple, welcome_message
-
 ''' PLOTTING '''
 
 from RockPy.tools.plotting import colorpalettes, ls, marker, figsize
@@ -55,6 +54,9 @@ implemented_ftypes = RockPy.ftypes.tools.__implemented__(Ftype)
 
 # todo create config file for RockPy
 auto_calc_results = True
+
+log.info('Creating RockPy.MasterStudy')
+MasterStudy = RockPy.Study('MasterStudy')
 
 def debug_mode(on=False):
     """

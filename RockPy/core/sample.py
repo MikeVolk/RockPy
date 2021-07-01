@@ -22,7 +22,7 @@ class Sample(object):
 
     @classmethod
     def log(cls):
-        # create and return a logger with the pattern RockPy.MTYPE
+        # create and return a logger with the pattern RockPy.mtype
         return logging.getLogger('RockPy.Sample')
 
     def __lt__(self, other):
@@ -67,10 +67,10 @@ class Sample(object):
                  mass=None, massunit='kg',
                  height=None, diameter=None, lengthunit='m', *,
 
-                 x_len=None, y_len=None, z_len=None,  # for cubic samples #todo implement volume
-                 sample_shape='cylinder',  # todo implement sample shape
+                 # x_len=None, y_len=None, z_len=None,  # for cubic samples #todo implement volume
+                 # sample_shape='cylinder',  # todo implement sample shape
                  coord=None,
-                 sgroups=None,
+                 # sgroups=None, #todo implement
                  study=None,
                  create_parameter=True,
                  **kwargs):
@@ -145,7 +145,7 @@ class Sample(object):
             study = RockPy.Study()
         else:
             if not isinstance(study, RockPy.Study):
-                self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy Masterstudy')
+                self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy MasterStudy')
             # study = RockPy.MasterStudy
 
         self.study = study
@@ -188,7 +188,7 @@ class Sample(object):
         mtypes = [(mt, len(self.get_measurement(mtype=mt))) for mt in self.mtypes]
 
         if mtypes:
-            info.loc[self.name, 'mtypes'] = ', '.join(self.mtypes) #if len(mtypes) > 1 else mtypes[0]
+            info.loc[self.name, 'mtypes'] = ', '.join(self.mtypes)  # if len(mtypes) > 1 else mtypes[0]
         else:
             info.loc[self.name, 'mtypes'] = None
 
@@ -247,13 +247,17 @@ class Sample(object):
             self.log().error(' << %s >> not implemented, yet' % mtype)
 
     def add_parameter_measurements(self, fpath=None, **kwargs):
-        '''
-        Method adds parameter measurements (mass, height, diameter...) to the sample. The parameters are passed as kwargs
-        
+        """
+        Method adds parameter measurements (mass, height, diameter...) to the sample.
+        The parameters are passed as kwargs
+
         Parameters
         ----------
+        fpath: str
+            default: None
+            path to measurement file (if exists). If None, measurement infos are contained in kwargs.
         kwargs
-        '''
+        """
 
         # add parameter from fpath
         if fpath is not None:
@@ -266,7 +270,7 @@ class Sample(object):
             for sinfo in minfo.gen_sample_dict:
                 if sinfo['sname'] == self.name:
                     for info in ['mass', 'massunit', 'diameter', 'height', 'lengthunit']:
-                        if not info in kwargs or kwargs[info] is None:
+                        if info not in kwargs or kwargs[info] is None:
                             kwargs[info] = sinfo[info]
 
         unit = kwargs.pop('unit', None)
@@ -286,7 +290,7 @@ class Sample(object):
                 else:
                     unit = kwargs.pop('lengthunit', 'm')
 
-            mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit = unit, **kwargs)
+            mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, **kwargs)
             # catch cant create error case where no data is written
             if mobj.data is None:
                 return
@@ -303,8 +307,8 @@ class Sample(object):
             mdata=None,
             mobj=None,  # for special import of a measurement instance
             series=None,
-            comment=None, additional=None,
-            reload=False,
+            comment=None, reload=False,
+            create_parameters=True,
             **kwargs):
 
         """
@@ -312,45 +316,41 @@ class Sample(object):
 
         Parameters
         ----------
-        create_parameters
-        additional
         mtype: str
           the type of measurement
           default_recipe: None
-
         fpath: str
           the complete path to the measurement file
           default_recipe: None
-
         ftype: str
           the filetype from which the file is output
           default_recipe: 'generic'
-
         dialect: str
           deals with small formatting differences in similar ftype
-
         idx: index of measurement
           default_recipe: None, will be the index of the measurement in sample.measurements
-
+        reload: bool
+            if True: file is loaded again from disk
+            if False: previously loaded file is used
+        create_parameters: bool
+            if True: parameter measurements will be created if they can be found in the file name
+            if False: parameter measurements will not be created
         mdata: any kind of data that must fit the required structure of the data of the measurement
             will be used instead of data from file
             example:
                 mdata = dict(mass=10)
                 mdata = dict( x=[1,2,3,4], y = [1,2,3,4],...)
-
-        mobj: RockPy3.Measurement object
+        mobj: RockPy.Measurement object
             if provided, the object is added to self.measurements
-
-        series: lsist of tuples
+        series: list of tuples
             default: None
-            A list of tuples consisting of (stype, svalue, sunit) 
-
+            A list of tuples consisting of (stype, svalue, sunit)
         comment: str
             a comment 
 
         Returns
         -------
-            RockPy3.measurement object
+            RockPy.measurement object
         """
 
         # create the idx
@@ -365,26 +365,18 @@ class Sample(object):
 
         """ DATA import from mass, height, diameter, len ... """
 
-        # if create_parameters:
-        #     self.add_parameter_measurements(fpath, **kwargs)
-        #
-        # # catch only parameter measurements
-        # if not any([fpath, mtype, mobj, mdata, ftype]):
-        #     if any([k in parameters for k in kwargs.keys()]):
-        #         mtype = [k for k in kwargs.keys() if k in parameters][0]
-        #         return self.get_measurement(mtype=mtype)[0]
-
         # check for parameters in kwargs (i.e. mass = '12mg'
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
-        if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
-            mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
-            return mobj
+        if create_parameters:
+            if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
+                mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
+                return mobj
 
-        if mtype in parameters and not mobj:
-            value = kwargs.pop('value')
-            unit = kwargs.pop('unit', None)
-            mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, series=series, idx=idx)
-            return mobj
+            if mtype in parameters and not mobj:
+                value = kwargs.pop('value')
+                unit = kwargs.pop('unit', None)
+                mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, series=series, idx=idx)
+                return mobj
 
         # create the import helper
         if fpath and not any((mtype, ftype)):
@@ -414,7 +406,7 @@ class Sample(object):
                 # create measurement object
                 mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self, reload=reload, **import_info)
 
-        """ DATA import from MDATA """
+        """ DATA import from mdata """
         if all([mdata, mtype]):
             if not RockPy.core.utils.mtype_implemented(mtype):
                 return
@@ -429,6 +421,25 @@ class Sample(object):
 
     def _add_measurement_from_str(self, fpath, kwargs, mobj,
                                   mtype=None, series=None):
+        """
+        Internal function to create measurement (usually parameter from a string). For example
+        >>> sample = RockPy.MasterStudy.add_sample('test')
+        >>> sample.add_measurement(mass='13g')
+        would call sample._add_measurement_from_str
+
+        Parameters
+        ----------
+        fpath
+        kwargs
+        mobj
+        mtype
+        series
+
+        Returns
+        -------
+            RockPy.measurement
+
+        """
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
         mtype = [k for k in kwargs.keys() if k in parameters if kwargs[k] is not None][0]
         mobj = RockPy.implemented_measurements[mtype].from_string(sobj=self,
@@ -438,7 +449,6 @@ class Sample(object):
                                                                   series=series,
                                                                   )
         return mobj
-
 
     def _del_mobj(self, mobj):
         """
@@ -470,13 +480,13 @@ class Sample(object):
             self.measurements = np.append(self.measurements, mobj)
 
     def calc_results(self, **kwargs):
-        '''
+        """
         Method calls calc_results for each measurement
-        
+
         Returns
         -------
             self.results
-        '''
+        """
         for m in self.measurements:
             m.calc_results(**kwargs)
         return self.results.copy()
@@ -494,7 +504,7 @@ class Sample(object):
         -------
         set: set of all series in the sample
         """
-        return set(s for m in self.measurements for s in m.series)
+        return set(series for m in self.measurements for series in m.series)
 
     @property
     def samplegroups(self):
@@ -511,7 +521,7 @@ class Sample(object):
         -------
             set: stypes
         """
-        return set(s for m in self.measurements for s in m.stypes if s)
+        return set(stype for m in self.measurements for stype in m.stypes if stype)
 
     @property
     def svals(self):
@@ -521,7 +531,9 @@ class Sample(object):
         -------
 
         """
-        return set(s[1] for s in self.series if isinstance(s[1], (int, float)) if not np.isnan(s[1]))
+        return set(series[1] for series in self.series
+                   if isinstance(series[1], (int, float))
+                   if not np.isnan(series[1]))
 
     @property
     def sunits(self):
@@ -531,7 +543,7 @@ class Sample(object):
         -------
             set: series units
         """
-        return set(s[2] for s in self.series)
+        return set(series[2] for series in self.series)
 
     @property
     def mtypes(self):
@@ -596,7 +608,7 @@ class Sample(object):
         else:
             return np.array(out)
 
-    ### get functions
+    """ get functions """
 
     def get_measurement(self,
                         mtype=None,
@@ -612,28 +624,29 @@ class Sample(object):
 
         Parameters
         ----------
-           mtype: list, str
-              mtypes to be returned
-           series: list(tuple)
-              list of tuples, to search for several sepcific series. e.g. [('mtime',4),('gc',2)] will only return
-              mesurements that fulfill both criteria.
-           stype: list, str
-              series type
-           sval_range: list, str
-              series range e.g. sval_range = [0,2] will give all from 0 to 2 including 0,2
-              also '<2', '<=2', '>2', and '>=2' are allowed.
-           sval: float
-              series value to be searched for.
-              caution:
-                 will be overwritten when sval_range is given
-           invert:
-              if invert true it returns only measurements that do not meet criteria
-           sval_range:
-              can be used to look up measurements within a certain range. if only one value is given,
-                     it is assumed to be an upper limit and the range is set to [0, sval_range]
-           mean: bool
-           mid: list(int)
-            search for given measurement id
+            mtype: list, str
+                mtypes to be returned
+            series: list(tuple)
+                list of tuples, to search for several specific series. e.g. [('mtime',4),('gc',2)] will only return
+                measurements that fulfill both criteria.
+            stype: list, str
+                series type
+            sval_range: list, str
+                series range e.g. sval_range = [0,2] will give all from 0 to 2 including 0,2
+                also '<2', '<=2', '>2', and '>=2' are allowed.
+            sval: float
+                series value to be searched for.
+                caution:
+                    will be overwritten when sval_range is given
+            result: list, str
+            invert:
+                if invert true it returns only measurements that do not meet criteria
+            sval_range:
+                can be used to look up measurements within a certain range. if only one value is given,
+                it is assumed to be an upper limit and the range is set to [0, sval_range]
+            mean: bool
+            mid: list(int)
+                search for given measurement id
 
         Returns
         -------
@@ -704,7 +717,7 @@ class Sample(object):
         out = []
 
         if mean:
-            svals = set(s for m in self.mean_measurements for s in m.svals)
+            svals = set(sval for m in self.mean_measurements for sval in m.svals)
         else:
             svals = self.svals
 

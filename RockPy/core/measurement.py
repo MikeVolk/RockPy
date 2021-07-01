@@ -358,6 +358,7 @@ class Measurement(object):
     def sid(self):
         return self.sobj.sid
 
+    @classmethod
     def _result_classes(self):  # todo test
         """
         Mothod that gets all result classes of the measurement
@@ -367,7 +368,7 @@ class Measurement(object):
             list: <class 'RockPy.Result'>
             
         """
-        for name, cls in inspect.getmembers(self.__class__):
+        for name, cls in inspect.getmembers(self):
             if not inspect.isclass(cls):
                 continue
             if isinstance(cls, RockPy.core.result.Result) or issubclass(cls, RockPy.core.result.Result):
@@ -829,9 +830,9 @@ class Measurement(object):
         series: list of tuples 
             each element is (stype, sval, sunit) tuple
         method: str:
-            'all': returns True if measurement posesses ALL series
-            'any': returns True if measurement posesses ONE or more series
-            'None': returns True if measurement posesses NONE of the provided series
+            'all': returns True if measurement possesses ALL series
+            'any': returns True if measurement possesses ONE or more series
+            'None': returns True if measurement possesses NONE of the provided series
 
         Returns
         -------
@@ -851,7 +852,7 @@ class Measurement(object):
             return True if self._series else False
 
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
-        # todo change to set_series with styoe, sval, suit, series
+        # todo change to set_series with stype, sval, suit, series
         """
         adds a series to measurement.series
 

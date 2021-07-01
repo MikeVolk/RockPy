@@ -836,7 +836,7 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 
 <dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.reset_geo">
-<code class="sig-name descname">reset_geo</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">strike</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_geo" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">reset_geo_di</code><span class="sig-paren">(</span><em class="sig-param">dip=None</em>, <em class="sig-param">strike=None</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_geo" title="Permalink to this definition">¶</a></dt>
 <dd><p>resets dec and inc in geographic coordinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -863,13 +863,13 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 
 <dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.reset_plate">
-<code class="sig-name descname">reset_plate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_plate" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">reset_core_di</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_plate" title="Permalink to this definition">¶</a></dt>
 <dd><p>resets dec and inc in machine coordinates</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><code class="xref py py-meth docutils literal notranslate"><span class="pre">RockPy.ftypes.cif.Cif._reset_plate()</span></code> for the private method.</p>
-<p><a class="reference internal" href="#RockPy.ftypes.cif.Cif.reset_geo" title="RockPy.ftypes.cif.Cif.reset_geo"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RockPy.ftypes.cif.Cif.reset_geo()</span></code></a> to reset the geographic coordinates.</p>
-<p><a class="reference internal" href="#RockPy.ftypes.cif.Cif.reset_strat" title="RockPy.ftypes.cif.Cif.reset_strat"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RockPy.ftypes.cif.Cif.reset_strat()</span></code></a> to reset the stratigraphic coordinates.</p>
+<p><a class="reference internal" href="#RockPy.ftypes.cif.Cif.reset_geo" title="RockPy.ftypes.cif.Cif.reset_geo_di"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RockPy.ftypes.cif.Cif.reset_geo_di()</span></code></a> to reset the geographic coordinates.</p>
+<p><a class="reference internal" href="#RockPy.ftypes.cif.Cif.reset_strat" title="RockPy.ftypes.cif.Cif.reset_bedding_di"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RockPy.ftypes.cif.Cif.reset_bedding_di()</span></code></a> to reset the stratigraphic coordinates.</p>
 <p>uses: <code class="xref py py-func docutils literal notranslate"><span class="pre">RockPy.tools.compute.xyz2dim()</span></code></p>
 </div>
 <dl class="field-list simple">
@@ -884,7 +884,7 @@ exists that future versions will plot Zijder plots with the measurement uncertai
 
 <dl class="py method">
 <dt id="RockPy.ftypes.cif.Cif.reset_strat">
-<code class="sig-name descname">reset_strat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">strike</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_strat" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">reset_bedding_di</code><span class="sig-paren">(</span><em class="sig-param">dip=None</em>, <em class="sig-param">strike=None</em><span class="sig-paren">)</span><a class="headerlink" href="#RockPy.ftypes.cif.Cif.reset_strat" title="Permalink to this definition">¶</a></dt>
 <dd><p>resets dec and inc in stratigraphic coordinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

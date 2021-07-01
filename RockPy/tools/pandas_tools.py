@@ -8,44 +8,77 @@ from RockPy.tools.compute import rotate, convert_to_xyz, convert_to_dim
 
 
 def dim2xyz(df, colD='D', colI='I', colM='M', colX='x', colY='y', colZ='z'):
-    """adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
+    """
+    adds x,y,z columns to pandas dataframe calculated from D,I,(M) columns
 
-    Args:
-        df (pandas.DataFrame): data including columns of D, I and optionally M
-            values
-        colD (str): name of column with declination input data
-        colI (str): name of column with inclination input data
-        colM (str): name of column with moment data (will be set to 1 if None)
-        colX (str): name of column for x data (will be created or overwritten)
-        colY (str): name of column for y data (will be created or overwritten)
-        colZ (str): name of column for z data (will be created or overwritten)
+    Parameters
+    ----------
+    df: pandas dataframe
+        data including columns of D, I and optionally M values
+    colD: str
+        name of column with declination input data
+    colI: str
+        name of column with inclination input data
+    colM: str
+        name of column with moment data (will be set to 1 if None)
+    colX: str
+        name of column for x data (will be created or overwritten)
+    colY: str
+        name of column for y data (will be created or overwritten)
+    colZ: str
+        name of column for z data (will be created or overwritten)
+
+    Returns
+    -------
+
     """
     df = df.copy()
-    dim = df[[colD, colI, colM]]
+    M = 1 if colM is None else df[colM]
+    col_i = df[colI].values.astype(float)
+    col_d = df[colD].values.astype(float)
 
-    xyz = convert_to_xyz(dim)
-    df_xyz = pd.DataFrame(columns=[colX, colY, colZ], data=xyz, index=df.index)
-    df = pd.concat([df, df_xyz], axis=1)
+    df.loc[:, colX] = np.cos(np.radians(col_i)) * np.cos(np.radians(col_d)) * M
+    df.loc[:, colY] = np.cos(np.radians(col_i)) * np.sin(np.radians(col_d)) * M
+    df.loc[:, colZ] = np.cos(np.radians(col_i)) * np.tan(np.radians(col_i)) * M
     return df
 
 
 def xyz2dim(df, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M'):
-    """adds D,I,(M) columns to pandas dataframe calculated from x,y,z columns
+    """
+    adds D,I,(M) columns to pandas dataframe calculated from x,y,z columns
 
-    Args:
-        df:
-        colX:
-        colY:
-        colZ:
-        colD:
-        colI:
-        colM:
+    Parameters
+    ----------
+    df: pandas dataframe
+        data including columns of x, y, z values
+    colX: str
+        name of column for x input data
+    colY: str
+        name of column for y input data
+    colZ: str
+        name of column for z input data
+    colD: str
+        name of column with declination data (will be created or overwritten)
+    colI: str
+        name of column with inclination data (will be created or overwritten)
+    colM: str
+        name of column with moment data (will not be written if None)
+
+    Returns
+    -------
+
     """
     df = df.copy()
-    xyz = df[[colX, colY, colZ]]
-    dim = convert_to_dim(xyz)
-    df_dim = pd.DataFrame(columns=[colX, colY, colZ], data=dim, index=df.index)
-    df = pd.concat([df, df_dim], axis=1)
+
+    col_y_ = df[colY].values
+    col_x_ = df[colX].values
+    col_z_ = df[colZ].values
+
+    M = np.linalg.norm([col_x_, col_y_, col_z_], axis=0)  # calculate total moment for all rows
+    df.loc[:, colD] = np.degrees(np.arctan2(col_y_, col_x_)) % 360  # calculate D and map to 0-360 degree range
+    df.loc[:, colI] = np.degrees(np.arcsin(col_z_ / M))  # calculate I
+    if colM is not None:
+        df.loc[:, colM] = M  # set M
     return df
 
 
@@ -147,7 +180,8 @@ def derivative(df, ycol, xcol='index', n=1, append=False, rolling=False, edge_or
     if norm:
         dy /= np.nanmax(abs(dy))
 
-    col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1', 'd').replace(')1', ')')
+    # col_name = 'd{}({})/d({}){}'.format(n, ycol, xcol, n).replace('d1', 'd').replace(')1', ')')
+    col_name = f'd{n}({ycol})/d({xcol}){n}'.replace('d1', 'd').replace(')1', ')')
 
     out = pd.DataFrame(data=np.array([x, dy]).T, columns=[xcol, col_name])
     out = out.set_index(xcol)
@@ -262,14 +296,15 @@ def regularize_data(df, order=2, grid_spacing=2, ommit_n_points=0, check=False, 
     return interp_data
 
 
-def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
+def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I', correct_xyz = False) -> pd.DataFrame:
     """Function that corrects the Dec and Inc values of a DataFrame by
     dip/strike
 
-    1. rotates aroud y-axis by -dip (i.e. counter clockwise)
+    1. rotates around y-axis by -dip (i.e. counter clockwise)
     2. rotates around z axis by -strike (i.e. counter clockwise)
 
-    Args:
+    Parameters
+    ----------
         df (pd.DataFrame):
         dip (float): dip of the 'core', 'plate'...
         strike (float): strike of the 'core', 'plate' ...
@@ -277,6 +312,8 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
         newD (str): name of the corrected inclination column
         colD (str): name of the uncorrected inclination column
         colI (str): name of the uncorrected inclination column
+        correct_xyz: bool
+            if True replaces x y z values with the corrected values
     """
     df = df.copy()
     DI = df[[colD, colI]]
@@ -292,6 +329,7 @@ def correct_dec_inc(df, dip, strike, newI='I_', newD='D_', colD='D', colI='I'):
 
     df[newI] = corrected[newI]
     df[newD] = corrected[newD]
+    df[['x', 'y', 'z']] = corrected[['x', 'y', 'z']] * np.linalg.norm(df[['x', 'y', 'z']])
     return df
 
 

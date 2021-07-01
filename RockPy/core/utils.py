@@ -1,12 +1,17 @@
 import os
 from functools import partial, wraps
 
+import json
+import codecs
+import configparser
 import decorator
 import importlib
 import pkgutil
 import RockPy
 import numpy as np
+import scipy as sp
 import pandas as pd
+import scipy.io as spio
 
 from contextlib import contextmanager
 
@@ -289,7 +294,8 @@ def correction(func, *args, **kwargs):
     set_get_attr(self, 'correction')
 
     if func.__name__ in self._correction:
-        self.log().warning('CORRECTION {} has already been applied'.format(func.__name__))
+        if not kwargs.pop('redo', False):
+            self.log().warning('CORRECTION {} has already been applied'.format(func.__name__))
         return
     else:
         self.log().info('APPLYING correction {}, resetting results'.format(func.__name__))
@@ -413,7 +419,11 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
         defaults.update(kwargs)
         kwargs = defaults
 
-        xyz = args[0]
+        if 'xyz' in kwargs:
+            xyz = kwargs.pop('xyz')
+        else:
+            xyz = args[0]
+
         ## maintain vector shape part
         s = np.array(xyz).shape
 
@@ -502,17 +512,59 @@ def maintain_n3_shape(xyz):
         xyz = np.array(xyz)
     return xyz
 
+def loadmat(filename):
+    '''
+    FROM: https://stackoverflow.com/questions/7008608/scipy-io-loadmat-nested-structures-i-e-dictionaries
+    this function should be called instead of direct spio.loadmat
+    as it cures the problem of not properly recovering python dictionaries
+    from mat files. It calls the function check keys to cure all entries
+    which are still mat-objects
+    '''
+    def _check_keys(d):
+        '''
+        checks if entries in dictionary are mat-objects. If yes
+        todict is called to change them to nested dictionaries
+        '''
+        for key in d:
+            if isinstance(d[key], spio.matlab.mio5_params.mat_struct):
+                d[key] = _todict(d[key])
+        return d
 
-if __name__ == '__main__':
-    a = handle_shape([[1, 2, 3], [1, 2, 3]])
-    print(a)
-    print(np.shape(a))
+    def _todict(matobj):
+        '''
+        A recursive function which constructs from matobjects nested dictionaries
+        '''
+        d = {}
+        for strg in matobj._fieldnames:
+            elem = matobj.__dict__[strg]
+            if isinstance(elem, spio.matlab.mio5_params.mat_struct):
+                d[strg] = _todict(elem)
+            # elif isinstance(elem, np.ndarray):
+            #     d[strg] = _tolist(elem)
+            else:
+                d[strg] = elem
+        return d
 
-import json
-import codecs
+    def _tolist(ndarray):
+        '''
+        A recursive function which constructs lists from cellarrays
+        (which are loaded as numpy ndarrays), recursing into the elements
+        if they contain matobjects.
+        '''
+        elem_list = []
+        for sub_elem in ndarray:
+            if isinstance(sub_elem, spio.matlab.mio5_params.mat_struct):
+                elem_list.append(_todict(sub_elem))
+            elif isinstance(sub_elem, np.ndarray):
+                elem_list.append(_tolist(sub_elem))
+            else:
+                elem_list.append(sub_elem)
+        return elem_list
+    data = sp.io.loadmat(filename, struct_as_record=False, squeeze_me=True)
+    return _check_keys(data)
+
 
 _MagIC_codes = None
-
 
 def MagIC_codes():
     if RockPy.core.utils._MagIC_codes is None:
@@ -521,3 +573,33 @@ def MagIC_codes():
         _MagIC_codes = {n: {i['code']: i['definition'] if 'definition' in i else None for i in data[n]['codes']} for n
                         in data.keys()}
     return _MagIC_codes
+
+def CreateConfigFile():
+    config = configparser.ConfigParser()
+    for mtype, cls in sorted(RockPy.implemented_measurements.items()):
+        for result in cls._result_classes():
+            config['#'.join([mtype, result])] = {}
+            print(result)
+            # print(cls.res_signature()[result]['signature'])
+            # config[mtype][] = 'test'#cls.res_signature()[result]
+    #         #         if result == 'b_anc':
+    #         #             print(cls.res_signature()[result])
+    #         #         if not cls.res_signature()[result]['indirect']:
+    #         #             standard_method = '_'.join([result, cls.result_recipe()[result]]).replace('_DEFAULT', '')
+    #         #             for param, value in cls.calc_signature()[standard_method].items():
+    #         #                 line = ', '.join([mtype, result, cls.result_recipe()[result].lower(), param, str(value), '\n'])
+    #         #                 f.write(line)
+    #
+    with open(os.path.join(RockPy.installation_directory, 'configfile.ini'), 'w') as configfile:
+        config.write(configfile)
+
+if __name__ == '__main__':
+    CreateConfigFile()
+    # import RockPy.packages.magnetism.measurements
+    # s = RockPy.Sample('test')
+    # m = s.add_measurement(fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001',
+    #                       mtype='hys',ftype='vsm')
+    # for i in m._result_classes():
+    #     print(i)
+    # for i in RockPy.packages.magnetism.measurements.Hysteresis._result_classes():
+    #     print(i)

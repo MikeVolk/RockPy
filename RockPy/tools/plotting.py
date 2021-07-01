@@ -108,13 +108,13 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
 
         label = 'abcdefghijklmnopqrstuvwxyz'[i]
 
-        if label in ignore:
+        if label in ignore or i in ignore:
             continue
 
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
-                bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                bbox=kwargs.pop('bbox', dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0)),
                 color=kwargs.pop('color', 'k'), **kwargs)
 
 
@@ -150,46 +150,66 @@ def add_twiny(label, ax=None, conversion=75.34):
 
 
 def max_zorder(ax):
+    """
+
+    Parameters
+    ----------
+    ax
+
+    Returns
+    -------
+        maximum z order of any line in ax.
+    """
     return max(_.zorder for _ in ax.get_children())
 
 
 """ Stereonet and other projections"""
 
 
-def setup_stereonet(ax=None, grid=True, rtickwidth=1):
+def setup_stereonet(ax=None, grid=True, rings=True, rtickwidth=1):
+    """
+
+    Parameters
+    ----------
+    ax
+    grid
+    rtickwidth
+
+    Returns
+    -------
+
+    """
     if ax is None:
-        ax = plt.subplot(1, 1, 1, projection='polar')
+        ax = plt.subplot(111, projection='polar')
 
     ax.grid(grid)
 
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
 
-    radial_ticks = np.array([np.ones(10) * 0, np.linspace(0, 90, 10), np.ones(10)]).T.reshape(10, 3)
-    radial_ticks = convert_to_equal_area(radial_ticks, intype='dim')
-
-    ticks = ax.set_rticks(radial_ticks[::2,1])  # Less radial ticks
-
-    for t in ticks:
-        t.set_alpha(0)
-
     ax.set_yticklabels([])  # Less radial ticks
-
-    maxz = max_zorder(ax)
 
     ## plot the grids
     # crosses
     for d in [0, 90, 180, 270]:
-        marker = np.array([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)]).T.reshape(10, 3)
-        marker = convert_to_equal_area(marker, intype='dim')
-        ax.plot(np.radians(marker[:, 0]), marker[:, 1], 'k+')
+        d = convert_to_equal_area([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)], intype='dim')
+        ax.plot(np.radians(d[:, 0]), d[:, 1], 'k+')
+
+    if rings:
+        ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+    else:
+        ticks = ax.set_rticks([])  # Less radial ticks
+
+    for t in ticks:
+        t.set_alpha(0.5)
+
     # outer ticks
     for t in np.deg2rad(np.arange(0, 360, 5)):
         ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=-1)
 
+    ax.set_thetagrids(angles=[0,90,180,270])
     ax.set_rmax(1)
     return ax
-
 
 def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
     if ax is None:
@@ -258,8 +278,7 @@ def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
 
 """ LINES """
 
-
-def combined_label_legend(ax=None, pad=-1, bbox_to_anchor=[1, 1], **legend_opts):
+def sorted_legend(ax=None, **legend_opts):
     """
     Combines labels that are the same into one label
 
@@ -275,13 +294,44 @@ def combined_label_legend(ax=None, pad=-1, bbox_to_anchor=[1, 1], **legend_opts)
         ax = plt.gca()
 
     h, l = ax.get_legend_handles_labels()
+
+    labels = sorted(set(l))
+    handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
+    ax.legend(handles, labels, **legend_opts)
+
+def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1],
+                          add_handles=None, add_labels=None, add_sort=True,
+                          **legend_opts):
+    """
+    Combines labels that are the same into one label
+
+    Args:
+        ax: matplotlib.axis
+            default: None -> gca()
+        pad: space between labels in a row
+        bbox_to_anchor: location of legend
+        **legend_opts: optional args passed to plt.legend
+    """
+
+    if ax is None:
+        ax = plt.gca()
+
+    h, l = ax.get_legend_handles_labels()
+
+    if all(i is not None for i in [add_handles, add_labels]) and add_sort:
+        h += add_handles
+        l += add_labels
+
     labels = sorted(set(l))
     handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
 
-    mxlen = max([len(i) for i in handles])
+    if all(i is not None for i in [add_handles, add_labels]) and not add_sort:
+        h += add_handles
+        l += add_labels
 
+    mxlen = max([len(i) for i in handles])
     ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor,
-              handler_map={tuple: HandlerTuple(ndivide=None, pad=pad)},
+              handler_map={tuple: HandlerTuple(ndivide=None, pad=-1)},
               handletextpad=mxlen * pad,
               **legend_opts)
 

@@ -1,7 +1,4 @@
 import os
-import io
-from io import StringIO, BytesIO
-
 from datetime import datetime
 
 import pandas as pd
@@ -12,12 +9,13 @@ import RockPy
 from RockPy import ureg
 import RockPy.core.ftype
 from RockPy.tools.pandas_tools import xyz2dim, dim2xyz, correct_dec_inc
+import RockPy.tools.compute as Rc
 
-
-class Cif(RockPy.core.ftype.Ftype):
+class Cit(RockPy.core.ftype.Ftype):
     ''' Ftype object that contains data read in from 'cif' files.
 
-    Attributes:
+    Parameters
+    ----------
         data (:obj:`pandas.DataFrame`): Data contained in the cif (or. UP) files. Note: units are converted to SI
             internally
         corrections (dict): A dictionary of the dec, inc values for all possible orientations (below, towards) when
@@ -27,16 +25,19 @@ class Cif(RockPy.core.ftype.Ftype):
         units (dict(:obj:`pint.ureg`)): units used internally (should be SI units)
         datacolumns (tuple(str)): names of all the columns should be the same as `self.data.columns`
         
-    Notes:
+    Notes
+    -----
         Data columns:
             `'mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time'`
-    See Also:
+    See Also
+    --------
         For more information on `attributes` see :py:class:`RockPy.core.ftype.Ftype`
     '''
     datacolumns = ('mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time')
 
+    # dec/ inc values for (below, towards) combinations
     corrections = {"TW": (0, 0),
                    "TN": (90, 0),
                    "TE": (180, 0),  #
@@ -126,6 +127,10 @@ class Cif(RockPy.core.ftype.Ftype):
                          mdata=mdata, create_minfo=create_minfo,
                          **kwargs)
 
+        # read the header file if none was specified (e.g. through read_rapid)
+        if self.header is None:
+            self.header = self._read_header(self.raw_data[:2])
+
         self.data = self._add_missing_levels(self.data)
 
     """ staticmethods """
@@ -142,6 +147,7 @@ class Cif(RockPy.core.ftype.Ftype):
         """
         rows = []
         header_rows = []
+
         for idx, row in enumerate(raw_data):
             if row.startswith('#'):
                 continue
@@ -267,7 +273,7 @@ class Cif(RockPy.core.ftype.Ftype):
                     series[l] *= 10000
 
         mtype = series['mtype']
-        # series[['std_x', 'std_y', 'std_z', 'intensity']] *= 1e3  # to emu
+        # series[['std_x', 'std_y', 'std_z', 'intensity']] *=  # to emu
         # series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu
 
 
@@ -275,6 +281,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
         columns = ['geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                    'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user']
+        # todo check the formatting
         formats = {'mtype': '{:<2}', 'level': '{:>4}',
                    'geo_dec': '{:>5.1f}', 'geo_inc': '{:>5.1f}', 'strat_dec': '{:>5.1f}', 'strat_inc': '{:>5.1f}',
                    'intensity': '{:.2E}', 'ang_err': '{:05.1f}', 'plate_dec': '{:>5.1f}', 'plate_inc': '{:>5.1f}',
@@ -302,7 +309,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
     @classmethod
     def _read_header(self, header_rows):
-        """ Reads the header of a cif file.
+        """ Reads the header of a cit file.
 
         In the first line the first four characters are the locality id, the next 9 the sample id, and the remainder
         (to 255) is a sample comment.
@@ -321,8 +328,11 @@ class Cif(RockPy.core.ftype.Ftype):
         sample_id = header_rows[0][4:13].strip(' ')
 
         widths = [(1, 7), (8, 13), (14, 19), (20, 25), (26, 31), (32, 37)]
-        labels = ['stratigraphic_level', 'core_strike', 'core_dip', 'bedding_strike', 'bedding_dip',
+        labels = ['stratigraphic_level',
+                  'core_strike', 'core_dip',
+                  'bedding_strike', 'bedding_dip',
                   'core_volume_or_mass']
+
         lw_dict = dict(zip(labels, widths))
 
         header = pd.DataFrame(index=[sample_id])
@@ -350,15 +360,15 @@ class Cif(RockPy.core.ftype.Ftype):
             Assuming that the previous AF step is the same as the UAFX steps, may be wrong.
         """
         data = data.copy()
-
+        
         AF_index = [(i, v) for i, v in enumerate(data['mtype']) if v == 'AF']
 
-        old_levels = data['level'].values
+        new_levels = data['level'].values
+        #
+        # # just in case make a copy of the old levels for reference
+        # data['old_levels'] = old_levels
 
-        # just in case make a copy of the old levels for reference
-        data['old_levels'] = old_levels
-
-        new_levels = old_levels
+        # new_levels = old_levels
         for idx, level in enumerate(new_levels):
             # if 'ARM'  in data['mtype'].iloc[idx]:
             #     level = 0
@@ -392,10 +402,9 @@ class Cif(RockPy.core.ftype.Ftype):
             cls.imported_files[dfile] = cls._read_raw_UP_file(dfile)
 
         out = cls.imported_files[dfile].copy() # todo does this have to be a copy?
-
         # check if the sample is in the data
         if not sample_id in set(out['Sample']):
-            RockPy.log.error('Could not find sample_id << {} >> in file << {} >.! '
+            RockPy.log.warning('Could not find sample_id << {} >> in file << {} >.! '
                              'Please check correct spelling'.format(sample_id, os.path.basename(dfile)))
             return
 
@@ -428,7 +437,12 @@ class Cif(RockPy.core.ftype.Ftype):
             level = 0
 
         sdata.loc[:, 'mtype'] = mtype
-        sdata.loc[:, 'level'] = int(level)
+
+        try:
+            sdata.loc[:, 'level'] = int(level)
+        except:
+            sdata.loc[:, 'level'] = 0
+
         return sdata
 
     @classmethod
@@ -487,6 +501,7 @@ class Cif(RockPy.core.ftype.Ftype):
         raw_data = [n.rstrip().replace(',', '|') for n in raw_data]
         # in case of weird double <CR> symbols
         raw_data = [i for i in raw_data if i]
+
         raw_data = [n.split('|') for n in raw_data]
         header = header.rstrip().replace(',', '|')
         header = header.split('|')
@@ -620,8 +635,9 @@ class Cif(RockPy.core.ftype.Ftype):
         df = df.reset_index()
         df = df.set_index('level')
 
-        # make sure the data is sorted
-        df = df.sort_values('datetime')
+        if 'datetime' in df.columns:
+            # make sure the data is sorted
+            df = df.sort_values('datetime')
 
         out = df.loc[~np.in1d(df['mtype'], ['UAFX1', 'UAFX2', 'UAFX3'])].copy()
         mean = df.groupby('level').mean()
@@ -630,7 +646,7 @@ class Cif(RockPy.core.ftype.Ftype):
         out.loc[:, 'y'] = mean.loc[:, 'y']
         out.loc[:, 'z'] = mean.loc[:, 'z']
 
-        out = self._recalc_plate(out)
+        out = self._recalc_core_di(out)
         out = self._correct_core(out, core_dip, core_strike)
         out = self._correct_strat(out, strat_dip, strat_strike)
 
@@ -641,7 +657,7 @@ class Cif(RockPy.core.ftype.Ftype):
         return out
 
     @classmethod
-    def _recalc_plate(cls, df):
+    def _recalc_core_di(cls, df):
         df = xyz2dim(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
         return df
 
@@ -659,7 +675,7 @@ class Cif(RockPy.core.ftype.Ftype):
         df['z'] *= -1
         df['y'] *= -1
 
-        df = cls._recalc_plate(df)
+        df = cls._recalc_core_di(df)
         df = cls._correct_core(df=df, dip=core_dip, strike=core_strike)
         df = cls._correct_strat(df=df, dip=bedding_dip, strike=bedding_strike)
 
@@ -801,15 +817,9 @@ class Cif(RockPy.core.ftype.Ftype):
         -------
             pd.DataFrame
         """
-        if not self.dio:
-            with open(self.dfile) as f:
-                raw_data = f.readlines()
-        else:
-            raw_data = self.dfile
-            if isinstance(self.dfile, BytesIO):
-                raw_data = io.TextIOWrapper(raw_data, encoding='utf-8')
-            raw_data = raw_data.readlines()
 
+        with open(self.dfile) as f:
+            raw_data = f.readlines()
 
         rows, raw_header_rows = self._separate_row(raw_data)
 
@@ -872,24 +882,24 @@ class Cif(RockPy.core.ftype.Ftype):
                                       strat_dip=strat_dip, strat_strike=strat_strike)
         return self.data
 
-    def reset_plate(self):
+    def reset_core_di(self):
         """ resets dec and inc in machine coordinates
 
         See Also:
             :py:meth:`RockPy.ftypes.cif.Cif._reset_plate` for the private method.
 
-            :py:meth:`RockPy.ftypes.cif.Cif.reset_geo` to reset the geographic coordinates.
+            :py:meth:`RockPy.ftypes.cif.Cif.reset_geo_di` to reset the geographic coordinates.
 
-            :py:meth:`RockPy.ftypes.cif.Cif.reset_strat` to reset the stratigraphic coordinates.
+            :py:meth:`RockPy.ftypes.cif.Cif.reset_bedding_di` to reset the stratigraphic coordinates.
 
             uses: :py:func:`RockPy.tools.compute.xyz2dim`
 
         Returns:
             :obj:`pandas.DataFrame`: Data recalculated from x,y,z values
         """
-        self.data = self._recalc_plate(self.data)
+        self.data = self._recalc_core_di(self.data)
 
-    def reset_geo(self, dip=None, strike=None):
+    def reset_geo_di(self, dip=None, strike=None):
         """ resets dec and inc in geographic coordinates
 
         Args:
@@ -914,7 +924,7 @@ class Cif(RockPy.core.ftype.Ftype):
         self.header['core_dip'] = dip
         self.header['core_strike'] = strike
 
-    def reset_strat(self, dip=None, strike=None):
+    def reset_bedding_di(self, dip=None, strike=None):
         """ resets dec and inc in stratigraphic coordinates
 
         Args:
@@ -932,9 +942,9 @@ class Cif(RockPy.core.ftype.Ftype):
         """
 
         if dip is None:
-            dip = self.header['strat_dip'].values[0]
+            dip = self.header['bedding_dip'].values[0]
         if strike is None:
-            strike = self.header['strat_strike'].values[0]
+            strike = self.header['bedding_strike'].values[0]
 
         self.data = self._correct_strat(self.data, dip, strike)
 
@@ -944,6 +954,35 @@ class Cif(RockPy.core.ftype.Ftype):
                                                   core_strike=self.header['core_strike'][0],
                                                   bedding_dip=self.header['bedding_dip'][0],
                                                   bedding_strike=self.header['bedding_strike'][0])
+
+    def rotate_individual_measurement(self, indices, theta, axis):
+        """
+
+        Parameters
+        ----------
+        indices
+
+        Returns
+        -------
+
+        """
+        indices = RockPy.to_tuple(indices)
+        indices = np.array(indices)
+
+        data = self.data.iloc[indices]
+
+        xyz = data[['x','y','z']].values
+        xyz_ = data[['std_x','std_y','std_z']].values
+
+        xyz_rotated = Rc.rotate(xyz=xyz, axis=axis, theta=theta)
+        xyz__rotated = Rc.rotate(xyz=xyz_, axis=axis, theta=theta)
+
+        self.data.loc[data.index, ['x','y','z']] = xyz_rotated
+        self.data.loc[data.index, ['std_x','std_y','std_z']] = xyz__rotated
+
+        self.reset_core_di()
+        self.reset_geo_di()
+        self.reset_bedding_di()
 
     def export(self, fname, sample_id=None, **kwargs):
         """
@@ -971,4 +1010,75 @@ class Cif(RockPy.core.ftype.Ftype):
                 row = self._write_cif_line(row)
                 f.write(row + '\n')
 
+    def plot(self, fname = None):
+        import RockPy.tools.plotting as rplt
+        import matplotlib.pyplot as plt
 
+        ax = [plt.subplot(121, projection='polar'),
+              plt.subplot(122)]
+        ax[0] = rplt.setup_stereonet(ax=ax[0])
+        rplt.plot_equal(self.geo_xyz, color='C0', label='MIL 2.3', ax=ax[0])
+
+        # Zydervelt
+        norm = round(np.log10(self.geo_xyz[['x','y','z']].abs().max().max()))//3
+
+        ax[1].plot(self.geo_xyz.iloc[:-1]['y'] / 10 ** (norm*3),
+                   self.geo_xyz.iloc[:-1]['x'] / 10 ** (norm*3),
+                   marker='o', ls='-', label='y/x (dec)', markevery=1, mfc='w')
+        ax[1].plot(self.geo_xyz.iloc[:-1]['y'] / 10 ** (norm*3),
+                   self.geo_xyz.iloc[:-1]['z'] / 10 ** (norm*3),
+                   marker='o', ls='-', label='y/z (inc)', markevery=1)
+
+        ax[1].plot([], [], marker='s', mfc='w', color='k')
+
+        ax[1].set_xlabel(f'E ($10^{{{norm*3}}}$ Am$^2$/kg)')
+        ax[1].set_ylabel(f'N/up ($10^{{{norm*3}}}$ Am$^2$/kg)', rotation=-90)
+
+        ax[1].xaxis.set_ticks_position('bottom')
+        ax[1].yaxis.set_ticks_position('left')
+
+        # ax[1].spines['left'].set_position('zero')
+        ax[1].spines['right'].set_color('none')
+        # ax[1].spines['bottom'].set_position('zero')
+        ax[1].spines['top'].set_color('none')
+
+        plt.tight_layout()
+        if fname is not None:
+            f.savefig(fname)
+        plt.show()
+class Cif(Cit):
+    def __init__(self, dfile,
+                 snames=None, reload=False,
+                 mdata=None, create_minfo=True,
+                 level_unit='gauss', dialect=None,
+                 **kwargs):
+        """
+        Constructor for the Cif file type. Reads cif files as generated by the 2G rapid system, for example.
+        Generally agnostic to the measurement type.
+
+        Args:
+            dfile (str): full path to file on HD
+            snames (str, optional): defaults to None
+                sample name
+            reload (bool, optional): defaults to True.
+                if True the file will be re-imported from HD
+                if False RockPy will attempt to read the file from cache
+            mdata (:obj:`pd.DataFrame`, optional): defaults to None. Used for creation of cif from several
+                files (i.e. UP) using from_file method
+            create_minfo (bool, optional): if False creation of ImportHelper object is suppressed;
+                if True RockPy will try to create ImportHelper object
+            level_unit(str, optional): defaults to 'G'. Determines the unit for the level. May be ˚C, G, ...
+            **kwargs: arbitrary keyword arguments
+        """
+        self.log().warning('This class has been deprecated, use << cit >> instead!')
+
+        # call the ftype constructor
+        super().__init__(dfile, snames=snames,
+                         dialect=None, reload=reload,
+                         mdata=mdata, create_minfo=create_minfo,
+                         **kwargs)
+
+if __name__ == '__main__':
+    d = Cit('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM_ARM_IRM/MIL14_IRM')
+    d.rotate_individual_measurement([1,2], 20, 'z')
+    # print(Rc.rotate([0.1899985356159913,-0.02805654275408272,1.366569934863367],axis='z',theta=20))
