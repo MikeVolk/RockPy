@@ -75,12 +75,13 @@ class Ftype(object):
         # initialize the _raw_data attribute
         self._raw_data = None
         # create sample name tuple
-        self.snames = [str(i) for i in RockPy.core.utils.to_tuple(snames)] if snames else None
+        self.snames = [str(i) for i in RockPy.core.utils.to_tuple(
+            snames)] if snames else None
 
         self.dfile = dfile
 
         dio = False
-        ## catch ERROR for StringIO and ByteIO
+        # catch ERROR for StringIO and ByteIO
         if isinstance(dfile, (StringIO, BytesIO)):
             self.log().debug('impporting Byte/String data')
             dfile = self.fid
@@ -89,7 +90,7 @@ class Ftype(object):
         self.dialect = dialect
 
         # only add header if it hasnt been defined already
-        ### the header should now be passed to the constructor
+        # the header should now be passed to the constructor
         if getattr(self, 'header', None) is None:
             # set attribute in case header is provided in **kwargs, default to None
             self.header = kwargs.pop('header', None)
@@ -99,7 +100,8 @@ class Ftype(object):
                 self.import_helper = ImportHelper.from_file(self.dfile)
                 self.file_infos = self.import_helper.return_file_infos()
             except:
-                self.__class__.log().warning('Cant read file infos automatically. RockPy file naming scheme required')
+                self.__class__.log().warning(
+                    'Cant read file infos automatically. RockPy file naming scheme required')
                 self.import_helper = None
                 self.file_infos = None
 
@@ -111,15 +113,15 @@ class Ftype(object):
                 self.log().info('IMPORTING << %s , %s >> file: << ... %s >>' % (self.snames,
                                                                                 type(self).__name__, dfile[-20:]))
             else:
-                self.log().info('IMPORTING << %s , %s >> from Bytes' % (self.snames, type(self).__name__))
+                self.log().info('IMPORTING << %s , %s >> from Bytes' %
+                                (self.snames, type(self).__name__))
 
             self.__class__.imported_files[dfile] = self.read_file()
 
         else:
             self.log().info(
-                "LOADING previously imported file << {} , {} >> file: << {} >>\n\t>>> "
-                "USE reload option if you want to read files from HD".format(self.snames, type(self).__name__,
-                                                                             dfile[-40:]))
+                f"RELOADING imported file << {self.snames} , {type(self).__name__} >>")
+            self.log().info("USE reload option if you want to read files from HD")
 
         self.data = self.__class__.imported_files[dfile]
         self.to_si_units()
@@ -169,7 +171,8 @@ class Ftype(object):
         if specimen not in self.data['specimen'].values:
             Ftype.log().error('CANNOT IMPORT -- sobj_name not in ftype_data specimen list.')
             Ftype.log().error('wrong sample name?')
-            Ftype.log().error('These samples exist: %s' % set(self.data['specimens']))
+            Ftype.log().error('These samples exist: %s' %
+                              set(self.data['specimens']))
             return False
         else:
             return True
@@ -179,8 +182,9 @@ class Ftype(object):
         """
         Q_ = ureg.Quantity
         for col in self.data.columns:
+            # convert units to internal_units
             if col in self.in_units:
-                if not col in self.units:
+                if col not in self.units:
                     self.log().warning(
                         'Unit of data column << {} >> has no internal unit equivalent. The input unit is  << {:P} >>.'.format(
                             col, self.in_units[col]))
@@ -192,7 +196,8 @@ class Ftype(object):
                     continue
 
                 if col == 'level':
-                    self.data.loc[:, 'old_level'] = self.data.loc[:, 'level'].values
+                    self.data.loc[:, 'old_level'] = self.data.loc[:,
+                                                                  'level'].values
 
                 in_unit = self.in_units[col]
                 unit = self.units[col]
@@ -202,16 +207,19 @@ class Ftype(object):
                     d = self.data.loc[:, col].values
                     d = Q_(d, in_unit)
                     conv = Q_(1, in_unit).to(unit).magnitude
-                    self.log().debug(f'converting to SI units {in_unit} -> {conv * unit}')
+                    self.log().debug(
+                        f'converting to SI units {in_unit} -> {conv * unit}')
                     self.data.loc[:, col] = d.to(unit).magnitude
                 except pint.DimensionalityError:
-                    self.log().debug(f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
+                    self.log().debug(
+                        f'Pint conversion to SI units FAILED {in_unit} -> {unit}')
                     if in_unit == ureg('gauss') and unit == ureg('tesla'):
                         conv = 1e-4
                     if in_unit == ureg('tesla') and unit == ureg('gauss'):
                         conv = 1e4
                     self.data.loc[:, col] *= conv
-                    self.log().info(f'manual conversion to SI units 1 {in_unit} -> {conv} {unit}')
+                    self.log().info(
+                        f'manual conversion to SI units 1 {in_unit} -> {conv} {unit}')
 
     def read_file(self):
         """ Method for actual import of the file.
@@ -235,8 +243,10 @@ class Ftype(object):
 
         if backup:
             self.log().info('Creating a copy of file << %s >>' % old_filename)
-            copy2(self.dfile, self.dfile.replace(old_filename, '#' + old_filename))
-        self.log().info('Renaming file << %s >> to << %s >>' % (old_filename, new_filename))
+            copy2(self.dfile, self.dfile.replace(
+                old_filename, '#' + old_filename))
+        self.log().info('Renaming file << %s >> to << %s >>' %
+                        (old_filename, new_filename))
         os.rename(self.dfile, self.dfile.replace(old_filename, new_filename))
 
     @property
@@ -281,7 +291,7 @@ class Ftype(object):
         return '{:~P}'.format(self.units[quantity].units)
 
 
-### related functions
+# related functions
 def is_implemented(ftype):
     """ Checks if ftype has been implemented.
 

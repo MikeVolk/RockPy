@@ -29,7 +29,8 @@ colorpalettes = {
                '#bdbdbd', '#d9d9d9'],
     'matlab': ['#0072bd', '#d95319', '#edb120', '#7e2f8e', '#77ac30', '#4dbeee', '#a2142f']}
 ls = ['-', '--', '-.', ':'] * 100
-marker = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X'] * 100
+marker = ['o', 'v', '^', '<', '>', '8', 's',
+          'p', '*', 'h', 'H', 'D', 'd', 'P', 'X'] * 100
 
 # std figsize for AGU journals
 figsize = np.array([3.74, 5.91]) * 1.3
@@ -56,7 +57,8 @@ def force_aspect(ax=None, aspect=1):
     if scale_str == 'linear':
         asp = abs((xmax - xmin) / (ymax - ymin)) / aspect
     elif scale_str == 'log':
-        asp = abs((np.log10(xmax) - np.log10(xmin)) / (np.log10(ymax) - np.log10(ymin))) / aspect
+        asp = abs((np.log10(xmax) - np.log10(xmin)) /
+                  (np.log10(ymax) - np.log10(ymin))) / aspect
     ax.set_aspect(asp, adjustable='box')
 
 
@@ -114,7 +116,8 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
         ax.text(positions[i][0], positions[i][1], '{:>s})'.format(label),
                 verticalalignment='bottom', horizontalalignment='left',
                 transform=ax.transAxes,
-                bbox=kwargs.pop('bbox', dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0)),
+                bbox=kwargs.pop('bbox', dict(
+                    facecolor='w', alpha=0.5, edgecolor='none', pad=0)),
                 color=kwargs.pop('color', 'k'), **kwargs)
 
 
@@ -189,21 +192,18 @@ def setup_stereonet(ax=None, grid=True, rings=True, rtickwidth=1):
 
     ax.set_yticklabels([])  # Less radial ticks
 
-    ## plot the grids
+    # plot the grids
     # crosses
     for d in [0, 90, 180, 270]:
-        d = convert_to_equal_area([np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)], intype='dim')
+        d = convert_to_equal_area(
+            [np.ones(10) * d, np.linspace(0, 90, 10), np.ones(10)], intype='dim')
         ax.plot(np.radians(d[:, 0]), d[:, 1], 'k+')
 
-<<<<<<< HEAD
-    ticks = ax.set_rticks(d[:, 1])  # Less radial ticks
-=======
     if rings:
-        ticks = ax.set_rticks(d[:,1])  # Less radial ticks
+        ticks = ax.set_rticks(d[:, 1])  # Less radial ticks
     else:
         ticks = ax.set_rticks([])  # Less radial ticks
 
->>>>>>> development
     for t in ticks:
         t.set_alpha(0.5)
 
@@ -211,12 +211,10 @@ def setup_stereonet(ax=None, grid=True, rings=True, rtickwidth=1):
     for t in np.deg2rad(np.arange(0, 360, 5)):
         ax.plot([t, t], [1, 0.97], lw=rtickwidth, color="k", zorder=-1)
 
-<<<<<<< HEAD
-=======
-    ax.set_thetagrids(angles=[0,90,180,270])
->>>>>>> development
+    ax.set_thetagrids(angles=[0, 90, 180, 270])
     ax.set_rmax(1)
     return ax
+
 
 def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
     if ax is None:
@@ -272,11 +270,14 @@ def plot_equal(xyz, ax=None, intype='xyz', setup_plot=True, **kwargs):
 
     ls = kwargs.pop('ls', '')
 
-    p1 = ax.plot(np.radians(down[:, 0]), down[:, 1], marker=marker, color=color, mfc='none', ls='', **kwargs)
-    p2 = ax.plot(np.radians(up[:, 0]), up[:, 1], marker=marker, color=color, ls='', **kwargs)
+    p1 = ax.plot(np.radians(down[:, 0]), down[:, 1],
+                 marker=marker, color=color, mfc='none', ls='', **kwargs)
+    p2 = ax.plot(np.radians(up[:, 0]), up[:, 1],
+                 marker=marker, color=color, ls='', **kwargs)
 
     if ls:
-        ax.plot(np.radians(pol[:, 0]), pol[:, 1], marker='', color=linecolor, ls=ls, **kwargs)
+        ax.plot(np.radians(pol[:, 0]), pol[:, 1],
+                marker='', color=linecolor, ls=ls, **kwargs)
 
     if setup_plot:
         setup_stereonet(ax=ax)
@@ -310,7 +311,8 @@ def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1],
         l += add_labels
 
     labels = sorted(set(l))
-    handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2) for n, l2 in enumerate(labels)]
+    handles = [tuple(h[i] for i, l1 in enumerate(l) if l1 == l2)
+               for n, l2 in enumerate(labels)]
 
     if all(i is not None for i in [add_handles, add_labels]) and not add_sort:
         h += add_handles
@@ -349,7 +351,8 @@ def log10_isolines(ax=None, angle=45):
         sn = (min(ynew) - max(ynew)) / (min(xnew) - max(xnew))
         intn = min(ynew) - sn * min(xnew)
 
-        ax.plot(xnew, ynew, scaley=False, scalex=False, color='0.5', ls='--', zorder=0)
+        ax.plot(xnew, ynew, scaley=False, scalex=False,
+                color='0.5', ls='--', zorder=0)
 
         rotation = ax.transData.transform_angles(np.array((angle,)),
                                                  np.array([1, 1]).reshape((1, 2)))[0]
@@ -402,7 +405,8 @@ def line_through_points(p1, p2, x_extent=None, ax=None, **kwargs):
     if kwargs and ('ls' in kwargs):
         kwargs['linestyle'] = kwargs.pop('ls')
 
-    line = np.array([[[x_extent[0], x_extent[0] * slope + intercept], [x_extent[1], x_extent[1] * slope + intercept]]])
+    line = np.array([[[x_extent[0], x_extent[0] * slope + intercept],
+                    [x_extent[1], x_extent[1] * slope + intercept]]])
     # Will not update limits
     line = LineCollection(line, **kwargs)
     ax.add_collection(line, autolim=False)
@@ -425,8 +429,10 @@ def add_zerolines(ax=None, **kwargs):
     if ax is None:
         ax = plt.gca()
 
-    ax.axhline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
-    ax.axvline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop('zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
+    ax.axhline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop(
+        'zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
+    ax.axvline(0, color=kwargs.pop('color', 'k'), zorder=kwargs.pop(
+        'zorder', 0), lw=kwargs.pop('lw', 1), **kwargs)
 
 
 def make_spines_zero(a, xlabel='', ylabel=''):
@@ -478,28 +484,33 @@ def connect(p0, p1, ax=None, direction='up', arrow=False, shrink=2, **kwargs):
         ax.annotate("",
                     xy=(x1, y1), xycoords='data',
                     xytext=(x0, y1), textcoords='data',
-                    arrowprops=dict(arrowstyle=arrowstyle, shrinkA=0, shrinkB=shrink, **kwargs),
+                    arrowprops=dict(arrowstyle=arrowstyle,
+                                    shrinkA=0, shrinkB=shrink, **kwargs),
                     )
         ax.annotate("",
                     xy=(x0, y0), xycoords='data',
                     xytext=(x0, y1), textcoords='data',
-                    arrowprops=dict(arrowstyle="-", shrinkA=0, shrinkB=shrink, **kwargs),
+                    arrowprops=dict(arrowstyle="-", shrinkA=0,
+                                    shrinkB=shrink, **kwargs),
                     )
 
     elif direction == 'up':
         ax.annotate("",
                     xy=(x1, y1), xycoords='data',
                     xytext=(x1, y0), textcoords='data',
-                    arrowprops=dict(arrowstyle=arrowstyle, shrinkA=0, shrinkB=shrink, **kwargs),
+                    arrowprops=dict(arrowstyle=arrowstyle,
+                                    shrinkA=0, shrinkB=shrink, **kwargs),
                     )
 
         ax.annotate("",
                     xy=(x1, y0), xycoords='data',
                     xytext=(x0, y0), textcoords='data',
-                    arrowprops=dict(arrowstyle="-", shrinkA=shrink, shrinkB=0, **kwargs),
+                    arrowprops=dict(
+                        arrowstyle="-", shrinkA=shrink, shrinkB=0, **kwargs),
                     )
     else:
-        RockPy.log.error('%s not a valid direction: choose either \'up\' or \'down\'' % direction)
+        RockPy.log.error(
+            '%s not a valid direction: choose either \'up\' or \'down\'' % direction)
 
 
 def plot_square(x, y, d, center=True, center_label=None, ax=None, **plt_args):
@@ -524,7 +535,8 @@ def plot_square(x, y, d, center=True, center_label=None, ax=None, **plt_args):
     if ax is None:
         ax = plt.gca()
 
-    l, = ax.plot(x, y, 's', markersize=3, visible=False, label=f'{center_label}', **plt_args)
+    l, = ax.plot(x, y, 's', markersize=3, visible=False,
+                 label=f'{center_label}', **plt_args)
 
     if center:
         ax.plot(x, y, '+', markersize=3, color=l.get_color(), mew=1)
@@ -595,9 +607,16 @@ def connect_ax_data(ax, **kwargs):
     ax.plot(x, y, **kwargs)
 
 
+def get_ax(ax):
+    if ax is None:
+        ax = plt.gca()
+    return ax
+
+
 """ COLORS """
 
-red_blue_colormap = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
+red_blue_colormap = mcol.LinearSegmentedColormap.from_list("MyCmapName", [
+                                                           "b", "r"])
 
 
 # set the colormap and centre the colorbar
@@ -683,7 +702,8 @@ def plot_metamorphic_facies(ax=None, facies_list=None, text=None, **kwargs):
             ax.text(*txtloc[fascies], fascies,
                     rotation=txtrot[fascies],
                     verticalalignment='center', horizontalalignment='center',
-                    bbox=dict(facecolor='w', alpha=0.5, edgecolor='none', pad=0),
+                    bbox=dict(facecolor='w', alpha=0.5,
+                              edgecolor='none', pad=0),
                     color='k', clip_on=True, **fontdictcopy)
 
 
@@ -839,7 +859,8 @@ class TernaryDiagram(object):
         else:
             s = name
 
-        self.ax.text(*coordinates[corner], s=s, ha=h_align[corner], va=v_align[corner], **kwargs)
+        self.ax.text(*coordinates[corner], s=s,
+                     ha=h_align[corner], va=v_align[corner], **kwargs)
 
     def plot_abc(self, abc, **kwargs):
         '''
@@ -876,11 +897,14 @@ class TernaryDiagram(object):
         kwargs.setdefault('zorder', 4)
 
         if corner == 0:
-            c = [[r, r * np.sin(i), r * np.cos(i)] for i in np.linspace(0, np.pi / 2)]
+            c = [[r, r * np.sin(i), r * np.cos(i)]
+                 for i in np.linspace(0, np.pi / 2)]
         elif corner == 1:
-            c = [[r * np.sin(i), r, r * np.cos(i)] for i in np.linspace(0, np.pi / 2)]
+            c = [[r * np.sin(i), r, r * np.cos(i)]
+                 for i in np.linspace(0, np.pi / 2)]
         elif corner == 2:
-            c = [[r * np.sin(i), r * np.cos(i), r] for i in np.linspace(0, np.pi / 2)]
+            c = [[r * np.sin(i), r * np.cos(i), r]
+                 for i in np.linspace(0, np.pi / 2)]
         else:
             c = None
         self.plot_abc(c, **kwargs)

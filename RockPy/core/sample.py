@@ -26,7 +26,6 @@ class Sample(object):
         return logging.getLogger('RockPy.Sample')
 
     def __lt__(self, other):
-
         """
 
         Parameters
@@ -74,7 +73,6 @@ class Sample(object):
                  study=None,
                  create_parameter=True,
                  **kwargs):
-
         """
         Parameters
         ----------
@@ -139,7 +137,8 @@ class Sample(object):
         # set name
         self.name = name
 
-        self.log().debug('Creating Sample[%i] %s:%i' % (self.sid, name, self.snum))
+        self.log().debug('Creating Sample[%i] %s:%i' % (
+            self.sid, name, self.snum))
 
         if not study:
             study = RockPy.Study()
@@ -180,15 +179,19 @@ class Sample(object):
 
     @property
     def info(self):
-        info = pd.DataFrame(columns=['mass [kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
+        info = pd.DataFrame(
+            columns=['mass [kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
         info.loc[self.name, 'mass [kg]'] = self.mass
-        info.loc[self.name, 'sample groups'] = self._samplegroups if self._samplegroups else 'None'
+        info.loc[self.name,
+                 'sample groups'] = self._samplegroups if self._samplegroups else 'None'
 
-        mtypes = [(mt, len(self.get_measurement(mtype=mt))) for mt in self.mtypes]
+        mtypes = [(mt, len(self.get_measurement(mtype=mt)))
+                  for mt in self.mtypes]
 
         if mtypes:
-            info.loc[self.name, 'mtypes'] = ', '.join(self.mtypes)  # if len(mtypes) > 1 else mtypes[0]
+            info.loc[self.name, 'mtypes'] = ', '.join(
+                self.mtypes)  # if len(mtypes) > 1 else mtypes[0]
         else:
             info.loc[self.name, 'mtypes'] = None
 
@@ -274,7 +277,8 @@ class Sample(object):
                             kwargs[info] = sinfo[info]
 
         unit = kwargs.pop('unit', None)
-        parameters = [i for i in ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len'] if i in kwargs if kwargs[i]]
+        parameters = [i for i in ['mass', 'diameter', 'height',
+                                  'x_len', 'y_len', 'z_len'] if i in kwargs if kwargs[i]]
 
         for mtype in parameters:
 
@@ -290,12 +294,14 @@ class Sample(object):
                 else:
                     unit = kwargs.pop('lengthunit', 'm')
 
-            mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, **kwargs)
+            mobj = RockPy.implemented_measurements[mtype](
+                sobj=self, value=value, unit=unit, **kwargs)
             # catch cant create error case where no data is written
             if mobj.data is None:
                 return
             self.log().debug(f'Creating parameter << {mtype} >> measurement')
-            self.add_measurement(mtype=mtype, mobj=mobj, ftype='generic', create_parameters=False)
+            self.add_measurement(mtype=mtype, mobj=mobj,
+                                 ftype='generic', create_parameters=False)
             # reset unit for next Parameter
             unit = None
 
@@ -310,7 +316,6 @@ class Sample(object):
             comment=None, reload=False,
             create_parameters=True,
             **kwargs):
-
         """
         All measurements have to be added here
 
@@ -355,7 +360,8 @@ class Sample(object):
 
         # create the idx
         if idx is None:
-            idx = len(self.measurements)  # todo change so it counts the number of subclasses created
+            # todo change so it counts the number of subclasses created
+            idx = len(self.measurements)
 
         ''' MINFO object generation '''
         if self.samplegroups:
@@ -369,20 +375,23 @@ class Sample(object):
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
         if create_parameters:
             if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
-                mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
+                mobj = self._add_measurement_from_str(
+                    fpath, kwargs, mobj, mtype, series)
                 return mobj
 
             if mtype in parameters and not mobj:
                 value = kwargs.pop('value')
                 unit = kwargs.pop('unit', None)
-                mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, series=series, idx=idx)
+                mobj = RockPy.implemented_measurements[mtype](
+                    sobj=self, value=value, unit=unit, series=series, idx=idx)
                 return mobj
 
         # create the import helper
         if fpath and not any((mtype, ftype)):
-            import_helper = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
+            import_helper = RockPy.core.file_io.ImportHelper.from_file(
+                fpath=fpath)
         else:
-            self.log().debug('creating minfo from mtype: << %s >>' % mtype)
+            self.log().debug(f'creating minfo from mtype: << {mtype} >>')
             import_helper = RockPy.core.file_io.ImportHelper.from_dict(fpath=fpath,
                                                                        sgroups=sgroups,
                                                                        snames=self.name,
@@ -404,13 +413,15 @@ class Sample(object):
                     self.log().error('{} not implemented'.format(mtype))
                     continue
                 # create measurement object
-                mobj = RockPy.implemented_measurements[mtype].from_file(sobj=self, reload=reload, **import_info)
+                mobj = RockPy.implemented_measurements[mtype].from_file(
+                    sobj=self, reload=reload, **import_info)
 
         """ DATA import from mdata """
         if all([mdata, mtype]):
             if not RockPy.core.utils.mtype_implemented(mtype):
                 return
-            mobj = RockPy.implemented_measurements[mtype](sobj=self, mdata=mdata, series=series, idx=idx)
+            mobj = RockPy.implemented_measurements[mtype](
+                sobj=self, mdata=mdata, series=series, idx=idx)
 
         # DATA import from MOBJ
         if mobj:
@@ -441,7 +452,8 @@ class Sample(object):
 
         """
         parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
-        mtype = [k for k in kwargs.keys() if k in parameters if kwargs[k] is not None][0]
+        mtype = [k for k in kwargs.keys() if k in parameters if kwargs[k]
+                 is not None][0]
         mobj = RockPy.implemented_measurements[mtype].from_string(sobj=self,
                                                                   string=kwargs[mtype],
                                                                   fpath=fpath,
@@ -589,7 +601,8 @@ class Sample(object):
                idx(stype) == idx(measurement(stype))
         """
         mx = max(len(m.series) for m in self.measurements)
-        out = [[m.stypes[i] if i < len(m.stypes) else 'nan' for i in range(mx)] for m in self.measurements]
+        out = [[m.stypes[i] if i < len(m.stypes) else 'nan' for i in range(
+            mx)] for m in self.measurements]
         return np.array(out)
 
     @property
@@ -602,7 +615,8 @@ class Sample(object):
                idx(sval) == idx(measurement(sval))
         """
         mx = max(len(m.series) for m in self.measurements)
-        out = [[m.svals[i] if i < len(m.svals) else np.nan for i in range(mx)] for m in self.measurements]
+        out = [[m.svals[i] if i < len(m.svals) else np.nan for i in range(
+            mx)] for m in self.measurements]
         if mx == 1:
             return np.array(out).flatten()
         else:
@@ -677,10 +691,12 @@ class Sample(object):
             mlist = (m for m in mlist if m.mtype in mtype)
 
         if stype:
-            mlist = (x for x in mlist if x.has_stype(stype=stype, method='any'))
+            mlist = (x for x in mlist if x.has_stype(
+                stype=stype, method='any'))
 
         if sval_range is not None:
-            sval_range = self._convert_sval_range(sval_range=sval_range, mean=mean)
+            sval_range = self._convert_sval_range(
+                sval_range=sval_range, mean=mean)
 
             if not sval:
                 sval = sval_range
@@ -693,7 +709,8 @@ class Sample(object):
 
         if series:
             series = RockPy.core.utils.tuple2list_of_tuples(series)
-            mlist = (m for m in mlist if m.has_series(series=series, method='all'))
+            mlist = (m for m in mlist if m.has_series(
+                series=series, method='all'))
 
         if result:
             mlist = (m for m in mlist if m.has_result(result=result))
@@ -717,7 +734,8 @@ class Sample(object):
         out = []
 
         if mean:
-            svals = set(sval for m in self.mean_measurements for sval in m.svals)
+            svals = set(
+                sval for m in self.mean_measurements for sval in m.svals)
         else:
             svals = self.svals
 
@@ -732,14 +750,18 @@ class Sample(object):
 
             if '<' in sval_range:
                 if '=' in sval_range:
-                    out = [i for i in svals if i <= float(sval_range.replace('<=', ''))]
+                    out = [i for i in svals if i <= float(
+                        sval_range.replace('<=', ''))]
                 else:
-                    out = [i for i in svals if i < float(sval_range.replace('<', ''))]
+                    out = [i for i in svals if i < float(
+                        sval_range.replace('<', ''))]
             if '>' in sval_range:
                 if '=' in sval_range:
-                    out = [i for i in svals if i >= float(sval_range.replace('>=', ''))]
+                    out = [i for i in svals if i >= float(
+                        sval_range.replace('>=', ''))]
                 else:
-                    out = [i for i in svals if i > float(sval_range.replace('>', ''))]
+                    out = [i for i in svals if i > float(
+                        sval_range.replace('>', ''))]
 
         return sorted(out)
 
@@ -761,7 +783,7 @@ class Sample(object):
             return np.nan
 
     def __repr__(self):
-        return '<< RockPy3.Sample.{} >>'.format(self.name)
+        return '<< Sample.{} >>'.format(self.name)
 
 
 if __name__ == '__main__':

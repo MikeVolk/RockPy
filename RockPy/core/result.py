@@ -5,6 +5,7 @@ import logging
 import inspect
 import RockPy
 
+
 class Result():
     dependencies = None
     default_recipe = None
@@ -19,7 +20,6 @@ class Result():
         return logging.getLogger('RockPy.%s' % cls.__name__)
 
     def set_result(self, result, result_name=None):
-
         """
         Args:
             result:
@@ -30,7 +30,6 @@ class Result():
 
         self.mobj.sobj._results.loc[self.mobj.mid, result_name] = result
         self.mobj.sobj._results.loc[self.mobj.mid, 'sID'] = self.mobj.sobj.sid
-
 
     def get_result(self, result_name=None):
         """Helper function for easy retrieval of results from a measurement
@@ -99,11 +98,13 @@ class Result():
         """
 
         if recipe == 'default':
-            self.log().info('Setting %s to default recipe << %s >>'%(self.name, self.default_recipe))
+            self.log().info('Setting %s to default recipe << %s >>' %
+                            (self.name, self.default_recipe))
             recipe = self.default_recipe
 
         if recipe is not None and recipe.replace('recipe_', '') not in self._recipes().keys():
-            raise KeyError('%s is not a valid recipe for the measurement %s: try one of these << %s >>'%(recipe, self.mobj.mtype, list(self._recipes().keys())))
+            raise KeyError('%s is not a valid recipe for the measurement %s: try one of these << %s >>' % (
+                recipe, self.mobj.mtype, list(self._recipes().keys())))
 
         # if no recipe is specified use the last one calculated
         if recipe is None:
@@ -138,7 +139,8 @@ class Result():
             for result in stack:
 
                 # set default_recipe parameters
-                signature = inspect.signature(result._recipes()[recipe]).parameters
+                signature = inspect.signature(
+                    result._recipes()[recipe]).parameters
 
                 for p in signature:
                     if p == 'check':
@@ -152,7 +154,7 @@ class Result():
                     else:
                         parameters[p] = signature[p].default
 
-                result.log().info('called: %s' % result)
+                result.log().debug('called: %s' % result)
                 result.log().debug('with parameters:')
 
                 for k, v in parameters.items():
@@ -180,9 +182,11 @@ class Result():
                     result.recipe = recipe
         return self.get_result()
 
+    def __repr__(self):
+        return f'<< {self.mobj.mtype}.{self.name} >>'
+
     @staticmethod
     def _needs_to_be_calculated(result, recipe, **parameters):
-
         """
         Args:
             result:
@@ -236,9 +240,11 @@ class Result():
             for p in params:
                 if p in self.params and not params[p] == self.params[p]:
                     try:
-                        self.log().debug('%s %f --> %f' % (p, self.params[p], params[p]))
+                        self.log().debug('%s %f --> %f' %
+                                         (p, self.params[p], params[p]))
                     except TypeError:
-                        self.log().debug('%s %s --> %s' % (p, self.params[p], params[p]))
+                        self.log().debug('%s %s --> %s' %
+                                         (p, self.params[p], params[p]))
                 else:
                     self.log().debug('parameter %s not used' % p)
             return True
@@ -290,7 +296,8 @@ class Result():
             self.default_recipe = list(self._recipes().keys())[0]
             self.log().debug('default_recipe recipe for %s not specified setting to only available << %s >>' % (
                 self.name, self.default_recipe))
-            self.log().debug('setting default_recipe recipe << %s >> for %s' % (self.default_recipe, self.name))
+            self.log().debug('setting default_recipe recipe << %s >> for %s' %
+                             (self.default_recipe, self.name))
 
     @property
     def _dependencies(self):
@@ -301,7 +308,8 @@ class Result():
         if not self.__deps:
             if self.dependencies is not None:
                 self.log().debug('YES dependencies: %s' % ', '.join(self.dependencies))
-                dependencies = [instance for res, instance in self.mobj._results.items() if res in self.dependencies]
+                dependencies = [instance for res, instance in self.mobj._results.items(
+                ) if res in self.dependencies]
             else:
                 self.log().debug('NO dependencies')
                 dependencies = []
@@ -318,7 +326,8 @@ class Result():
                 if self.name in instance.dependencies:  # and not instance.indirect:
                     subjects.append(instance)
             if subjects:
-                self.log().debug('YES subjects: %s' % ', '.join([s.name for s in subjects]))
+                self.log().debug('YES subjects: %s' %
+                                 ', '.join([s.name for s in subjects]))
             else:
                 self.log().debug('NO subjects')
 
