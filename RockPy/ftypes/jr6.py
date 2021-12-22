@@ -85,11 +85,7 @@ class Jr6(RockPy.core.ftype.Ftype): #todo figure out how to import the data...
         out = None
 
         if self.dialect == 'tdt':
-            if item.lower() == 'nrm':
-                split = [0, item.upper()]
-            else:
-                split = item.split('.')
-
+            split = [0, item.upper()] if item.lower() == 'nrm' else item.split('.')
             idx = Jr6.table[self.dialect].index(split[1])
             out = Jr6.pint_treatment_codes[idx]
 

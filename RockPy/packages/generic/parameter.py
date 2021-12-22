@@ -54,10 +54,7 @@ class Parameter(Measurement):
         pass
 
     def __repr__(self):
-        if self.is_mean:
-            add = 'mean_'
-        else:
-            add = ''
+        add = 'mean_' if self.is_mean else ''
         return '<<RockPy.{}.{}{}{} {} ({}) at {}>>'.format(self.sobj.name, add, self.mtype,
                                                     '[' + ';'.join(['{},{}({})'.format(i[0], i[1], i[2]) for i in
                                                                     self.get_series()]) + ']' if self.has_series() else '',

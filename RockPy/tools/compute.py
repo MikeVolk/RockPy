@@ -16,10 +16,9 @@ def rx(angle):
     Returns:
         ndarray: Rotationmatrix
     """
-    RX = [[1, 0, 0],
+    return [[1, 0, 0],
           [0, np.cos(angle), -np.sin(angle)],
           [0, np.sin(angle), np.cos(angle)]]
-    return RX
 
 
 def ry(angle):
@@ -31,10 +30,9 @@ def ry(angle):
     Returns:
         ndarray: Rotationmatrix
     """
-    RY = [[np.cos(angle), 0, np.sin(angle)],
+    return [[np.cos(angle), 0, np.sin(angle)],
           [0, 1, 0],
           [-np.sin(angle), 0, np.cos(angle)]]
-    return RY
 
 
 def rz(angle):
@@ -46,10 +44,9 @@ def rz(angle):
     Returns:
         ndarray: Rotationmatrix
     """
-    RZ = [[np.cos(angle), -np.sin(angle), 0],
+    return [[np.cos(angle), -np.sin(angle), 0],
           [np.sin(angle), np.cos(angle), 0],
           [0, 0, 1]]
-    return RZ
 
 
 def rotmat(dec, inc):
@@ -106,9 +103,7 @@ def rotate_around_axis(xyz, *, axis_unit_vector, theta, axis_di=False, intype='x
                   [uy * ux * (1 - cost) + uz * sint, cost + uy ** 2 * (1 - cost), uy * uz * (1 - cost) - ux * sint],
                   [uz * ux * (1 - cost) - uy * sint, uz * uy * (1 - cost) + ux * sint, cost + uz ** 2 * (1 - cost)]])
 
-    out = np.dot(R, xyz.T).T
-
-    return out
+    return np.dot(R, xyz.T).T
 
 
 @handle_shape_dtype
@@ -181,10 +176,11 @@ def rotate_360_deg(xyz, theta, intype='xyz'):
         intype:
     """
 
-    circle = []
-    # rotate around z axis
-    for deg in np.arange(0, 360, 2):
-        circle.append(rotate([0, 90 - theta, 1], axis='z', intype='dim', theta=deg)[0])
+    circle = [
+        rotate([0, 90 - theta, 1], axis='z', intype='dim', theta=deg)[0]
+        for deg in np.arange(0, 360, 2)
+    ]
+
     circle = np.array(circle)
 
     # rotate that by 90-inc around 'y' axis (note: rotations are anticlockwise)
@@ -225,18 +221,13 @@ def convert_to_xyz(dim, *, M=True):
     D = dim[:, 0]
     I = dim[:, 1]
 
-    if M:
-        M = dim[:, 2]
-    else:
-        M = np.ones(len(D))
-
+    M = dim[:, 2] if M else np.ones(len(D))
     M = 1 if M is None else M
     x = np.cos(np.radians(I)) * np.cos(np.radians(D)) * M
     y = np.cos(np.radians(I)) * np.sin(np.radians(D)) * M
     z = np.cos(np.radians(I)) * np.tan(np.radians(I)) * M
 
-    out = np.array([x, y, z]).T
-    return out
+    return np.array([x, y, z]).T
 
 
 @handle_shape_dtype(transform_output=False)
@@ -301,9 +292,7 @@ def convert_to_stereographic(xyz, intype='dim'):
 
     r = 1 - (1 - np.tan((np.pi / 4) - (abs(i) / 2)))
 
-    out = np.array([d, r, neg]).T
-
-    return out
+    return np.array([d, r, neg]).T
 
 
 @handle_shape_dtype(internal_dtype='xyz', transform_output=False)
@@ -350,9 +339,7 @@ def convert_to_equal_area(xyz, intype='xyz'):
     i = np.radians(np.abs(i))
 
     r = 1 - np.sqrt(1 - np.sin(i))
-    # r = np.abs(xyz[:, 2]) # Tauxe
-    out = np.array([d, r0 - r, neg]).T
-    return out
+    return np.array([d, r0 - r, neg]).T
 
 
 @handle_shape_dtype(internal_dtype='dim', transform_output=False)
@@ -491,9 +478,8 @@ def detect_outlier(x, y, order, threshold):
     p, residual, rank, singular_values, rcond = np.polyfit(x, y, order, full=True)
     rmse = np.sqrt(sum(residual) / len(x))  # root mean squared error
     p = np.poly1d(p)  # polynomial p(x)
-    outliers = [i for i, v in enumerate(y) if v < p(x[i]) - threshold * rmse] + \
+    return [i for i, v in enumerate(y) if v < p(x[i]) - threshold * rmse] + \
                [i for i, v in enumerate(y) if v > p(x[i]) + threshold * rmse]
-    return outliers
 
 
 def crossing_1d(x1, y1, x2, y2, lim=None, check=False, **kwargs):

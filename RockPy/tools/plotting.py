@@ -228,11 +228,7 @@ def plot_stems(hkl, ymin=0, ymax=None, minI=0.5, ax=None, color=None):
     for r in hkl.index:
         if hkl.loc[r]['Iobs'] >= minI:
 
-            if ymax is None:
-                y = hkl.loc[r]['Iobs']
-            else:
-                y = ymax
-
+            y = hkl.loc[r]['Iobs'] if ymax is None else ymax
             ax.axvline(r, ymin=ymin / ymx, ymax=y / ymx, color=color, lw=0.7)
 
 
@@ -316,7 +312,7 @@ def combined_label_legend(ax=None, pad=0.25, bbox_to_anchor=[1, 1],
         h += add_handles
         l += add_labels
 
-    mxlen = max([len(i) for i in handles])
+    mxlen = max(len(i) for i in handles)
     ax.legend(handles, labels, bbox_to_anchor=bbox_to_anchor,
               handler_map={tuple: HandlerTuple(ndivide=None, pad=-1)},
               handletextpad=mxlen * pad,
@@ -341,7 +337,7 @@ def log10_isolines(ax=None, angle=45):
     # np.power(10, (np.array([-20., 20.]) * s0 - int0)), '-r')#, scaley=False, scalex=False)
 
     # plot iso lines
-    for i, s in enumerate(np.arange(-20, 20, 1)):
+    for s in np.arange(-20, 20, 1):
         # for each power
         xnew = np.power(10, (np.array([-20., 20.]) - s / 2))
         ynew = np.power(10, (np.array([-20., 20.]) + s / 2))
@@ -393,10 +389,10 @@ def line_through_points(p1, p2, x_extent=None, ax=None, **kwargs):
     slope = (p2[1] - p1[1]) / (p2[0] - p1[0])
     intercept = p1[1] - slope * p1[0]
 
-    if not ('linestyle' in kwargs or 'ls' in kwargs):
+    if 'linestyle' not in kwargs and 'ls' not in kwargs:
         kwargs = kwargs.update({'linestyle': '--'})
 
-    if not ('color' in kwargs or 'c' in kwargs):
+    if 'color' not in kwargs and 'c' not in kwargs:
         kwargs.update({'color': '0.5'})
 
     if kwargs and ('ls' in kwargs):
@@ -668,7 +664,7 @@ def plot_metamorphic_facies(ax=None, facies_list=None, text=None, **kwargs):
         kwargscopy = deepcopy(kwargs)
         fontdictcopy = deepcopy(kwargs)
 
-        if not fascies in xls.sheet_names:
+        if fascies not in xls.sheet_names:
             continue  # todo add warning
 
         data = pd.read_excel(xls, fascies).rolling(2).mean()
@@ -795,8 +791,7 @@ class TernaryDiagram(object):
         x = 1 / 2 * ((2 * b + c) / np.sum(abc, axis=1))
         y = np.sqrt(3) / 2 * (c / np.sum(abc, axis=1))
 
-        xy = np.array(list(zip(x, y)))
-        return xy
+        return np.array(list(zip(x, y)))
 
     def transform_2d(ab, ):
         '''
@@ -808,8 +803,7 @@ class TernaryDiagram(object):
         '''
         ab = np.array(ab)
         c = 1 - np.linalg.norm(ab, axis=1)
-        abc = np.array([ab[:, 0], ab[:, 1], c]).T
-        return abc
+        return np.array([ab[:, 0], ab[:, 1], c]).T
 
     def label_corner(self, corner, name, formula=None, **kwargs):
         """
@@ -831,14 +825,8 @@ class TernaryDiagram(object):
         h_align = ['center', 'center', 'center']
         v_align = ['top', 'top', 'bottom']
 
-        s = None
-        if formula:
-            s = formula
-        if s:
-            s = '\n'.join([s, name])
-        else:
-            s = name
-
+        s = formula or None
+        s = '\n'.join([s, name]) if s else name
         self.ax.text(*coordinates[corner], s=s, ha=h_align[corner], va=v_align[corner], **kwargs)
 
     def plot_abc(self, abc, **kwargs):

@@ -61,7 +61,7 @@ def ThellierStepMaker(steps, tmax=680., ck_every=2, tr_every=2, ac_every=2):
             elif i <= len(steps):
                 out.loc[i, 'LT-PTRM-Z'] = ac_step
 
-        if tr_every != 0 and not i % tr_every and not i == 0:
+        if tr_every != 0 and not i % tr_every and i != 0:
             out.loc[i, 'LT-PTRM-MD'] = t
 
     return out

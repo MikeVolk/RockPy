@@ -7,9 +7,7 @@ class TestStudy(TestCase):
 
     def create_samples(self):
         samples_to_add = ['S%i'%i for i in range(10)]
-        slist = []
-        for sname in samples_to_add:
-            slist.append(self.S.add_sample(sname))
+        slist = [self.S.add_sample(sname) for sname in samples_to_add]
         return samples_to_add, slist
 
     # def test_n_samples(self):

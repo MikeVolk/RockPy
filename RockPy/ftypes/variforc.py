@@ -33,9 +33,8 @@ class VariForc(Ftype):
         with open(dfile) as f:
             raw_header = f.readlines()
 
-        header = {}
+        header = {'mtype': raw_header[0].split('  ')[1].rstrip()}
 
-        header['mtype'] = raw_header[0].split('  ')[1].rstrip()
         header['VariForc_version'] = raw_header[0].split('  ')[0].rstrip()
         header['data_start_idx'] = [i + 1 for i, v in enumerate(raw_header) if cls.header_ends[header['mtype']] in v][0]
 
@@ -49,7 +48,10 @@ class VariForc(Ftype):
             for i, x in enumerate(v):
                 if x.startswith(' '):
                     x = x[1:]
-                if not any(letter in x.lower() for letter in 'abcdfghijklmnopqrstuvwxyz'):
+                if all(
+                    letter not in x.lower()
+                    for letter in 'abcdfghijklmnopqrstuvwxyz'
+                ):
                     v[i] = float(x)
                 elif x.lower() == 'false':
                     v[i] = False

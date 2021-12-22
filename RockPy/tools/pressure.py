@@ -17,9 +17,7 @@ def pressure(force, diameter):
 
     area = ((diameter / 2) ** 2) * np.pi
 
-    pressure = force / area  # N/m2 / Pa
-
-    return pressure
+    return force / area
 
 def overburden_pressure(thickness, density=2600):
     """Calculates the approximate pressure of a layer (thickness) of rock with

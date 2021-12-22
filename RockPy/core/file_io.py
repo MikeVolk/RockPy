@@ -22,7 +22,10 @@ def read_abbreviations():
 
     # create the mtype:abbreviation dict
     get_abbreviations = [tuple(i.rstrip().split(":")) for i in get_abbreviations if i.rstrip() if not i.startswith("#")]
-    get_abbreviations = dict((i[0], [j.lstrip() for j in i[1].split(",")]) for i in get_abbreviations)
+    get_abbreviations = {
+        i[0]: [j.lstrip() for j in i[1].split(",")] for i in get_abbreviations
+    }
+
 
     # create inverse abbrev:mtype/ftype
     get_mtype_ftype = {i: k for k in get_abbreviations for i in get_abbreviations[k]}
@@ -141,7 +144,7 @@ class ImportHelper(object):
             * *list of additionals*
             * *str, dialect*
         """
-        if not 'dialect' in block:
+        if 'dialect' not in block:
             return block, ''
         parts = block.split(",")
         dialect = [p for p in parts if "dialect" in p][0].replace("dialect=", "")
@@ -161,8 +164,8 @@ class ImportHelper(object):
             RockPy.minfo:
         """
 
-        if filter == None:
-            filter = dict()
+        if filter is None:
+            filter = {}
 
         dfiles = [os.path.join(folder, i) for i in os.listdir(folder) if not i.startswith("#")]
 
@@ -175,12 +178,7 @@ class ImportHelper(object):
                 cls.log().debug("cant read file: %s" % os.path.basename(f))
                 continue
 
-            if minfo is None:
-                minfo = finfo
-            else:
-                # append subsequent minfos
-                minfo = minfo + finfo
-
+            minfo = finfo if minfo is None else minfo + finfo
         return minfo
 
     @classmethod
@@ -204,7 +202,7 @@ class ImportHelper(object):
         splits = filename.split("#")
 
         # check if RockPy compatible e.g. first part must be len(4)
-        if not len(splits[0].split("_")) == 4:
+        if len(splits[0].split("_")) != 4:
             cls.log().debug('filename << %s >> does not conform to the RockPy file naming scheme. At least 3 elements (sname, mtype, ftype) '
                               'have to be given, separated by \'_\' '%filename)
             return
@@ -234,17 +232,25 @@ class ImportHelper(object):
             additional, dialect = (None, None)
 
         # comment
-        if len(splits) > 4:
-            comment = splits[4]
-        else:
-            comment = None
-
-        return cls(snames=snames, mtypes=mtypes, ftype=ftype, fpath=fpath, sgroups=sgroups,
-                   dialect=dialect,
-                   mass=mass, massunit=massunit if massunit else "kg",
-                   height=height, heightunit=heightunit if heightunit else "m",
-                   diameter=diameter, diameterunit=diameterunit if diameterunit else "m",
-                   series=series, comment=comment, additional=additional, suffix=suffix)
+        comment = splits[4] if len(splits) > 4 else None
+        return cls(
+            snames=snames,
+            mtypes=mtypes,
+            ftype=ftype,
+            fpath=fpath,
+            sgroups=sgroups,
+            dialect=dialect,
+            mass=mass,
+            massunit=massunit or "kg",
+            height=height,
+            heightunit=heightunit or "m",
+            diameter=diameter,
+            diameterunit=diameterunit or "m",
+            series=series,
+            comment=comment,
+            additional=additional,
+            suffix=suffix,
+        )
 
     @classmethod
     def from_dict(cls, **kwargs):
@@ -341,10 +347,8 @@ class ImportHelper(object):
         else:
             self.lengthunit = RockPy.core.utils.to_list(lengthunit)
 
-        if series is not None:
-            # if only one series and not three
-            if len(series) == 3 and not len(series[0]) == 3:
-                series = tuple2list_of_tuples(to_tuple(series))
+        if series is not None and len(series) == 3 and len(series[0]) != 3:
+            series = tuple2list_of_tuples(to_tuple(series))
 
         self.series = [series]
 
@@ -372,7 +376,7 @@ class ImportHelper(object):
         """
         mtypes = (RockPy.classname_to_abbrev[i][0] for i in mtypes)
         block = [sgroups, snames, mtypes, ftype]
-        if not all(i for i in block):
+        if not all(block):
             raise ImportError("sname, mtype, ftype needed for minfo to be generated")
         return "_".join((RockPy.core.utils.tuple2str(b) for b in block))
 
@@ -419,11 +423,8 @@ class ImportHelper(object):
 
         for i in range(n):
             b = block[i]
-            if not all(j for j in b):
-                if i == 0:
-                    aux = "XXmg"
-                else:
-                    aux = "XXmm"
+            if not all(b):
+                aux = "XXmg" if i == 0 else "XXmm"
             else:
                 out.append("".join(map(str, b)))
         return ",".join(out)
@@ -475,7 +476,7 @@ class ImportHelper(object):
             blocks = [measurement_block, sample_block, series_block, add_block]
             # work through blocks backwards throw out blocks that are empty,
             # if ones is not empty, stop.
-            for i, block in enumerate(blocks[::-1]):
+            for block in blocks[::-1]:
                 if not block:
                     blocks.pop()
                 else:
@@ -509,9 +510,9 @@ class ImportHelper(object):
         mtypes = RockPy.to_tuple(mtypes)
 
         for ih in self._gen_dicts:
-            if all(i for i in snames) and ih["snames"] not in snames:
+            if all(snames) and ih["snames"] not in snames:
                 continue
-            if all(i for i in mtypes) and ih["mtypes"] not in mtypes:
+            if all(mtypes) and ih["mtypes"] not in mtypes:
                 continue
             a = self.__class__.from_dict(**ih)
             yield a
@@ -583,9 +584,8 @@ class ImportHelper(object):
         Returns:
             dict:
         """
-        out = {}
+        out = {'snames': list_or_item(self.snames[0])}
 
-        out['snames'] = list_or_item(self.snames[0])
         out['sgroups'] = list_or_item(self.sgroups[0])
         out['mtypes'] = list_or_item(self.mtypes[0])
         out['ftype'] = self.ftype[0]

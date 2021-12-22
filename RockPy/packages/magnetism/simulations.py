@@ -40,9 +40,13 @@ class Fabian2001(object):
             calls
             RockPy.packages.Magnetismnetism.Measurement.Simulation.utils.ThellierStepMaker
         """
-        out = SimUtils.ThellierStepMaker(steps=steps, tmax=tmax, ck_every=ck_every, tr_every=tr_every,
-                                         ac_every=ac_every)
-        return out
+        return SimUtils.ThellierStepMaker(
+            steps=steps,
+            tmax=tmax,
+            ck_every=ck_every,
+            tr_every=tr_every,
+            ac_every=ac_every,
+        )
 
     def __init__(self, preset=None,
                  a11=None, a12=None, a13=None, a1t=None,
@@ -120,7 +124,7 @@ class Fabian2001(object):
 
         if preset is not None and preset not in self.presets:
             print('preset << %s >> not implemented, chose from:' % preset)
-            print(', '.join([i for i in self.presets]))
+            print(', '.join(list(self.presets)))
             print('using: Fabian Fig. 4a')
             preset = 'Fabian4a'
 
@@ -297,11 +301,7 @@ class Fabian2001(object):
         data = np.ones((self.tau_ub.size, self.tau_b.size)) * 10
 
         # the index is where ti == tau_b and tau_ub
-        if tau_i == 0:
-            idx = 0
-        else:
-            idx = np.argmin(np.abs(self.tau_b - tau_i)) + 1
-
+        idx = 0 if tau_i == 0 else np.argmin(np.abs(self.tau_b - tau_i)) + 1
         # self.log().debug('Tau_i = %.2f, idx = %i'%(tau_i, idx))
         data[:idx, :idx] = hlab
         # self.log().debug('hlab rectangle shape: (%s, %s)'%data[:idx, :idx].shape)
@@ -443,19 +443,10 @@ class Fabian2001(object):
                 tau = self.tau(t)
                 # self.log().debug('Calculating temperature %i (tau_i = %.2f)'%(t, tau))
 
-                if typ == 'LT-NO':  # todo moment in x,y,z
-                    m = self.moment(tau_i=tau, applied_field=0, pressure_demag=pressure_demag)
-                elif typ == 'LT-T-Z':
+                if typ in ['LT-NO', 'LT-T-Z']:  # todo moment in x,y,z
                     m = self.moment(tau_i=tau, applied_field=0, pressure_demag=pressure_demag)
                 elif typ == 'LT-T-I':
                     m = self.moment(tau_i=tau, applied_field=self.simparams['hlab'], pressure_demag=pressure_demag)
-
-                # elif typ == 'LT-PTRM-I': #todo add AC, TR, CK steps
-                #     NRM_Tj = self.get_moment(tau_i=self.tau(prev), hlab=0, pressure_demag=pressure_demag)
-                #     pTRM_Ti = self.get_moment(tau_i=tau, hlab=hlab, pressure_demag=pressure_demag)
-                #     NRM_Ti = self.get_moment(tau_i=tau, hlab=0, pressure_demag=pressure_demag)
-                #     m = pTRM_Ti - NRM_Ti + NRM_Tj
-                # #                         print(row, column, typ, t, tau, prev, m)
 
                 else:
                     continue
@@ -621,11 +612,7 @@ class Fabian2001(object):
         ls = kwargs.pop('ls', '-')
         marker = kwargs.pop('marker', '.')
 
-        if norm:
-            norm = th['m'].max()
-        else:
-            norm = 1
-
+        norm = th['m'].max() if norm else 1
         color = kwargs.pop('color', None)
         # pTRM plot
         ax.plot(th.index, (pt['m'] - th['m'])/norm,

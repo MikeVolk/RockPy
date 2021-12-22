@@ -29,8 +29,7 @@ class CryoMag(ftype.Ftype):
 
     @property
     def _raw_data(self):
-        out = CryoMag.imported_files[self.dfile]
-        return out
+        return CryoMag.imported_files[self.dfile]
 
 
     def read_file(self):

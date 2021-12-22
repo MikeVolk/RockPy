@@ -72,7 +72,7 @@ class Result():
             for dep_res in self._dependencies:
                 stack = dep_res.get_stack(stack)
 
-        if not self in stack:
+        if self not in stack:
             stack.append(self)
         else:
             return stack
@@ -141,13 +141,12 @@ class Result():
                 signature = inspect.signature(result._recipes()[recipe]).parameters
 
                 for p in signature:
-                    if p == 'check':
-                        continue
-                    elif p == 'self':
-                        continue
-                    elif p in parameters:
-                        continue
-                    elif p == 'unused_params':
+                    if (
+                        p == 'check'
+                        or p == 'self'
+                        or p in parameters
+                        or p == 'unused_params'
+                    ):
                         continue
                     else:
                         parameters[p] = signature[p].default
@@ -198,21 +197,20 @@ class Result():
             return True
         if result._parameters_changed(**parameters):
             return True
-        if result._recipe_changed(recipe):
-            return True
-        else:
-            return False
+        return bool(result._recipe_changed(recipe))
 
     @property
     def _is_calculated(self):
         """Checks if the result has been calculated e.g. checks in
         Measurement.results
         """
-        if self.mobj.results is not None:
-            if self.name in self.mobj.results:
-                if not np.isnan(self.get_result()):
-                    self.log().debug('%s IS calculated' % self.name)
-                    return True
+        if (
+            self.mobj.results is not None
+            and self.name in self.mobj.results
+            and not np.isnan(self.get_result())
+        ):
+            self.log().debug('%s IS calculated' % self.name)
+            return True
 
         self.log().debug('%s NOT calculated' % self.name)
         return False
@@ -234,7 +232,7 @@ class Result():
         else:
             self.log().debug('YES parameters changed')
             for p in params:
-                if p in self.params and not params[p] == self.params[p]:
+                if p in self.params and params[p] != self.params[p]:
                     try:
                         self.log().debug('%s %f --> %f' % (p, self.params[p], params[p]))
                     except TypeError:
@@ -284,7 +282,7 @@ class Result():
     def set_default_recipe(self):
         """Sets the default_recipe recipe if only one recipe exists."""
         if self.default_recipe is None:
-            if not len(self._recipes()) == 1:
+            if len(self._recipes()) != 1:
                 self.log().error('Result << %s >> has more than one recipe, but no default_recipe recipe ' % (self.name))
                 raise KeyError
             self.default_recipe = list(self._recipes().keys())[0]

@@ -46,13 +46,16 @@ class Vsm(Ftype):
         self.calibration_factor = float(self.header.loc['Calibration factor'])
 
         self.correct_exp = None
-        if not np.isnan(self.calibration_factor):
-            if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
-                self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
-                RockPy.log.warning(
-                    'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
-                        self.standard_calibration_exponent,
-                        int(np.floor(np.log10(self.calibration_factor)))))
+        if (
+            not np.isnan(self.calibration_factor)
+            and np.floor(np.log10(self.calibration_factor))
+            != self.standard_calibration_exponent
+        ):
+            self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
+            RockPy.log.warning(
+                'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
+                    self.standard_calibration_exponent,
+                    int(np.floor(np.log10(self.calibration_factor)))))
 
         if self.correct_exp:
             for c in self.data:
@@ -97,7 +100,13 @@ class Vsm(Ftype):
                              skiprows=2, skip_blank_lines=True,
                              widths=(31, 13), index_col=0, names=[0])
         # remove empty line and section headers
-        idx = [i for i,v in enumerate(header.index) if not str(v).upper() == v if str(v) != 'nan']
+        idx = [
+            i
+            for i, v in enumerate(header.index)
+            if str(v).upper() != v
+            if str(v) != 'nan'
+        ]
+
 
         header = header.iloc[idx]
         header = header.replace('No', False)
@@ -112,7 +121,7 @@ class Vsm(Ftype):
         # add file location to header
         header.loc['fpath'] = dfile
 
-        if not 'Calibration factor' in header.index:
+        if 'Calibration factor' not in header.index:
             header.loc['Calibration factor'] = None
         return header
 
@@ -135,7 +144,7 @@ class Vsm(Ftype):
             Returns -------s
         """
 
-        if not 'First-order reversal curves' in mtype:
+        if 'First-order reversal curves' not in mtype:
             # reading segments_tab data
             head = self.raw_data[header_end+1:segment_start]
             head = pd.read_fwf(io.StringIO(''.join(head)), widths=segment_widths)
@@ -176,10 +185,7 @@ class Vsm(Ftype):
 
         for i, idx in enumerate(nanidx):
             # get start index of segment
-            if i == 0:
-                sidx = 0
-            else:
-                sidx = nanidx[i - 1] + 1
+            sidx = 0 if i == 0 else nanidx[i - 1] + 1
             # end index
             eidx = idx - 1
 
@@ -210,11 +216,10 @@ class Vsm(Ftype):
                        pd.read_fwf(self.dfile, skiprows=self.data_start - 4,
                                    nrows=3, widths=self.data_widths).values.T]
 
-        data = pd.read_csv(io.StringIO(''.join(self.raw_data[self.data_start:])),
+        return pd.read_csv(io.StringIO(''.join(self.raw_data[self.data_start:])),
                            nrows=int(self.file_length - self.data_start) - 2,
                            names=data_header, skip_blank_lines=False, squeeze=True,
                            )
-        return data
 
     @property
     def iter_segments(self):

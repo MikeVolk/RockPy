@@ -50,7 +50,7 @@ class Mpms(Ftype):
             iterator - pandas.DataFrame:
         """
 
-        if not what in self.data.columns:
+        if what not in self.data.columns:
             raise KeyError('Value << %s >> not in data.columns. Chose from: %s'%(what, ', '.join(self.data.columns)))
 
         for v in sorted(set(self.data[what])):
