@@ -26,8 +26,7 @@ def theta_to_q(theta, lamb):
     if isinstance(lamb, str):
         lamb = wavelength(lamb)
 
-    q = (4 * np.pi * np.sin(np.deg2rad(theta))) / lamb
-    return q
+    return (4 * np.pi * np.sin(np.deg2rad(theta))) / lamb
 
 
 def q_to_theta(q, lamb):
@@ -59,11 +58,7 @@ def pdd_transpose_wavelength(pdd, lambda1, lambda2, column='index'):
 
     pdd = pdd.copy()
 
-    if column == 'index':
-        theta = pdd.index
-    else:
-        theta = pdd[column]
-
+    theta = pdd.index if column == 'index' else pdd[column]
     q = theta_to_q(theta=theta/2, lamb=lambda1)
     theta_new = q_to_theta(q, lamb=lambda2) *2
 

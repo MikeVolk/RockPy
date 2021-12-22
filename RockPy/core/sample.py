@@ -46,8 +46,7 @@ class Sample(object):
         -------
             RockPy.measurement
         """
-        for m in self.measurements:
-            yield m
+        yield from self.measurements
 
     def __getitem__(self, item):
 
@@ -131,11 +130,7 @@ class Sample(object):
         self._results = _results.set_index('mID', drop=True)
 
         # assign name to sample if no name is specified
-        if not name:
-            name = 'S%02i' % Sample.snum
-        else:
-            name = name  # unique name, only one per study
-
+        name = 'S%02i' % Sample.snum if not name else name
         # set name
         self.name = name
 
@@ -143,11 +138,8 @@ class Sample(object):
 
         if not study:
             study = RockPy.Study()
-        else:
-            if not isinstance(study, RockPy.Study):
-                self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy MasterStudy')
-            # study = RockPy.MasterStudy
-
+        elif not isinstance(study, RockPy.Study):
+            self.log().error('STUDY not a valid RockPy3.core.Study object. Using RockPy MasterStudy')
         self.study = study
 
         # add sample to study
@@ -183,15 +175,11 @@ class Sample(object):
         info = pd.DataFrame(columns=['mass [kg]', 'sample groups', 'mtypes', 'stypes', 'svals'])
 
         info.loc[self.name, 'mass [kg]'] = self.mass
-        info.loc[self.name, 'sample groups'] = self._samplegroups if self._samplegroups else 'None'
+        info.loc[self.name, 'sample groups'] = self._samplegroups or 'None'
 
         mtypes = [(mt, len(self.get_measurement(mtype=mt))) for mt in self.mtypes]
 
-        if mtypes:
-            info.loc[self.name, 'mtypes'] = ', '.join(self.mtypes)  # if len(mtypes) > 1 else mtypes[0]
-        else:
-            info.loc[self.name, 'mtypes'] = None
-
+        info.loc[self.name, 'mtypes'] = ', '.join(self.mtypes) if mtypes else None
         ''' STYPES '''
         if len(self.stypes) == 0:
             stypes = 'None'
@@ -358,17 +346,16 @@ class Sample(object):
             idx = len(self.measurements)  # todo change so it counts the number of subclasses created
 
         ''' MINFO object generation '''
-        if self.samplegroups:
-            sgroups = self.samplegroups
-        else:
-            sgroups = None
-
+        sgroups = self.samplegroups or None
         """ DATA import from mass, height, diameter, len ... """
 
-        # check for parameters in kwargs (i.e. mass = '12mg'
-        parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
         if create_parameters:
-            if any([(k in parameters) and (kwargs[k] is not None) for k in kwargs.keys()]):
+            # check for parameters in kwargs (i.e. mass = '12mg'
+            parameters = ['mass', 'diameter', 'height', 'x_len', 'y_len', 'z_len']
+            if any(
+                (k in parameters) and (kwargs[k] is not None)
+                for k in kwargs.keys()
+            ):
                 mobj = self._add_measurement_from_str(fpath, kwargs, mobj, mtype, series)
                 return mobj
 
@@ -504,7 +491,7 @@ class Sample(object):
         -------
         set: set of all series in the sample
         """
-        return set(series for m in self.measurements for series in m.series)
+        return {series for m in self.measurements for series in m.series}
 
     @property
     def samplegroups(self):
@@ -521,7 +508,7 @@ class Sample(object):
         -------
             set: stypes
         """
-        return set(stype for m in self.measurements for stype in m.stypes if stype)
+        return {stype for m in self.measurements for stype in m.stypes if stype}
 
     @property
     def svals(self):
@@ -531,9 +518,9 @@ class Sample(object):
         -------
 
         """
-        return set(series[1] for series in self.series
-                   if isinstance(series[1], (int, float))
-                   if not np.isnan(series[1]))
+        return {series[1] for series in self.series
+                       if isinstance(series[1], (int, float))
+                       if not np.isnan(series[1])}
 
     @property
     def sunits(self):
@@ -543,7 +530,7 @@ class Sample(object):
         -------
             set: series units
         """
-        return set(series[2] for series in self.series)
+        return {series[2] for series in self.series}
 
     @property
     def mtypes(self):
@@ -554,7 +541,7 @@ class Sample(object):
         -------
             set: mtype
         """
-        return set(m.mtype for m in self.measurements)
+        return {m.mtype for m in self.measurements}
 
     @property
     def mids(self):
@@ -717,7 +704,7 @@ class Sample(object):
         out = []
 
         if mean:
-            svals = set(sval for m in self.mean_measurements for sval in m.svals)
+            svals = {sval for m in self.mean_measurements for sval in m.svals}
         else:
             svals = self.svals
 

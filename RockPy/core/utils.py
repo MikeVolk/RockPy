@@ -119,7 +119,7 @@ def mtype_implemented(mtype):
     Returns:
         bool
     """
-    return True if mtype in RockPy.implemented_measurements else False
+    return mtype in RockPy.implemented_measurements
 
 
 ''' ARRAY related '''
@@ -158,7 +158,7 @@ def tuple2list_of_tuples(item) -> list:
     # check if item is a list -> each item in item has to be converted to a tuple
     if isinstance(item, list):
         for i, elem in enumerate(item):
-            if not type(elem) == tuple:
+            if type(elem) != tuple:
                 item[i] = (elem,)
 
     if not isinstance(item, (list, tuple)):
@@ -261,7 +261,7 @@ def split_num_alph(item):
         else:
             idx = i
 
-    if not idx == len(item) - 1:
+    if idx != len(item) - 1:
         return float(item[:idx + 1]), item[idx + 1:].strip()
     else:
         return float(item), None
@@ -419,11 +419,7 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
         defaults.update(kwargs)
         kwargs = defaults
 
-        if 'xyz' in kwargs:
-            xyz = kwargs.pop('xyz')
-        else:
-            xyz = args[0]
-
+        xyz = kwargs.pop('xyz') if 'xyz' in kwargs else args[0]
         ## maintain vector shape part
         s = np.array(xyz).shape
 
@@ -448,21 +444,25 @@ def handle_shape_dtype(func=None, internal_dtype='xyz', transform_output=True):
         # calculate function
         xyz = func(xyz, *args[1:], **kwargs)
 
-        if transform_output:
             # return the same data type and shape as input
             # for internal dtype == dim, the data up to here is dim. Needs to be converted, if input was xyz.
-            if internal_dtype == 'dim':
-                # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'intype' in kwargs and kwargs['intype'] == 'xyz':
-                    from RockPy.tools.compute import convert_to_xyz
-                    xyz = convert_to_xyz(xyz)
+        if internal_dtype == 'dim':
+            if (
+                transform_output
+                and 'intype' in kwargs
+                and kwargs['intype'] == 'xyz'
+            ):
+                from RockPy.tools.compute import convert_to_xyz
+                xyz = convert_to_xyz(xyz)
 
-            # if the internal dtype is xyz, input data in the format of 'dim' needs to be converted
-            elif internal_dtype == 'xyz':
-                # if input data dtype == 'xyz' (i.e. input = 'xyz')
-                if 'intype' in kwargs and kwargs['intype'] == 'dim':
-                    from RockPy.tools.compute import convert_to_dim
-                    xyz = convert_to_dim(xyz)
+        elif internal_dtype == 'xyz':
+            if (
+                transform_output
+                and 'intype' in kwargs
+                and kwargs['intype'] == 'dim'
+            ):
+                from RockPy.tools.compute import convert_to_dim
+                xyz = convert_to_dim(xyz)
 
         return xyz
 
@@ -492,15 +492,14 @@ def maintain_n3_shape(xyz):
     ## maintain vector shape part
     s = np.array(xyz).shape
 
-    if not any(i == 3 for i in s):
+    if all(i != 3 for i in s):
         raise ValueError('At least one dimension needs to be length 3')
     # for [x,y,z] or [d,i,m]
     if s == (3,):
-        if len(set(np.shape(elem) for elem in xyz)) != 1:
+        if len({np.shape(elem) for elem in xyz}) != 1:
             raise ValueError('Number of elements ix xyz is inconsistent')
         xyz = np.array(xyz).reshape((1, 3))
 
-    # for array like [[x1,x2,... ],[y1,y2,...],[z1,z2,...]],
     elif s[0] == 3 and s[1] != 3:
         xyz = np.array(xyz).T
     elif s[1] == 3 and s[0] != 3:

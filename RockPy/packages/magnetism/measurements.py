@@ -48,7 +48,7 @@ class Hysteresis(Measurement):
         # expected column names for typical VSM hysteresis experiments
         expected_columns = ['Field (T)', 'Moment (Am2)']
 
-        if not all(i in expected_columns for i in ftype_data.data.columns):
+        if any(i not in expected_columns for i in ftype_data.data.columns):
             Hysteresis.log().debug('ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         data = ftype_data.data.rename(columns={"Field (T)": "B", "Moment (Am2)": "M"})
@@ -131,10 +131,7 @@ class Hysteresis(Measurement):
             bool:
         """
         # check if the first point is  close to the maximum/minimum field
-        if np.abs(self.data.index[0]) > 0.9 * self.data.index.max():
-            return False
-        else:
-            return True
+        return np.abs(self.data.index[0]) <= 0.9 * self.data.index.max()
 
     def get_polarity_switch(self, window=5):
         """
@@ -168,10 +165,7 @@ class Hysteresis(Measurement):
         diffs = diffs.fillna(method='bfill')  # filling missing values at beginning
         diffs = diffs.fillna(method='ffill')  # filling missing values at end
 
-        # reduce to sign of the differences
-        asign = diffs.apply(np.sign)
-
-        return asign
+        return diffs.apply(np.sign)
 
     def get_polarity_switch_index(self, window=1):
         """Method calls hysteresis.get_polarity_switch with window and then
@@ -204,7 +198,7 @@ class Hysteresis(Measurement):
         if len(idx) > 1:
             return self.data.iloc[int(idx[0]):int(idx[1])].dropna(axis=1).dropna()
         else:
-            return self.data.iloc[0:int(idx[1])].dropna(axis=1).dropna()
+            return self.data.iloc[:int(idx[1])].dropna(axis=1).dropna()
 
     @property
     def upfield(self):
@@ -374,7 +368,7 @@ class Hysteresis(Measurement):
             down_f = m.downfield[m.downfield['M'].abs() <= df_moment]
             up_f = m.upfield[m.upfield['M'].abs() <= uf_moment]
 
-            for i, dir in enumerate([down_f, up_f]):
+            for dir in [down_f, up_f]:
                 slope, intercept, r_value, p_value, std_err = stats.linregress(dir.index, dir['M'])
                 result.append(intercept)
 
@@ -693,7 +687,7 @@ class Hysteresis(Measurement):
             **parameter: Keyword arguments passed through
         """
 
-        if any([len(i.index) <= 50 for i in [self.downfield, self.upfield]]):
+        if any(len(i.index) <= 50 for i in [self.downfield, self.upfield]):
             self.log.warning('Hysteresis branches have less than 50 (%i) points, gridding not possible' % (
                 len(self.data['down_field']['field'].v)))
             return
@@ -714,7 +708,7 @@ class Hysteresis(Measurement):
         # initialize DataFrame for gridded data
         interp_data = pd.DataFrame(columns=self.data.columns)
 
-        for n, dtype in enumerate(['downfield', 'upfield', 'virgin']):
+        for dtype in ['downfield', 'upfield', 'virgin']:
             aux = pd.DataFrame(columns=self.data.columns)
 
             # catch missing branches
@@ -768,13 +762,10 @@ class Hysteresis(Measurement):
                 aux = aux.reset_index(drop=True)
 
             interp_data = pd.concat([interp_data, aux], sort=True)
-            # interp_data.index = interp_data.index.astype(np.float)
-
         self.replace_data(interp_data)
 
         if check:
-            ax = self.check_plot(self.data, uncorrected_data)
-            return ax
+            return self.check_plot(self.data, uncorrected_data)
 
     # def correct_symmetry(self, check=False):
     #
@@ -994,8 +985,7 @@ class Paleointensity(Measurement):
 
     @property
     def nrm(self):
-        d = self.data[self.data['LT_code'] == 'LT-NO'].set_index('ti')
-        return d
+        return self.data[self.data['LT_code'] == 'LT-NO'].set_index('ti')
 
     @property
     def if_steps(self):
@@ -1036,8 +1026,7 @@ class Paleointensity(Measurement):
             pandas.DataFrame:
         """
 
-        d = self.data[self.data['LT_code'] == 'LT-PTRM-Z'].set_index('ti')
-        return d
+        return self.data[self.data['LT_code'] == 'LT-PTRM-Z'].set_index('ti')
 
     @property
     def tr(self):
@@ -1047,8 +1036,7 @@ class Paleointensity(Measurement):
             pandas.DataFrame:
         """
 
-        d = self.data[self.data['LT_code'] == 'LT-PTRM-MD'].set_index('ti')
-        return d
+        return self.data[self.data['LT_code'] == 'LT-PTRM-MD'].set_index('ti')
 
     @property
     def ifzf_diff(self):
@@ -1201,8 +1189,7 @@ class Paleointensity(Measurement):
                 **unused_params:
             """
             x_dash = self.x_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
-            out = abs(np.max(x_dash) - np.min(x_dash))
-            return out
+            return abs(np.max(x_dash) - np.min(x_dash))
 
         def delta_y_dash(self, vmin, vmax, component,
                          **unused_params):
@@ -1217,8 +1204,7 @@ class Paleointensity(Measurement):
                 **unused_params:
             """
             y_dash = self.y_dash(vmin=vmin, vmax=vmax, component=component, **unused_params)
-            out = abs(np.max(y_dash) - np.min(y_dash))
-            return out
+            return abs(np.max(y_dash) - np.min(y_dash))
 
         def best_fit_line_length(self, vmin=20, vmax=700, component='m'):
             """
@@ -1227,9 +1213,10 @@ class Paleointensity(Measurement):
                 vmax:
                 component:
             """
-            L = np.sqrt((self.delta_x_dash(vmin=vmin, vmax=vmax, component=component)) ** 2 +
-                        (self.delta_y_dash(vmin=vmin, vmax=vmax, component=component)) ** 2)
-            return L
+            return np.sqrt(
+                (self.delta_x_dash(vmin=vmin, vmax=vmax, component=component)) ** 2
+                + (self.delta_y_dash(vmin=vmin, vmax=vmax, component=component)) ** 2
+            )
 
         def recipe_default(self, vmin=20, vmax=700, component='m', **unused_params):
             """calculates the least squares slope for the specified temperature
@@ -1613,18 +1600,17 @@ class Dcd(Measurement):
         # expected column names for typical VSM hysteresis experiments
         expected_columns = ['Field (T)', 'Remanence (Am2)']
 
-        if not all(i in expected_columns for i in ftype_data.data.columns):
+        if any(i not in expected_columns for i in ftype_data.data.columns):
             Dcd.log().error('ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         segment_index = ftype_data.mtype.index('dcd')
-        data = ftype_data.get_segment_data(segment_index).rename(columns={"Field (T)": "B", "Remanence (Am2)": "M"})
-
-        return data
+        return ftype_data.get_segment_data(segment_index).rename(
+            columns={"Field (T)": "B", "Remanence (Am2)": "M"}
+        )
 
     @staticmethod
     def _format_agm(ftype_data, **kwargs):
-        data = Dcd._format_vsm(ftype_data, **kwargs)
-        return data
+        return Dcd._format_vsm(ftype_data, **kwargs)
 
     @staticmethod
     def _format_vftb(ftype_data, sobj_name=None):  # todo implement VFTB
@@ -1782,14 +1768,14 @@ class Irm_Acquisition(Acquisition):
         # expected column names for typical VSM hysteresis experiments
         expected_columns = ['Field (T)', 'Remanence (Am2)']
 
-        if not all(i in expected_columns for i in ftype_data.data.columns):
+        if any(i not in expected_columns for i in ftype_data.data.columns):
             IrmAcquisition.log().error(
                 'ftype_data has more than the expected columns: %s' % list(ftype_data.data.columns))
 
         segment_index = ftype_data.mtype.index('irm')
-        data = ftype_data.get_segment_data(segment_index).rename(columns={"Field (T)": "B", "Remanence (Am2)": "M"})
-
-        return data
+        return ftype_data.get_segment_data(segment_index).rename(
+            columns={"Field (T)": "B", "Remanence (Am2)": "M"}
+        )
 
 
 if __name__ == '__main__':

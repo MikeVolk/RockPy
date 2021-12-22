@@ -338,7 +338,7 @@ class Measurement(object):
             for s in series:
                 self.add_series(*s)
 
-        self.idx = idx if idx else self.__idx  # external index e.g. 3rd hys measurement of sample 1
+        self.idx = idx or self.__idx
 
         # add the data to the clsdata
         self.append_to_clsdata(mdata)
@@ -424,7 +424,7 @@ class Measurement(object):
         :return:
         """
         result = self._results[res]
-        recipes = [r for r in result._recipes()]
+        recipes = list(result._recipes())
         return set(recipes)
 
     def has_result(self, result):
@@ -440,7 +440,7 @@ class Measurement(object):
             bool
         """
 
-        return True if result in self._results.keys() else False
+        return result in self._results.keys()
 
     def __lt__(self, other):
         """
@@ -460,10 +460,7 @@ class Measurement(object):
             pass
 
     def __repr__(self):
-        if self.is_mean:
-            add = 'mean_'
-        else:
-            add = ''
+        add = 'mean_' if self.is_mean else ''
         return '<<RockPy.{}.{}{}{} at {}>>'.format(self.sobj.name, add, self.mtype,
                                                     '[' + ';'.join(['{},{}({})'.format(i[0], i[1], i[2]) for i in
                                                                     self.get_series()]) + ']' if self.has_series() else '',
@@ -534,13 +531,13 @@ class Measurement(object):
             first.data[dtype] = first.data[dtype].sort()
         return self.sobj.add_measurement(mtype=first.mtype, mdata=first.data)
 
-    def reset_data(self):  # todo rewrite new data pandas
+    def reset_data(self):    # todo rewrite new data pandas
         """
         Resets all data back to the original state. Deepcopies _raw_data back to _data and resets correction
         """
         midx = self.__class__._mids.index(self.mid)
 
-        self.log().debug(f'Resetting the data')
+        self.log().debug('Resetting the data')
         self.clsdata[midx] = self._clsdata[midx]
 
         # create _correction if not exists
@@ -635,7 +632,7 @@ class Measurement(object):
         """
         checks if there is an initial state
         """
-        return True if self.initial_state else False
+        return bool(self.initial_state)
 
     @property
     def stypes(self):
@@ -748,9 +745,8 @@ class Measurement(object):
         """
         if self._series:
             return self._series
-        else:
-            series = (None, np.nan, None)  # no series
-            return [series]
+        series = (None, np.nan, None)  # no series
+        return [series]
 
     def has_sval(self, sval=None, method='all'):
         """
@@ -775,16 +771,15 @@ class Measurement(object):
         if not self._series:
             return False
 
-        if sval is not None:
-            sval = to_tuple(sval)
-            if method == 'all':
-                return True if all(i in self.svals for i in sval) else False
-            if method == 'any':
-                return True if any(i in self.svals for i in sval) else False
-            if method == 'none':
-                return True if not any(i in self.svals for i in sval) else False
-        else:
-            return True if not self.svals else False
+        if sval is None:
+            return not self.svals
+        sval = to_tuple(sval)
+        if method == 'all':
+            return all(i in self.svals for i in sval)
+        if method == 'any':
+            return any(i in self.svals for i in sval)
+        if method == 'none':
+            return all(i not in self.svals for i in sval)
 
     def has_stype(self, stype=None, method='all'):
         """
@@ -809,16 +804,15 @@ class Measurement(object):
         if not self._series:
             return False
 
-        if stype is not None:
-            stype = to_tuple(stype)
-            if method == 'all':
-                return True if all(i in self.stypes for i in stype) else False
-            if method == 'any':
-                return True if any(i in self.stypes for i in stype) else False
-            if method == 'none':
-                return True if not any(i in self.stypes for i in stype) else False
-        else:
-            return True if not self.stypes else False
+        if stype is None:
+            return not self.stypes
+        stype = to_tuple(stype)
+        if method == 'all':
+            return all(i in self.stypes for i in stype)
+        if method == 'any':
+            return any(i in self.stypes for i in stype)
+        if method == 'none':
+            return all(i not in self.stypes for i in stype)
 
     def has_series(self, series=None, method='all'):
         '''
@@ -840,16 +834,15 @@ class Measurement(object):
             returns true if Nothing is passes
         '''
 
-        if series is not None:
-            series = tuple2list_of_tuples(series)
-            if method == 'all':
-                return True if all(i in self.series for i in series) else False
-            if method == 'any':
-                return True if any(i in self.series for i in series) else False
-            if method == 'none':
-                return True if not any(i in self.svals for i in series) else False
-        else:
-            return True if self._series else False
+        if series is None:
+            return bool(self._series)
+        series = tuple2list_of_tuples(series)
+        if method == 'all':
+            return all(i in self.series for i in series)
+        if method == 'any':
+            return any(i in self.series for i in series)
+        if method == 'none':
+            return all(i not in self.svals for i in series)
 
     def add_series(self, stype, sval, sunit=None):  # todo add (stype,sval,sunit) type calling
         # todo change to set_series with stype, sval, suit, series
@@ -959,13 +952,9 @@ class Measurement(object):
         ignore_stypes = to_tuple(ignore_stypes)
         ignore_stypes = [st.lower() for st in ignore_stypes if type(st) == str]
         selfseries = (s for s in self.series if not s[0] in ignore_stypes)
-        otherseries = (s for s in other.series if not s[0] in ignore_stypes)
+        otherseries = (s for s in other.series if s[0] not in ignore_stypes)
 
-        if all(i in otherseries for i in selfseries):
-            return True
-
-        else:
-            return False
+        return all(i in otherseries for i in selfseries)
 
     # todo test normalize functions
     ####################################################################################################################
@@ -975,7 +964,7 @@ class Measurement(object):
                   reference='data', ref_dtype='mag', norm_dtypes='all', vval=None,
                   norm_method='max', norm_factor=None, result=None,
                   normalize_variable=False, dont_normalize=('temperature', 'field'),
-                  norm_initial_state=True, **options):  # todo check if works
+                  norm_initial_state=True, **options):    # todo check if works
         """
         normalizes all available data to reference value, using norm_method
 
@@ -1033,17 +1022,17 @@ class Measurement(object):
         for dtype, dtype_data in self.data.items():  # cycling through all dtypes in data
             if dtype_data:
                 if 'all' in norm_dtypes:  # if all, all non stype data will be normalized
-                    norm_dtypes = [i for i in dtype_data.column_names if not 'stype' in i]
+                    norm_dtypes = [i for i in dtype_data.column_names if 'stype' not in i]
 
                 ### DO not normalize:
                 # variable
                 if not normalize_variable:
                     variable = dtype_data.column_names[dtype_data.column_dict['variable'][0]]
-                    norm_dtypes = [i for i in norm_dtypes if not i == variable]
+                    norm_dtypes = [i for i in norm_dtypes if i != variable]
 
                 if dont_normalize:
                     dont_normalize = RockPy.core.utils.to_tuple(dont_normalize)
-                    norm_dtypes = [i for i in norm_dtypes if not i in dont_normalize]
+                    norm_dtypes = [i for i in norm_dtypes if i not in dont_normalize]
 
                 for ntype in norm_dtypes:  # else use norm_dtypes specified
                     try:
@@ -1116,7 +1105,7 @@ class Measurement(object):
                     return 1
                 return m.data['data']['mass'].v[0]
 
-            if isinstance(reference, float) or isinstance(reference, int):
+            if isinstance(reference, (float, int)):
                 norm_factor = float(reference)
 
         elif result:
@@ -1126,21 +1115,19 @@ class Measurement(object):
         return norm_factor
 
     def _norm_method(self, norm_method, vval, rtype, data):
-        methods = {'max': max,
-                   'min': min,
-                   }
-
         if not vval:
-            if not norm_method in methods:
+            methods = {'max': max,
+                       'min': min,
+                       }
+
+            if norm_method not in methods:
                 raise NotImplemented('NORMALIZATION METHOD << %s >>' % norm_method)
-                return
             else:
                 return methods[norm_method](data[rtype].v)
 
         if vval:
             idx = np.argmin(abs(data['variable'].v - vval))
-            out = data.filter_idx([idx])[rtype].v[0]
-            return out
+            return data.filter_idx([idx])[rtype].v[0]
 
     def get_mtype_prior_to(self, mtype):
         """

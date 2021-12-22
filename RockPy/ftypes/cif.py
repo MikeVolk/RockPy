@@ -157,11 +157,7 @@ class Cif(RockPy.core.ftype.Ftype):
                     num_index += 1
 
                 mtype = row[:num_index].rstrip()
-                if not row[num_index:6]:
-                    level = 0
-                else:
-                    level = int(row[num_index:6])
-
+                level = 0 if not row[num_index:6] else int(row[num_index:6])
                 # other columns are separate by whitespace -> split(' ')
                 values = [i for i in row[6:].split(' ') if i]
 
@@ -236,8 +232,7 @@ class Cif(RockPy.core.ftype.Ftype):
         Returns:
             :obj:`pandas.Series`: Holder corrected 'x', 'y' and 'z' values
         """
-        corrected = sample_means - holder_means
-        return corrected
+        return sample_means - holder_means
 
     def _write_cif_line(self, series):
         """ Writes one cit formatted line.
@@ -260,7 +255,7 @@ class Cif(RockPy.core.ftype.Ftype):
         level = int(series['level'] * 10000)
 
         for l in series.index:
-            if not l in self.out_units:
+            if l not in self.out_units:
                 continue
             try:
                 series[l] *= (1 * self.units[l]).to(self.out_units[l]).magnitude
@@ -284,7 +279,7 @@ class Cif(RockPy.core.ftype.Ftype):
                    'std_x': '{:>.6f}', 'std_y': '{:>.6f}', 'std_z': '{:>.6f}',
                    'user': '{:>7}', 'date': '{:>4}', 'time': '{:>4}'}
 
-        if mtype == 'NRM' or mtype == 'ARM':
+        if mtype in ['NRM', 'ARM']:
             formats['mtype'] = "{:<3}"
             formats['level'] = '{:>3}'
             level = ''
@@ -333,10 +328,7 @@ class Cif(RockPy.core.ftype.Ftype):
         for label in lw_dict:
             v = header_rows[1][lw_dict[label][0]:lw_dict[label][1]].strip(' ')
 
-            if v:
-                header.loc[sample_id, label] = float(v)
-            else:
-                header.loc[sample_id, label] = None
+            header.loc[sample_id, label] = float(v) if v else None
         header.index.name = 'sample_id'
         return header
 
@@ -396,7 +388,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
         out = cls.imported_files[dfile].copy() # todo does this have to be a copy?
         # check if the sample is in the data
-        if not sample_id in set(out['Sample']):
+        if sample_id not in set(out['Sample']):
             RockPy.log.warning('Could not find sample_id << {} >> in file << {} >.! '
                              'Please check correct spelling'.format(sample_id, os.path.basename(dfile)))
             return
@@ -558,22 +550,19 @@ class Cif(RockPy.core.ftype.Ftype):
 
         # read all the files , create list of Dataframes
         raw_df = []
-        for i, dfile in enumerate(files):
+        for dfile in files:
             # print('reading file << {:>20} >> {:>4} of {:>4}'.format(os.path.basename(dfile), i, len(files)), end='\r')
             readdf = cls._read_UP_file(dfile, sample_id, reload=reload)
 
             if readdf is not None:
                 raw_df.append(readdf)
 
-        average_df = []
-        for i, df in enumerate(raw_df):
-            # print('averaging file {:>4} of {:>4}'.format(i, len(raw_df)), end='\r')
-            average_df.append(cls._return_mean_from_UP_file(df, subtract_holder=subtract_holder))
-        if len(average_df) > 1:
-            data = pd.concat(average_df)
-        else:
-            data = average_df[0]
+        average_df = [
+            cls._return_mean_from_UP_file(df, subtract_holder=subtract_holder)
+            for df in raw_df
+        ]
 
+        data = pd.concat(average_df) if len(average_df) > 1 else average_df[0]
         data = xyz2dim(data, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
 
         data = data.sort_index()
@@ -767,11 +756,17 @@ class Cif(RockPy.core.ftype.Ftype):
 
         comment += f' >> RockPy exported {datetime.now().strftime("%Y-%m-%d %H:%M")}'
 
-        out = ['{:<4}{:<9}{}\n'.format(locality_id, sample_id, comment[:255]),
-               ' {:>6} {:>5} {:>5} {:>5} {:>5} {:>5}\n'.format(stratigraphic_level, core_strike, core_dip,
-                                                               bedding_strike, bedding_dip, core_volume_or_mass),
-               ]
-        return out
+        return [
+            '{:<4}{:<9}{}\n'.format(locality_id, sample_id, comment[:255]),
+            ' {:>6} {:>5} {:>5} {:>5} {:>5} {:>5}\n'.format(
+                stratigraphic_level,
+                core_strike,
+                core_dip,
+                bedding_strike,
+                bedding_dip,
+                core_volume_or_mass,
+            ),
+        ]
 
     def read_file(self):
         """

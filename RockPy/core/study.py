@@ -40,13 +40,9 @@ class Study(object):
         self.studID = id(self)
 
         # use time if no name is specified for the study
-        if not name:
-            self.name = time.strftime("%Y%m%d:%H%M")
-        else:
-            self.name = name
-
+        self.name = time.strftime("%Y%m%d:%H%M") if not name else name
         # create empty dictionary for storing samples
-        self._samples = dict()  # {'sname':'sobj'}
+        self._samples = {}
 
         # create variable for all imported files to be stored. If file has been imported the fpath is stored here.
         self.imported_files = []
@@ -61,8 +57,7 @@ class Study(object):
         return '<< RockPy.Study.{} -- {} >>'.format(self.name, self.studID)
 
     def __iter__(self):
-        for s in sorted(self._samples.values()):
-            yield s
+        yield from sorted(self._samples.values())
 
     def __getitem__(self, item):
         if isinstance(item, int):
@@ -96,8 +91,7 @@ class Study(object):
             RockPy.sample
         """
 
-        for s in sorted(self._samples.values()):
-            yield s
+        yield from sorted(self._samples.values())
 
     @property
     def samplenames(self):
@@ -109,8 +103,7 @@ class Study(object):
             str: RockPy.Sample.name
         """
 
-        for sname in sorted(self._samples.keys()):
-            yield sname
+        yield from sorted(self._samples.keys())
 
     @property
     def sample_list(self):
@@ -137,8 +130,7 @@ class Study(object):
         '''
 
         for s in self.samples:
-            for m in s.measurements:
-                yield m
+            yield from s.measurements
 
     @property
     def measurement_list(self):
@@ -156,7 +148,7 @@ class Study(object):
         '''
         returns a sorted list of unique mtypes
         '''
-        return sorted(set(m.mtype for m in self.measurements))
+        return sorted({m.mtype for m in self.measurements})
 
     ''' SAMPLE GROUPS '''
 
@@ -166,7 +158,7 @@ class Study(object):
 
     @property
     def groupnames(self):
-        return sorted(set(i for j in self.samples for i in j._samplegroups))
+        return sorted({i for j in self.samples for i in j._samplegroups})
 
     @property
     def samplegroups(self):
@@ -358,7 +350,9 @@ class Study(object):
 
         slist = list(self.samples)
 
-        if not any(i for i in [gname, sname, mtype, series, stype, sval, sval_range, mean, invert]):
+        if not any(
+            [gname, sname, mtype, series, stype, sval, sval_range, mean, invert]
+        ):
             return slist
 
         # samplegroup filtering
@@ -371,7 +365,7 @@ class Study(object):
             sname = to_tuple(sname)
             slist = [s for s in slist if s.name in sname]
 
-        if any(i for i in [mtype, series, stype, sval, sval_range, mean, invert]):
+        if any([mtype, series, stype, sval, sval_range, mean, invert]):
             slist = [s for s in slist if s.get_measurement(mtype=mtype,
                                                            stype=stype, sval=sval, sval_range=sval_range,
                                                            series=series,
@@ -393,14 +387,13 @@ class Study(object):
         if mid:
             return [m for s in self.samples for m in s.get_measurement(mid=mid, invert=invert)]
 
-        else:
-            samples = self.get_sample(gname=gname, sname=sname, mtype=mtype, series=series,
-                                      stype=stype, sval=sval, sval_range=sval_range, invert=invert,
-                                      sid=sid)
+        samples = self.get_sample(gname=gname, sname=sname, mtype=mtype, series=series,
+                                  stype=stype, sval=sval, sval_range=sval_range, invert=invert,
+                                  sid=sid)
 
-            mlist = (m for s in samples for m in s.get_measurement(mtype=mtype, series=series,
-                                                                   stype=stype, sval=sval, sval_range=sval_range,
-                                                                   invert=invert))
+        mlist = (m for s in samples for m in s.get_measurement(mtype=mtype, series=series,
+                                                               stype=stype, sval=sval, sval_range=sval_range,
+                                                               invert=invert))
         return list(mlist)
 
     ''' IMPORT functions '''
@@ -440,7 +433,7 @@ class Study(object):
             slist.append(s)
 
             # create all measurements
-            for i, measurement_dict in enumerate(iHelper.gen_measurement_dict):
+            for measurement_dict in iHelper.gen_measurement_dict:
                 if s.name != measurement_dict['sname']:
                     continue
                 m = s.add_measurement(create_parameters=False, **measurement_dict)

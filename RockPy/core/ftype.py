@@ -166,13 +166,12 @@ class Ftype(object):
              bool: `True` if file contains `specimen` otherwise `False`
 
         """
-        if specimen not in self.data['specimen'].values:
-            Ftype.log().error('CANNOT IMPORT -- sobj_name not in ftype_data specimen list.')
-            Ftype.log().error('wrong sample name?')
-            Ftype.log().error('These samples exist: %s' % set(self.data['specimens']))
-            return False
-        else:
+        if specimen in self.data['specimen'].values:
             return True
+        Ftype.log().error('CANNOT IMPORT -- sobj_name not in ftype_data specimen list.')
+        Ftype.log().error('wrong sample name?')
+        Ftype.log().error('These samples exist: %s' % set(self.data['specimens']))
+        return False
 
     def to_si_units(self):
         """ converts each numeric column in self.data to SI internal_units TODO: write to out_units
@@ -180,7 +179,7 @@ class Ftype(object):
         Q_ = ureg.Quantity
         for col in self.data.columns:
             if col in self.in_units:
-                if not col in self.units:
+                if col not in self.units:
                     self.log().warning(
                         'Unit of data column << {} >> has no internal unit equivalent. The input unit is  << {:P} >>.'.format(
                             col, self.in_units[col]))
@@ -296,7 +295,6 @@ def is_implemented(ftype):
     """
     if ftype in RockPy.implemented_ftypes:
         return True
-    else:
-        RockPy.log.error(
-            f'Ftype << {ftype} >> is not implemented. Check RockPy.implemented_ftypes for which ftypes are.')
-        return False
+    RockPy.log.error(
+        f'Ftype << {ftype} >> is not implemented. Check RockPy.implemented_ftypes for which ftypes are.')
+    return False
