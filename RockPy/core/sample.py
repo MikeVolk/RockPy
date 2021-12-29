@@ -378,20 +378,7 @@ class Sample(object):
                 mobj = RockPy.implemented_measurements[mtype](sobj=self, value=value, unit=unit, series=series, idx=idx)
                 return mobj
 
-        # create the import helper
-        if fpath and not any((mtype, ftype)):
-            import_helper = RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
-        else:
-            self.log().debug('creating minfo from mtype: << %s >>' % mtype)
-            import_helper = RockPy.core.file_io.ImportHelper.from_dict(fpath=fpath,
-                                                                       sgroups=sgroups,
-                                                                       snames=self.name,
-                                                                       mtypes=mtype, ftype=ftype,
-                                                                       series=series,
-                                                                       suffix=idx,
-                                                                       comment=comment,  # unused for now
-                                                                       dialect=dialect,
-                                                                       )
+        import_helper = self.__get_import_helper(fpath, ftype, dialect, mtype, idx, series, comment, sgroups)
 
         """ DATA import from FILE """
         # if no mdata or measurement object are passed, create measurement file from the minfo object
@@ -418,6 +405,22 @@ class Sample(object):
             return mobj
         else:
             self.log().error('COULD not create measurement << %s >>' % mtype)
+
+    def __get_import_helper(self, fpath, ftype, dialect, mtype, idx, series, comment, sgroups):
+        if fpath and not any((mtype, ftype)):
+            return RockPy.core.file_io.ImportHelper.from_file(fpath=fpath)
+        self.log().debug('creating minfo from mtype: << %s >>' % mtype)
+        return RockPy.core.file_io.ImportHelper.from_dict(
+            fpath=fpath,
+            sgroups=sgroups,
+            snames=self.name,
+            mtypes=mtype,
+            ftype=ftype,
+            series=series,
+            suffix=idx,
+            comment=comment,  # unused for now
+            dialect=dialect,
+        )
 
     def _add_measurement_from_str(self, fpath, kwargs, mobj,
                                   mtype=None, series=None):

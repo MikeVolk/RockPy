@@ -241,7 +241,7 @@ class Measurement(object):
               measurement data file
            machine: str
               measurement machine
-            mobj: RockPy.MEasurement object
+            mobj: RockPy.Measurement object
         """
         # todo needs to be rewritten
         raise NotImplementedError
@@ -999,7 +999,7 @@ class Measurement(object):
             result: str
                 default_recipe: None
                 normalizes the values in norm_dtypes to the result value.
-                e.g. normalize the moment to ms (hysteresis measuremetns)
+                e.g. normalize the moment to ms (hysteresis measurements)
             dont_normalize: list
                 list of dtypes that will not be normalized
                 default_recipe: None
@@ -1015,7 +1015,7 @@ class Measurement(object):
         # dont normalize parameter measurements
         if isinstance(self, Parameter):
             return
-        # print(self.mtype, locals())
+
         # separate the calc from non calc parameters
         calculation_parameter, options = RockPy.core.utils.separate_calculation_parameter_from_kwargs(rpobj=self,
                                                                                                       **options)
@@ -1093,7 +1093,7 @@ class Measurement(object):
         -------
            normalization factor: float
         """
-        norm_factor = 1  # inititalize
+        norm_factor = 1  # initialize
         # print('measurement:', locals())
         if reference and not result:
             if reference == 'nrm' and reference not in self.data and 'data' in self.data:
@@ -1144,7 +1144,7 @@ class Measurement(object):
 
     def get_mtype_prior_to(self, mtype):
         """
-        This method allows to search for a measurememt with a specific mtype, that was added prior to this measurement.
+        This method allows to search for a measurement with a specific mtype, that was added prior to this measurement.
 
         Parameters
         ----------
