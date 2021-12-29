@@ -24,7 +24,7 @@ class Cif(RockPy.core.ftype.Ftype):
         out_units (dict(:obj:`pint.ureg`)): units used to export the data
         units (dict(:obj:`pint.ureg`)): units used internally (should be SI units)
         datacolumns (tuple(str)): names of all the columns should be the same as `self.data.columns`
-        
+
     Notes
     -----
         Data columns:
@@ -222,7 +222,8 @@ class Cif(RockPy.core.ftype.Ftype):
         out['ang_err'] = stdevs['S']['D']
 
         if subtract_holder:
-            out[['x', 'y', 'z']] = Cif._correct_holder(means['S'][['x', 'y', 'z']], means['H'][['x', 'y', 'z']])
+            out[['x', 'y', 'z']] = Cif._correct_holder(
+                means['S'][['x', 'y', 'z']], means['H'][['x', 'y', 'z']])
         return out
 
     @staticmethod
@@ -252,18 +253,20 @@ class Cif(RockPy.core.ftype.Ftype):
             :py:meth:`RockPy.core.ftype.Ftype.read_file` docstring for information on the exact formatting.
         """
 
-        series = series[1].copy() #create copy of the series, dont work with original data
+        # create copy of the series, dont work with original data
+        series = series[1].copy()
 
-        #todo convert back to original units using pint
+        # todo convert back to original units using pint
 
         # convert back to out_units
         level = int(series['level'] * 10000)
 
         for l in series.index:
-            if not l in self.out_units:
+            if l not in self.out_units:
                 continue
             try:
-                series[l] *= (1 * self.units[l]).to(self.out_units[l]).magnitude
+                series[l] *= (1 * self.units[l]
+                              ).to(self.out_units[l]).magnitude
             except pint.errors.DimensionalityError:
                 if self.units[l] == 'Tesla' and self.out_units[l] == 'gauss':
                     series[l] *= 10000
@@ -271,7 +274,6 @@ class Cif(RockPy.core.ftype.Ftype):
         mtype = series['mtype']
         # series[['std_x', 'std_y', 'std_z', 'intensity']] *=  # to emu
         # series[['intensity']] *= 1e-5  # std is saved in 10^-5 emu
-
 
         timedate = pd.to_datetime(series['date'] + ' ' + series['time'])
 
@@ -284,7 +286,7 @@ class Cif(RockPy.core.ftype.Ftype):
                    'std_x': '{:>.6f}', 'std_y': '{:>.6f}', 'std_z': '{:>.6f}',
                    'user': '{:>7}', 'date': '{:>4}', 'time': '{:>4}'}
 
-        if mtype == 'NRM' or mtype == 'ARM':
+        if mtype in ['NRM', 'ARM']:
             formats['mtype'] = "{:<3}"
             formats['level'] = '{:>3}'
             level = ''
@@ -294,7 +296,8 @@ class Cif(RockPy.core.ftype.Ftype):
             formats['level'] = '{:>1}'
             level = str(level)[-1]
 
-        start = ''.join([formats['mtype'].format(mtype), formats['level'].format(level), ' '])
+        start = ''.join([formats['mtype'].format(mtype),
+                        formats['level'].format(level), ' '])
         rest = ' '.join(formats[fmt].format(series[fmt]) for fmt in columns)
         date = timedate.strftime(' %Y-%m-%d')
         time = timedate.strftime(' %H:%M:%S')
@@ -333,10 +336,7 @@ class Cif(RockPy.core.ftype.Ftype):
         for label in lw_dict:
             v = header_rows[1][lw_dict[label][0]:lw_dict[label][1]].strip(' ')
 
-            if v:
-                header.loc[sample_id, label] = float(v)
-            else:
-                header.loc[sample_id, label] = None
+            header.loc[sample_id, label] = float(v) if v else None
         header.index.name = 'sample_id'
         return header
 
@@ -394,11 +394,12 @@ class Cif(RockPy.core.ftype.Ftype):
         if dfile not in cls.imported_files or reload:
             cls.imported_files[dfile] = cls._read_raw_UP_file(dfile)
 
-        out = cls.imported_files[dfile].copy() # todo does this have to be a copy?
+        # todo does this have to be a copy?
+        out = cls.imported_files[dfile].copy()
         # check if the sample is in the data
-        if not sample_id in set(out['Sample']):
+        if sample_id not in set(out['Sample']):
             RockPy.log.warning('Could not find sample_id << {} >> in file << {} >.! '
-                             'Please check correct spelling'.format(sample_id, os.path.basename(dfile)))
+                               'Please check correct spelling'.format(sample_id, os.path.basename(dfile)))
             return
 
         sdata = out.loc[out.Sample == sample_id].copy()
@@ -414,13 +415,15 @@ class Cif(RockPy.core.ftype.Ftype):
         sdata = cls._rotate_UP_measurements(sdata)
 
         # calculate dec, inc and moment
-        sdata = xyz2dim(sdata, colX='x', colY='y', colZ='z', colD='D', colI='I', colM='M')
+        sdata = xyz2dim(sdata, colX='x', colY='y', colZ='z',
+                        colD='D', colI='I', colM='M')
 
         sdata = sdata.set_index('datetime')
         dfile = os.path.basename(dfile)
         sdata.loc[:, 'dfile'] = dfile
 
-        mtype = ''.join([n for n in dfile.split('.')[0] if not n.isnumeric()]).rstrip()
+        mtype = ''.join([n for n in dfile.split('.')[0]
+                        if not n.isnumeric()]).rstrip()
         level = ''.join([n for n in dfile.split('.')[0] if n.isnumeric() if n])
 
         if 'UAFX' in mtype:
@@ -550,15 +553,17 @@ class Cif(RockPy.core.ftype.Ftype):
         """
 
         if os.path.isdir(files_or_folder):
-            files = [os.path.join(files_or_folder, f) for f in os.listdir(files_or_folder)]
+            files = [os.path.join(files_or_folder, f)
+                     for f in os.listdir(files_or_folder)]
         else:
             files = RockPy.to_tuple(files_or_folder)
 
-        files = sorted([f for f in files if (f.endswith('UP') or f.endswith('DOWN'))])
+        files = sorted([f for f in files if (
+            f.endswith('UP') or f.endswith('DOWN'))])
 
         # read all the files , create list of Dataframes
         raw_df = []
-        for i, dfile in enumerate(files):
+        for dfile in files:
             # print('reading file << {:>20} >> {:>4} of {:>4}'.format(os.path.basename(dfile), i, len(files)), end='\r')
             readdf = cls._read_UP_file(dfile, sample_id, reload=reload)
 
@@ -566,15 +571,17 @@ class Cif(RockPy.core.ftype.Ftype):
                 raw_df.append(readdf)
 
         average_df = []
-        for i, df in enumerate(raw_df):
+        for df in raw_df:
             # print('averaging file {:>4} of {:>4}'.format(i, len(raw_df)), end='\r')
-            average_df.append(cls._return_mean_from_UP_file(df, subtract_holder=subtract_holder))
+            average_df.append(cls._return_mean_from_UP_file(
+                df, subtract_holder=subtract_holder))
         if len(average_df) > 1:
             data = pd.concat(average_df)
         else:
             data = average_df[0]
 
-        data = xyz2dim(data, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
+        data = xyz2dim(data, colX='x', colY='y', colZ='z',
+                       colI='plate_inc', colD='plate_dec', colM='intensity')
 
         data = data.sort_index()
         data.index.name = 'datetime'
@@ -587,7 +594,7 @@ class Cif(RockPy.core.ftype.Ftype):
         data.loc[:, 'core_strike'] = core_strike
         data.loc[:, 'bedding_dip'] = bedding_dip
         data.loc[:, 'bedding_strike'] = bedding_strike
-        data.loc[:, ["std_x","std_y","std_z"]] *= 1e5
+        data.loc[:, ["std_x", "std_y", "std_z"]] *= 1e5
 
         data = cls._correct_core(data, core_dip, core_strike)
 
@@ -650,7 +657,8 @@ class Cif(RockPy.core.ftype.Ftype):
 
     @classmethod
     def _recalc_plate(cls, df):
-        df = xyz2dim(df, colX='x', colY='y', colZ='z', colI='plate_inc', colD='plate_dec', colM='intensity')
+        df = xyz2dim(df, colX='x', colY='y', colZ='z',
+                     colI='plate_inc', colD='plate_dec', colM='intensity')
         return df
 
     @classmethod
@@ -699,7 +707,8 @@ class Cif(RockPy.core.ftype.Ftype):
         if isinstance(strike, pd.Series):
             strike = strike.values[0]
 
-        cls.log().info(f'Correcting data for core dip ({dip}) and strike ({strike})')
+        cls.log().info(
+            f'Correcting data for core dip ({dip}) and strike ({strike})')
         return correct_dec_inc(df=df, dip=dip, strike=(strike - 90),
                                colI='plate_inc', colD='plate_dec',
                                newD='geo_dec', newI='geo_inc')
@@ -821,8 +830,10 @@ class Cif(RockPy.core.ftype.Ftype):
             columns=['mtype', 'level', 'geo_dec', 'geo_inc', 'strat_dec', 'strat_inc', 'intensity', 'ang_err',
                      'plate_dec', 'plate_inc', 'std_x', 'std_y', 'std_z', 'user', 'date', 'time'], data=rows)
 
-        data = dim2xyz(data, colD='plate_dec', colI='plate_inc', colM='intensity')
-        data.loc[:, 'datetime'] = pd.to_datetime(data['date'] + ' ' + data['time'])
+        data = dim2xyz(data, colD='plate_dec',
+                       colI='plate_inc', colM='intensity')
+        data.loc[:, 'datetime'] = pd.to_datetime(
+            data['date'] + ' ' + data['time'])
         data = data.set_index('datetime')
         return data
 
@@ -949,6 +960,7 @@ class Cif(RockPy.core.ftype.Ftype):
 
     def correct_individual_measurement(self, idx):
         pass
+
     def export(self, fname, sample_id=None, **kwargs):
         """
         Exports a cif file from the data
@@ -978,4 +990,3 @@ class Cif(RockPy.core.ftype.Ftype):
 
 if __name__ == '__main__':
     Cif('/Users/mike/Dropbox/science/harvard/2G_data/mike/MIL/NRM_ARM_IRM/MIL14_IRM')
-    
