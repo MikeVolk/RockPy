@@ -3,8 +3,9 @@ from RockPy.core.ftype import Ftype
 import pandas as pd
 import numpy as np
 import io
+from RockPy import ureg
 from copy import deepcopy
-import io
+
 
 class Vsm(Ftype):
     standard_calibration_exponent = 0
@@ -13,12 +14,19 @@ class Vsm(Ftype):
                          'Direct moment vs. field; Initial magnetization; Hysteresis loop\n': ('hys',),
                          'Direct moment vs. field; Multiple segments\n': ('hys',),
                          'Remanence curves:  DCD\n': ('dcd',),
-                         'Remanence curves:  IRM + DCD\n':('irm','dcd'),
-                         'Direct moment vs. field; First-order reversal curves\n':('forc',),
+                         'Remanence curves:  IRM + DCD\n': ('irm', 'dcd'),
+                         'Direct moment vs. field; First-order reversal curves\n': ('forc',),
                          }
 
-    def __init__(self, dfile, snames=None, dialect=None, reload=False):
+    in_units = {'Field (T)': ureg('tesla'),
+                'Remanence (Am2)': ureg('ampere meter ^2')}
 
+    out_units = in_units
+
+    units = {'Field (T)': ureg('tesla'),
+             'Remanence (Am2)': ureg('ampere meter ^2')}
+
+    def __init__(self, dfile, snames=None, dialect=None, reload=False):
         """
         Args:
             dfile:
@@ -36,29 +44,29 @@ class Vsm(Ftype):
         self.mtype = self.mtype_translation[mtype]
         self.header = self.read_header(dfile, header_end)
 
-        super().__init__(dfile, snames=snames, dialect=dialect, reload = reload, header = self.header)
+        super().__init__(dfile, snames=snames, dialect=dialect,
+                         reload=reload, header=self.header)
 
-        self.segment_header = self.read_segement_infos(dfile, mtype, header_end, segment_start, segment_end, segment_widths)
-
-
+        self.segment_header = self.read_segement_infos(
+            dfile, mtype, header_end, segment_start, segment_end, segment_widths)
 
         # check the calibration factor
         self.calibration_factor = float(self.header.loc['Calibration factor'])
 
-        self.correct_exp = None
-        if not np.isnan(self.calibration_factor):
-            if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
-                self.correct_exp = np.power(10, np.floor(np.log10(self.calibration_factor)))
-                RockPy.log.warning(
-                    'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
-                        self.standard_calibration_exponent,
-                        int(np.floor(np.log10(self.calibration_factor)))))
+        # self.correct_exp = None
+        # if not np.isnan(self.calibration_factor):
+        #     if np.floor(np.log10(self.calibration_factor)) != self.standard_calibration_exponent:
+        #         self.correct_exp = np.power(10, np.floor(
+        #             np.log10(self.calibration_factor)))
+        #         RockPy.log.warning(
+        #             'CALIBRATION FACTOR (cf) seems to be wrong. CF should be {} here: {}. Data was corrected'.format(
+        #                 self.standard_calibration_exponent,
+        #                 int(np.floor(np.log10(self.calibration_factor)))))
 
-        if self.correct_exp:
-            for c in self.data:
-                if any(t in c for t in ('(Am2)',)):
-                    self.data[c] *= self.correct_exp
-
+        # if self.correct_exp:
+        #     for c in self.data:
+        #         if any(t in c for t in ('(Am2)',)):
+        #             self.data[c] *= self.correct_exp
 
     def read_basic_file_info(self):
         """Opens the file and extracts the mtype, header lines, segment lines,
@@ -97,7 +105,8 @@ class Vsm(Ftype):
                              skiprows=2, skip_blank_lines=True,
                              widths=(31, 13), index_col=0, names=[0])
         # remove empty line and section headers
-        idx = [i for i,v in enumerate(header.index) if not str(v).upper() == v if str(v) != 'nan']
+        idx = [i for i, v in enumerate(header.index) if str(
+            v).upper() != v if str(v) != 'nan']
 
         header = header.iloc[idx]
         header = header.replace('No', False)
@@ -112,7 +121,7 @@ class Vsm(Ftype):
         # add file location to header
         header.loc['fpath'] = dfile
 
-        if not 'Calibration factor' in header.index:
+        if 'Calibration factor' not in header.index:
             header.loc['Calibration factor'] = None
         return header
 
@@ -135,18 +144,24 @@ class Vsm(Ftype):
             Returns -------s
         """
 
-        if not 'First-order reversal curves' in mtype:
+        if 'First-order reversal curves' not in mtype:
             # reading segments_tab data
-            head = self.raw_data[header_end+1:segment_start]
-            head = pd.read_fwf(io.StringIO(''.join(head)), widths=segment_widths)
-            segment_header = [' '.join([str(n) for n in line]).replace('nan', '').strip() for line in head.values.T]
+            head = self.raw_data[header_end + 1:segment_start]
+
+            head = pd.read_fwf(io.StringIO(''.join(head)), names=[],
+                               widths=segment_widths)
+            segment_header = [' '.join([str(n) for n in line]).replace(
+                'nan', '').strip() for line in head.values.T]
+
             segment_infos = pd.read_csv(dfile, skiprows=segment_start, nrows=int(self.header[0]['Number of segments']),
                                         names=segment_header, encoding='latin-1',
                                         )
             # add column with start indices for each segment
-            segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+            segment_infos['Start Index'] = [0] + \
+                list(segment_infos['Final Index'].values[:-1] + 1)
             # add one to the final index because of empty row
-            segment_infos['Final Index'] = [v + i for i, v in enumerate(segment_infos['Final Index'])]
+            segment_infos['Final Index'] = [v + i for i,
+                                            v in enumerate(segment_infos['Final Index'])]
 
         else:
             # constructs segment header from file itself
@@ -164,7 +179,7 @@ class Vsm(Ftype):
             'Pause', 'Final Index'
         """
         segment_infos = pd.DataFrame(columns=['Segment Number', 'Averaging Time', 'Initial Field', 'Field Increment',
-                                               'Final Field', 'Pause', 'Final Index'])
+                                              'Final Field', 'Pause', 'Final Index'])
 
         # an empty row == only nan values separates the different segments
         # get nan indices
@@ -176,10 +191,7 @@ class Vsm(Ftype):
 
         for i, idx in enumerate(nanidx):
             # get start index of segment
-            if i == 0:
-                sidx = 0
-            else:
-                sidx = nanidx[i - 1] + 1
+            sidx = 0 if i == 0 else nanidx[i - 1] + 1
             # end index
             eidx = idx - 1
 
@@ -187,7 +199,8 @@ class Vsm(Ftype):
             Bfin.append(self.data['Field (T)'].iloc[eidx])
 
             if Binit[i] != Bfin[i]:
-                step.append(np.mean(np.diff(self.data['Field (T)'].iloc[sidx:eidx + 1])))
+                step.append(
+                    np.mean(np.diff(self.data['Field (T)'].iloc[sidx:eidx + 1])))
             else:
                 step.append(np.nan)
 
@@ -200,21 +213,22 @@ class Vsm(Ftype):
         segment_infos['Averaging Time'] = self.header.loc['Averaging time'].iloc[0, 0]
 
         # add column with start indices for each segment
-        segment_infos['Start Index'] = [0] + list(segment_infos['Final Index'].values[:-1] + 1)
+        segment_infos['Start Index'] = [0] + \
+            list(segment_infos['Final Index'].values[:-1] + 1)
         return segment_infos
 
     def read_file(self):
-
         # reading data
-        data_header = [' '.join([str(n) for n in line]).replace('nan', '').replace('�', '2').strip() for line in
-                       pd.read_fwf(self.dfile, skiprows=self.data_start - 4,
-                                   nrows=3, widths=self.data_widths).values.T]
+        data_header = [' '.join([str(n) for n in line]).replace('nan', '').replace('�', '2').replace('²', '2').strip() for line in
+                       pd.read_fwf(self.dfile, skiprows=self.data_start - 5, columns=[],
+                                   nrows=2, widths=self.data_widths,
+                                   encoding='latin1',).values.T]
 
-        data = pd.read_csv(io.StringIO(''.join(self.raw_data[self.data_start:])),
-                           nrows=int(self.file_length - self.data_start) - 2,
-                           names=data_header, skip_blank_lines=False, squeeze=True,
+        return pd.read_csv(io.StringIO(''.join(self.raw_data[self.data_start:-2])),
+                           names=data_header,
+                           skip_blank_lines=False, squeeze=True,
+                           encoding='latin1',
                            )
-        return data
 
     @property
     def iter_segments(self):
@@ -224,7 +238,8 @@ class Vsm(Ftype):
 
         # iterate over individual rows (segments) in the header
         for i, seg in self.segment_header.iterrows():
-            segment = self.data.iloc[int(seg['Start Index']):int(seg['Final Index'])].dropna(axis=0)
+            segment = self.data.iloc[int(seg['Start Index']):int(
+                seg['Final Index'])].dropna(axis=0)
             yield segment
 
     @property
@@ -233,7 +248,6 @@ class Vsm(Ftype):
         :rtype: list
         """
         return list(self.iter_segments)
-
 
     def get_segment_data(self, segment_index):
         """Returns the segment of a measurement corresponding to the index
@@ -250,6 +264,7 @@ class Vsm(Ftype):
         """
         return list(self.iter_segments)[segment_index]
 
+
 if __name__ == '__main__':
     # dcd = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/dcd_vsm.001')
     # hys = Vsm(dfile='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/hys_vsm.001')
@@ -260,6 +275,5 @@ if __name__ == '__main__':
     #     fpath='/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/dcd_irm_vsm.001')
     # print(m.data)
 
-    d = Vsm('/Users/mike/github/RockPy/RockPy/tests/test_data/VSM/forc_vsm.001')
-
-    d
+    powder = Vsm(
+        '/Users/mike/Dropbox/science/harvard/2021_MUC_VSM/doped_Verezosca_750nmFe3O4_120mg.hys')

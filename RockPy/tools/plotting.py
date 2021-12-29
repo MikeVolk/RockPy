@@ -627,6 +627,12 @@ def connect_ax_data(ax, **kwargs):
     ax.plot(x, y, **kwargs)
 
 
+def get_ax(ax):
+    if ax is None:
+        ax = plt.gca()
+    return ax
+
+
 """ COLORS """
 
 red_blue_colormap = mcol.LinearSegmentedColormap.from_list("MyCmapName", [
