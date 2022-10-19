@@ -37,7 +37,6 @@ figsize = np.array([3.74, 5.91]) * 1.3
 
 """ AXIS """
 
-
 def force_aspect(ax=None, aspect=1):
     """
     Changes the aspect of an axes to be `aspect`. Not by data
@@ -87,7 +86,8 @@ def get_unique_axis(fig: plt.Figure):
     return unique_axes
 
 
-def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
+def enumerate_figure(fig: plt.figure, positions=None, ignore=[],
+                     labels='abcdefghijklmnopqrstuvwxyz', **kwargs):
     """
     Takes a figure object and places n) on each of the axes.
 
@@ -108,7 +108,7 @@ def enumerate_figure(fig: plt.figure, positions=None, ignore=[], **kwargs):
 
     for i, ax in enumerate(axes):
 
-        label = 'abcdefghijklmnopqrstuvwxyz'[i]
+        label = labels[i]
 
         if label in ignore or i in ignore:
             continue
@@ -625,7 +625,6 @@ def connect_ax_data(ax, **kwargs):
         y.extend(l.get_ydata())
 
     ax.plot(x, y, **kwargs)
-
 
 def get_ax(ax):
     if ax is None:

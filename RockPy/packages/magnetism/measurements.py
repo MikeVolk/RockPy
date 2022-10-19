@@ -1753,7 +1753,6 @@ class Dcd(Measurement):
             Note:
                 Uses numpy.polyfit for calculation
             """
-
             m = self.mobj
 
             if npoints > len(m.data):
